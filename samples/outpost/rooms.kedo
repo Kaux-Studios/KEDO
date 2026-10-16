@@ -1,0 +1,78 @@
+kedo 1
+module outpost
+
+/// Base común: toda sala tiene integridad y un paisaje sonoro.
+abstract room base_room {
+    tags = [interior]
+    component damage { integrity = 100  repair_parts = 1 }
+    component soundscape { loop = asset:hum  alarm = asset:klaxon }
+}
+
+/// Salas presurizadas consumen oxígeno y agua por tripulante.
+mixin pressurized {
+    component life_support { oxygen = -2  water = -1 }
+    tags = [pressurized]
+}
+
+/// Salas con energía propia.
+mixin powered {
+    component life_support { power = 5 }
+}
+
+room habitat_a extends base_room with pressurized {
+    title = "Habitat A"
+    kind = habitat
+    component capacity { crew = 4 }
+    adjacent = [room:greenhouse, room:airlock_main]
+    backdrop = asset:habitat_bg
+
+    on crew_enters(ctx) {
+        if (ctx.member.mood_is(mood.panicked)) {
+            apply effect:calm_down(ctx.member, 1)
+        }
+    }
+}
+
+room greenhouse extends base_room with pressurized, powered {
+    title = "Greenhouse"
+    kind = greenhouse
+    component life_support { oxygen = 6  water = -3 }  // produce oxígeno; sobrescribe el consumo del mixin
+    component capacity { crew = 2  storage = 10 }
+    adjacent = [room:habitat_a]
+
+    on hour_tick(ctx) {
+        if (ctx.hour % 6 == 0) {
+            apply effect:harvest(ctx.room, 2)
+        }
+    }
+}
+
+room reactor extends base_room with powered {
+    title = "Reactor"
+    kind = reactor
+    component life_support { power = 40 }
+    component capacity { crew = 1 }
+    component damage { repair_parts = 4 }
+    remove component soundscape
+    tags += [hazard]
+    adjacent = [room:workshop]
+}
+
+room workshop extends base_room with pressurized {
+    title = "Workshop"
+    kind = workshop
+    component capacity { crew = 2  storage = 25 }
+    adjacent = [room:reactor, room:airlock_main]
+}
+
+room airlock_main extends base_room {
+    title = "Main airlock"
+    kind = airlock
+    tags =! [exterior]
+    component capacity { crew = 2 }
+    adjacent = [room:habitat_a, room:workshop]
+}
+
+asset hum { kind = ambience  path = "audio/hum.ogg" }
+asset klaxon { kind = sfx  path = "audio/klaxon.ogg" }
+asset habitat_bg { path = "art/habitat.png" }

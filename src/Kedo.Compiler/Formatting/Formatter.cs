@@ -237,9 +237,9 @@ public static class Formatter
                     first = false;
                 }
             }
-            else if (n.Kind == NodeKind.UnaryExpr && tree.Tokens[n.FirstToken].Kind == TokenKind.Minus)
+            else if ((n.Kind == NodeKind.UnaryExpr || n.Kind == NodeKind.LiteralExpr) && tree.Tokens[n.FirstToken].Kind == TokenKind.Minus)
             {
-                unaryMinus[n.FirstToken] = true;
+                unaryMinus[n.FirstToken] = true;   // `-x` and negative literals `-1` print without a space
             }
         }
     }

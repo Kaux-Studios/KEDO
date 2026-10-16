@@ -405,9 +405,18 @@ public static class DeclarationBuilder
             {
                 case NodeKind.LiteralExpr:
                 {
-                    var tk = _t.OwnTokens(node)[0];
+                    var own = _t.OwnTokens(node);
+                    var negative = own.Count == 2 && _t.Tokens[own[0]].Kind == TokenKind.Minus;
+                    var tk = negative ? own[1] : own[0];
                     var token = _t.Tokens[tk];
                     var text = Text(tk);
+                    if (negative)
+                    {
+                        return token.Kind == TokenKind.Duration
+                            ? ParseDuration(origin, text) is var d ? new DurationValue(origin, -d.Amount, d.Unit) : throw new InvalidOperationException()
+                            : new IntValue(origin, -ParseInt(text, token.Span));
+                    }
+
                     return token.Kind switch
                     {
                         TokenKind.Integer => new IntValue(origin, ParseInt(text, token.Span)),

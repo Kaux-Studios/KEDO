@@ -1,0 +1,86 @@
+kedo 1
+module outpost
+
+// Esquema del mini-juego de muestra "Outpost": una estación aislada que administra
+// salas, tripulación, recursos y crisis. Nada aquí viene de Patriark: sirve para
+// comprobar que el núcleo no filtra supuestos de un juego concreto.
+
+kedo_enum room_kind { values = [habitat, greenhouse, reactor, workshop, airlock, medbay] }
+kedo_enum crew_role { values = [engineer, botanist, medic, pilot, child] }
+kedo_enum mood { values = [calm, tense, panicked] }
+kedo_enum severity { values = [minor, major, critical] }
+kedo_enum resource { values = [oxygen, water, power, parts] }
+kedo_enum sound_kind { values = [music, ambience, sfx] }
+
+kedo_record cost { fields = [{ name = resource  kind = enum  enum = resource  required = true }, { name = amount  kind = int  min = 0  required = true }] }
+kedo_record choice {
+    doc = "Una respuesta posible a una crisis."
+    fields = [
+        { name = id  kind = enum  required = true }
+        { name = label  kind = text  required = true }
+        { name = costs  kind = list  strategy = keyed  key = resource  element = { kind = record  record = cost } }
+        { name = requires_role  kind = enum  enum = crew_role }
+        { name = duration  kind = duration  min = 0  default = 0 }
+        { name = mood_shift  kind = int  min = -2  max = 2  default = 0 }
+    ]
+}
+
+kedo_component life_support {
+    doc = "Consumo y producción por hora."
+    fields = [
+        { name = oxygen  kind = int  default = 0 }
+        { name = water  kind = int  default = 0 }
+        { name = power  kind = int  default = 0 }
+    ]
+}
+kedo_component capacity { fields = [{ name = crew  kind = int  min = 0  required = true }, { name = storage  kind = int  min = 0  default = 0 }] }
+kedo_component damage { fields = [{ name = integrity  kind = int  min = 0  max = 100  default = 100 }, { name = repair_parts  kind = int  min = 0  default = 1 }] }
+kedo_component soundscape { fields = [{ name = loop  kind = asset  asset_kind = audio }, { name = alarm  kind = asset  asset_kind = audio }] }
+
+kedo_type room {
+    doc = "Una sala de la estación."
+    fields = [
+        { name = title  kind = text  required = true }
+        { name = kind  kind = enum  enum = room_kind  required = true }
+        { name = tags  kind = list  strategy = set  element = { kind = enum } }
+        { name = adjacent  kind = list  strategy = set  element = { kind = reference  target = room } }
+        { name = backdrop  kind = asset  asset_kind = texture }
+    ]
+    components = [life_support, capacity, damage, soundscape]
+    hooks = [crew_enters, hour_tick]
+}
+
+kedo_type crew {
+    fields = [
+        { name = name  kind = text  required = true }
+        { name = role  kind = enum  enum = crew_role  required = true }
+        { name = mood  kind = enum  enum = mood  default = calm }
+        { name = skill  kind = int  min = 1  max = 5  default = 2 }
+        { name = home  kind = reference  target = room }
+        { name = portrait  kind = asset  asset_kind = texture }
+    ]
+    hooks = [hour_tick]
+}
+
+kedo_type crisis {
+    doc = "Una crisis con opciones; se dispara desde una sala o un reloj."
+    fields = [
+        { name = title  kind = text  required = true }
+        { name = severity  kind = enum  enum = severity  required = true }
+        { name = room  kind = reference  target = room }
+        { name = choices  kind = list  strategy = keyed  element = { kind = record  record = choice }  required = true }
+        { name = cooldown  kind = duration  min = 0  default = 0 }
+    ]
+    hooks = [resolved]
+}
+
+kedo_type asset {
+    fields = [
+        { name = kind  kind = enum  enum = sound_kind }
+        { name = path  kind = text  required = true }
+    ]
+}
+
+kedo_hook crew_enters { context = [{ name = member  kind = reference  target = crew }, { name = room  kind = reference  target = room }] }
+kedo_hook hour_tick { context = [{ name = hour  kind = int }, { name = room  kind = reference  target = room }]  allows_await = false }
+kedo_hook resolved { context = [{ name = choice_id  kind = text }, { name = room  kind = reference  target = room }, { name = by  kind = reference  target = crew }] }

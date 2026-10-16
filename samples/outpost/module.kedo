@@ -1,0 +1,8 @@
+kedo 1
+module outpost
+
+manifest {
+    version = 1
+    requires = []
+    base_unit = min
+}

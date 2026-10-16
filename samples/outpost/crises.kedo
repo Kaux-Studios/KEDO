@@ -1,0 +1,55 @@
+kedo 1
+module outpost
+
+/// Opción de "esperar y ver" presente en toda crisis.
+mixin wait_choice {
+    choices += [{ id = wait  label = "Wait and see"  duration = 1h  mood_shift = -1 }]
+}
+
+abstract crisis base_crisis with wait_choice {
+    severity = minor
+    cooldown = 12h
+}
+
+crisis coolant_leak extends base_crisis {
+    title = "Coolant leak"
+    severity = major
+    room = room:reactor
+    choices = [
+        { id = patch  label = "Patch the line"  requires_role = engineer  duration = 30min  costs = [{ resource = parts  amount = 2 }]  mood_shift = 1 }
+        { id = vent  label = "Vent the loop"  duration = 10min  costs = [{ resource = water  amount = 5 }] }
+    ]
+
+    on resolved(ctx) {
+        if (ctx.choice_id == "patch") {
+            let cost = repair_cost(ctx.room.integrity(), 2)
+            apply effect:consume(resource.parts, cost)
+            wait 2h
+            apply effect:restore(ctx.room, 20)
+        } else if (ctx.choice_id == "vent") {
+            emit signal:water_low(ctx.room)
+        } else {
+            wait decision prompt:coolant_followup {
+                option evacuate { apply effect:evacuate(ctx.room) }
+                option risk_it { wait roll reactor(100) as r
+                    if (r < 30) { apply effect:meltdown(ctx.room) } }
+            }
+        }
+    }
+}
+
+crisis coolant_leak_minor extends coolant_leak {
+    title = "Small coolant leak"
+    severity = minor
+    choices[patch] { costs = [{ resource = parts  amount = 1 }] }
+    choices -= [vent]
+}
+
+crisis blight extends base_crisis {
+    title = "Greenhouse blight"
+    room = room:greenhouse
+    choices = [
+        { id = prune  label = "Prune the beds"  requires_role = botanist  duration = 2h  mood_shift = 0 }
+        { id = burn  label = "Burn the infected beds"  duration = 1h  costs = [{ resource = oxygen  amount = 3 }]  mood_shift = -1 }
+    ]
+}

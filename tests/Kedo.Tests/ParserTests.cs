@@ -99,7 +99,7 @@ public class ParserTests
     [InlineData("module m\nactor a {}\n", "K1002")]
     [InlineData("kedo 2\nmodule m\n", "K1001")]
     [InlineData("kedo 1\nmodule m\nactor a { x 1 }\n", "K1002")]
-    [InlineData("kedo 1\nmodule m\nactor a { x = -1 }\n", "K1005")]
+    [InlineData("kedo 1\nmodule m\nactor a { x = -y }\n", "K1005")]
     [InlineData("kedo 1\nmodule m\nactor signal {}\n", "K1002")]
     public void ReportsSyntaxErrorsAndKeepsParsing(string text, string code)
     {

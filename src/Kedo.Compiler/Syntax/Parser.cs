@@ -482,6 +482,13 @@ public sealed class Parser
                 Expect(TokenKind.RParen, "`)` to close the expression");
                 Close();
                 return;
+            case TokenKind.Minus when Peek(1) is TokenKind.Integer or TokenKind.Duration:
+                // Negative literal: `-` immediately followed by a number is one LiteralExpr (`mood_shift = -1`).
+                Open(NodeKind.LiteralExpr);
+                Advance();
+                Advance();
+                Close();
+                return;
             case TokenKind.Minus:
                 Error("K1005", "a compound expression must be enclosed in parentheses: `(-x)`", Current.Span);
                 Open(NodeKind.ParenExpr);

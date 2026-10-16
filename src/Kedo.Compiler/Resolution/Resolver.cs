@@ -641,7 +641,8 @@ public sealed class Resolver
                     return null;
                 }
 
-                var rhs = Lower(fe.Value, fs, p, list, nesting) as RList;
+                // `-=` on a keyed list takes keys (scalars), so the element schema does not apply.
+                var rhs = Lower(fe.Value, fe.Op == FieldOp.Remove && list.Strategy == ListStrategy.Keyed ? null : fs, p, list, nesting) as RList;
                 if (rhs is null)
                 {
                     return null;

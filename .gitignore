@@ -17,3 +17,6 @@ BenchmarkDotNet.Artifacts/
 .env
 .env.*
 !.env.example
+
+# Local benchmark logs.
+/bench-run.log
