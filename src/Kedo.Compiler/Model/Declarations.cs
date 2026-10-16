@@ -3,11 +3,19 @@ using Kedo.Text;
 
 namespace Kedo.Compiler.Model;
 
-/// <summary>Where something was authored.</summary>
-public readonly record struct Origin(string? File, TextSpan Span)
+/// <summary>Where something was authored: file, byte span and one-based line/column of the start.</summary>
+public readonly record struct Origin(string? File, TextSpan Span, int Line, int Column)
 {
+    /// <summary>Origin of a syntax node.</summary>
+    public static Origin Of(SyntaxTree tree, int node)
+    {
+        var span = tree.SpanOf(node);
+        var pos = tree.Source.GetLinePosition(span.Start);
+        return new Origin(tree.Source.Path, span, pos.Line, pos.Column);
+    }
+
     /// <inheritdoc />
-    public override string ToString() => $"{File}:{Span}";
+    public override string ToString() => $"{(File is null ? "<memory>" : Path.GetFileName(File))}:{Line}:{Column}";
 }
 
 /// <summary>Assignment operators of a field entry.</summary>

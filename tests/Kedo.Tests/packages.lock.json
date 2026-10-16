@@ -61,6 +61,11 @@
         "resolved": "8.0.0",
         "contentHash": "AurL6Y5BA1WotzlEvVaIDpqzpIPvYnnldxru8oXJU2yFxFUy3+pNXjXd1ymO+RA0rq0+590Q8gaz2l3Sr7fmqg=="
       },
+      "System.IO.Hashing": {
+        "type": "Transitive",
+        "resolved": "9.0.0",
+        "contentHash": "seeO8icDfED/Qwl9PDFUx2Gf/7xv7dPsMnw5PnRwNZuz4EWMpy0wIVohC4MfCcTIoJgp+KUrWG4WH3NPSusQOA=="
+      },
       "System.Reflection.Metadata": {
         "type": "Transitive",
         "resolved": "8.0.0",
@@ -112,7 +117,8 @@
       "kedo.compiler": {
         "type": "Project",
         "dependencies": {
-          "Kedo.Core": "[1.0.0-alpha.0, )"
+          "Kedo.Core": "[1.0.0-alpha.0, )",
+          "System.IO.Hashing": "[9.0.0, )"
         }
       },
       "kedo.core": {

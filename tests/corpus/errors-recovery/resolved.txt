@@ -1,0 +1,12 @@
+actor a
+    hash 86859f6b3b293c7a6dfba5c6d3abad92
+actor b
+    y = 1
+    hash 5c26a00384247a889973799b644529a8
+actor c
+    on arrive (input.kedo)
+    hash e8a1c118e723f3420250da340e358c9b
+actor d
+    q [atomic] [1, 2]
+    hash 4614a8486e712b32c12068fcbf1ae5e0
+catalog 637790fac2f4ba1e321cf991ff06e683

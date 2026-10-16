@@ -55,58 +55,20 @@ File
       Field `world` `=`
         Body `{` `}`
           Field `nodes` `=`
-            ListExpr `[` `]`
-              Body `{` `}`
-                Field `id` `=`
-                  NameExpr `city_a`
-                Field `name_key` `=`
-                  LiteralExpr `"place.city_a"`
-                Field `role` `=`
-                  NameExpr `main`
-                Field `campaign_role` `=`
-                  NameExpr `city_a`
-                Field `tags` `=`
-                  ListExpr `[` `]`
-                    NameExpr `shelter`
-              Body `{` `}`
-                Field `id` `=`
-                  NameExpr `city_b`
-                Field `name_key` `=`
-                  LiteralExpr `"place.city_b"`
-                Field `role` `=`
-                  NameExpr `main`
-                Field `campaign_role` `=`
-                  NameExpr `city_b`
-              Body `{` `}`
-                Field `id` `=`
-                  NameExpr `bridge_west`
-                Field `name_key` `=`
-                  LiteralExpr `"place.west"`
-                Field `role` `=`
-                  NameExpr `special`
-                Field `campaign_role` `=`
-                  NameExpr `bridge_west`
-                Field `tags` `=`
-                  ListExpr `[` `]`
-                    NameExpr `bridge`
-              Body `{` `}`
-                Field `id` `=`
-                  NameExpr `bridge_east`
-                Field `name_key` `=`
-                  LiteralExpr `"place.east"`
-                Field `role` `=`
-                  NameExpr `special`
-                Field `campaign_role` `=`
-                  NameExpr `bridge_east`
+            ListExpr `[` `,` `,` `,` `]`
+              RefExpr `place:city_a`
+              RefExpr `place:city_b`
+              RefExpr `place:bridge_west`
+              RefExpr `place:bridge_east`
           Field `edges` `=`
             ListExpr `[` `]`
               Body `{` `}`
                 Field `id` `=`
                   NameExpr `bridge_link`
                 Field `from` `=`
-                  NameExpr `bridge_west`
+                  RefExpr `place:bridge_west`
                 Field `to` `=`
-                  NameExpr `bridge_east`
+                  RefExpr `place:bridge_east`
                 Field `minutes` `=`
                   LiteralExpr `20`
                 Field `structure` `=`
@@ -117,7 +79,7 @@ File
                 Field `id` `=`
                   NameExpr `plaza`
                 Field `parent` `=`
-                  NameExpr `city_a`
+                  RefExpr `place:city_a`
                 Field `name_key` `=`
                   LiteralExpr `"refuge.place.plaza"`
                 Field `description_key` `=`
@@ -132,7 +94,7 @@ File
                 Field `id` `=`
                   NameExpr `market`
                 Field `parent` `=`
-                  NameExpr `city_a`
+                  RefExpr `place:city_a`
                 Field `name_key` `=`
                   LiteralExpr `"refuge.place.market"`
                 Field `description_key` `=`
@@ -147,7 +109,7 @@ File
                 Field `id` `=`
                   NameExpr `guild`
                 Field `parent` `=`
-                  NameExpr `city_a`
+                  RefExpr `place:city_a`
                 Field `name_key` `=`
                   LiteralExpr `"refuge.place.guild"`
                 Field `description_key` `=`
@@ -162,7 +124,7 @@ File
                 Field `id` `=`
                   NameExpr `bar`
                 Field `parent` `=`
-                  NameExpr `city_a`
+                  RefExpr `place:city_a`
                 Field `name_key` `=`
                   LiteralExpr `"refuge.place.bar"`
                 Field `description_key` `=`
@@ -177,7 +139,7 @@ File
                 Field `id` `=`
                   NameExpr `hospital`
                 Field `parent` `=`
-                  NameExpr `city_a`
+                  RefExpr `place:city_a`
                 Field `name_key` `=`
                   LiteralExpr `"refuge.place.hospital"`
                 Field `description_key` `=`
@@ -253,6 +215,62 @@ File
             LiteralExpr `999`
           Field `materials` `=`
             LiteralExpr `999`
+  ObjectDecl `abstract`
+    TypeName `place`
+    Name `campaign_node`
+    Body `{` `}`
+      Field `role` `=`
+        NameExpr `main`
+  ObjectDecl
+    TypeName `place`
+    Name `city_a`
+    ExtendsClause `extends`
+      Name `campaign_node`
+    Body `{` `}`
+      Field `name_key` `=`
+        LiteralExpr `"place.city_a"`
+      Field `campaign_role` `=`
+        NameExpr `city_a`
+      Field `tags` `=`
+        ListExpr `[` `]`
+          NameExpr `shelter`
+  ObjectDecl
+    TypeName `place`
+    Name `city_b`
+    ExtendsClause `extends`
+      Name `campaign_node`
+    Body `{` `}`
+      Field `name_key` `=`
+        LiteralExpr `"place.city_b"`
+      Field `campaign_role` `=`
+        NameExpr `city_b`
+  ObjectDecl
+    TypeName `place`
+    Name `bridge_west`
+    ExtendsClause `extends`
+      Name `campaign_node`
+    Body `{` `}`
+      Field `name_key` `=`
+        LiteralExpr `"place.west"`
+      Field `role` `=`
+        NameExpr `special`
+      Field `campaign_role` `=`
+        NameExpr `bridge_west`
+      Field `tags` `=`
+        ListExpr `[` `]`
+          NameExpr `bridge`
+  ObjectDecl
+    TypeName `place`
+    Name `bridge_east`
+    ExtendsClause `extends`
+      Name `campaign_node`
+    Body `{` `}`
+      Field `name_key` `=`
+        LiteralExpr `"place.east"`
+      Field `role` `=`
+        NameExpr `special`
+      Field `campaign_role` `=`
+        NameExpr `bridge_east`
   ObjectDecl
     TypeName `guild`
     Name `menders`
@@ -611,6 +629,21 @@ File
               LiteralExpr `1`
             Field `h` `=`
               LiteralExpr `2`
+  ObjectDecl
+    TypeName `item`
+    Name `rope`
+    Body `{` `}`
+      Field `weight_g` `=`
+        LiteralExpr `800`
+      Field `size` `=`
+        Body `{` `}`
+          Field `w` `=`
+            LiteralExpr `1`
+          Field `h` `=`
+            LiteralExpr `2`
+      Field `tags` `=`
+        ListExpr `[` `]`
+          NameExpr `tool`
   ObjectDecl
     TypeName `item`
     Name `cargo_crate`

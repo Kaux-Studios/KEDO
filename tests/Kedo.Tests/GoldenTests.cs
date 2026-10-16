@@ -20,6 +20,44 @@ public class GoldenTests
         }
     }
 
+    public static IEnumerable<object[]> ModuleCases()
+    {
+        var root = Path.Combine(ParserTests.RepoRoot(), "tests", "corpus");
+        foreach (var dir in Directory.GetDirectories(root).OrderBy(d => d, StringComparer.Ordinal))
+        {
+            if (Directory.Exists(Path.Combine(dir, "module")))
+            {
+                yield return new object[] { Path.GetFileName(dir) };
+            }
+        }
+    }
+
+    /// <summary>Multi-file cases: tests/corpus/&lt;case&gt;/module/*.kedo resolved together; expected resolved.txt and diagnostics.txt.</summary>
+    [Theory]
+    [MemberData(nameof(ModuleCases))]
+    public void ModuleCaseMatchesGoldenFiles(string name)
+    {
+        var dir = Path.Combine(ParserTests.RepoRoot(), "tests", "corpus", name);
+        var bag = new DiagnosticBag();
+        var sources = new Dictionary<string, SourceText>();
+        var decls = new List<Kedo.Compiler.Model.FileDeclarations>();
+        foreach (var file in Directory.GetFiles(Path.Combine(dir, "module"), "*.kedo").OrderBy(f => f, StringComparer.Ordinal))
+        {
+            var source = SourceText.FromFile(file);
+            sources[file] = source;
+            decls.Add(Kedo.Compiler.Model.DeclarationBuilder.Build(Parser.Parse(source, bag), bag));
+        }
+
+        var catalog = Kedo.Compiler.Resolution.Resolver.Resolve(decls, new Kedo.Schema.SchemaRegistry { Permissive = true }, bag);
+        var diagnostics = string.Join("", bag.Items.Select(d =>
+        {
+            var pos = d.File is not null && sources.TryGetValue(d.File, out var s) ? s.GetLinePosition(d.Span.Start) : default;
+            return $"{d.Severity.ToString().ToLowerInvariant()} {d.Code} {Path.GetFileName(d.File)}:{pos.Line}:{pos.Column} {d.Message}\n";
+        }));
+        Check(dir, "diagnostics.txt", diagnostics);
+        Check(dir, "resolved.txt", Kedo.Compiler.Resolution.ResolvedDump.Dump(catalog));
+    }
+
     [Theory]
     [MemberData(nameof(Cases))]
     public void CaseMatchesGoldenFiles(string name)
@@ -28,6 +66,7 @@ public class GoldenTests
         var source = SourceText.FromFile(Path.Combine(dir, "input.kedo"));
         var bag = new DiagnosticBag();
         var tree = Parser.Parse(source, bag);
+        var parseCodes = bag.Items.Select(d => d.Code).ToList();
 
         var actualTree = SyntaxDump.Dump(tree);
         var actualDiagnostics = string.Join("", bag.Items.Select(d =>
@@ -37,16 +76,27 @@ public class GoldenTests
         }));
         var actualFormatted = Formatter.Format(tree);
 
+        // Resolution in permissive mode (the corpus has no game schema); diagnostics include the resolver's.
+        var decls = Kedo.Compiler.Model.DeclarationBuilder.Build(tree, bag);
+        var catalog = Kedo.Compiler.Resolution.Resolver.Resolve(new[] { decls }, new Kedo.Schema.SchemaRegistry { Permissive = true }, bag);
+        var actualResolved = Kedo.Compiler.Resolution.ResolvedDump.Dump(catalog, withProvenance: false);
+        actualDiagnostics = string.Join("", bag.Items.Select(d =>
+        {
+            var pos = source.GetLinePosition(d.Span.Start);
+            return $"{d.Severity.ToString().ToLowerInvariant()} {d.Code} {pos.Line}:{pos.Column} {d.Message}\n";
+        }));
+
         Check(dir, "tree.txt", actualTree);
         Check(dir, "diagnostics.txt", actualDiagnostics);
         Check(dir, "formatted.kedo", actualFormatted);
+        Check(dir, "resolved.txt", actualResolved);
 
         // Formatter invariants: idempotent, and the formatted source parses to the same tree shape with the same diagnostics.
         var bag2 = new DiagnosticBag();
         var tree2 = Parser.Parse(SourceText.FromString(actualFormatted), bag2);
         Assert.Equal(actualFormatted, Formatter.Format(tree2));
         Assert.Equal(StripTokens(actualTree), StripTokens(SyntaxDump.Dump(tree2)));
-        Assert.Equal(bag.Items.Select(d => d.Code), bag2.Items.Select(d => d.Code));
+        Assert.Equal(parseCodes, bag2.Items.Select(d => d.Code).ToList());
     }
 
     private static string StripTokens(string dump)

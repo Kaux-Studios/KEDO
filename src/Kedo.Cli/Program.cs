@@ -29,7 +29,11 @@ try
         case "parse":
             return Parse(positional.Skip(1).ToArray(), json, dumpTree: true);
         case "check":
-            return Parse(positional.Skip(1).ToArray(), json, dumpTree: false);
+            return Check(positional.Skip(1).ToArray(), json, dump: false, options.Contains("--provenance"));
+        case "resolve":
+            return Check(positional.Skip(1).ToArray(), json, dump: true, options.Contains("--provenance"));
+        case "explain":
+            return Explain(positional.Skip(1).ToArray());
         case "fmt":
             return Fmt(positional.Skip(1).ToArray(), options.Contains("--check"), json);
         default:
@@ -49,8 +53,86 @@ static void PrintUsage()
     Console.WriteLine("kedo <command> [files or directories...] [--json]");
     Console.WriteLine("  version            Print the toolchain version.");
     Console.WriteLine("  parse <paths>      Parse and print the syntax tree and diagnostics.");
-    Console.WriteLine("  check <paths>      Parse and print diagnostics only.");
+    Console.WriteLine("  check <paths>      Parse, resolve and validate; print diagnostics.");
+    Console.WriteLine("  resolve <paths>    Like check, then print the resolved catalog (--provenance adds origins).");
+    Console.WriteLine("  explain <paths> <type:id> <path>   Show where a resolved value came from.");
     Console.WriteLine("  fmt <paths>        Rewrite files in canonical form; with --check only report files that would change.");
+    Console.WriteLine("Without a registered schema the resolver runs in permissive mode (any type and field; list strategies inferred).");
+}
+
+static Kedo.Compiler.Resolution.ResolvedCatalog Load(string[] paths, DiagnosticBag bag, List<SyntaxTree> trees)
+{
+    var decls = new List<Kedo.Compiler.Model.FileDeclarations>();
+    foreach (var file in ExpandFiles(paths))
+    {
+        var tree = Parser.Parse(SourceText.FromFile(file), bag);
+        trees.Add(tree);
+        decls.Add(Kedo.Compiler.Model.DeclarationBuilder.Build(tree, bag));
+    }
+
+    var schema = new Kedo.Schema.SchemaRegistry { Permissive = true };
+    return Kedo.Compiler.Resolution.Resolver.Resolve(decls, schema, bag);
+}
+
+static int Check(string[] paths, bool json, bool dump, bool provenance)
+{
+    if (paths.Length == 0)
+    {
+        Console.Error.WriteLine("expected at least one file or directory");
+        return 2;
+    }
+
+    var bag = new DiagnosticBag();
+    var trees = new List<SyntaxTree>();
+    var catalog = Load(paths, bag, trees);
+    if (json)
+    {
+        using var stream = Console.OpenStandardOutput();
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+        writer.WriteStartObject();
+        writer.WriteString("catalog_hash", catalog.Hash);
+        writer.WriteNumber("objects", catalog.Concrete.Count());
+        if (dump)
+        {
+            writer.WriteString("resolved", Kedo.Compiler.Resolution.ResolvedDump.Dump(catalog, provenance));
+        }
+
+        WriteDiagnosticsJson(writer, bag, trees);
+        writer.WriteEndObject();
+        writer.Flush();
+        Console.WriteLine();
+    }
+    else
+    {
+        if (dump)
+        {
+            Console.Write(Kedo.Compiler.Resolution.ResolvedDump.Dump(catalog, provenance));
+        }
+
+        WriteDiagnosticsText(bag, trees);
+        if (!dump)
+        {
+            Console.WriteLine($"{catalog.Concrete.Count()} object(s), catalog {catalog.Hash}, {bag.Items.Count(d => d.IsError)} error(s), {bag.Items.Count(d => d.Severity == Severity.Warning)} warning(s)");
+        }
+    }
+
+    return bag.HasErrors ? 1 : 0;
+}
+
+static int Explain(string[] args)
+{
+    if (args.Length < 3)
+    {
+        Console.Error.WriteLine("usage: kedo explain <paths...> <type:id> <field.path>");
+        return 2;
+    }
+
+    var bag = new DiagnosticBag();
+    var trees = new List<SyntaxTree>();
+    var catalog = Load(args[..^2], bag, trees);
+    Console.WriteLine(Kedo.Compiler.Resolution.Resolver.Explain(catalog, args[^2], args[^1]));
+    WriteDiagnosticsText(bag, trees);
+    return 0;
 }
 
 static IEnumerable<string> ExpandFiles(string[] paths)

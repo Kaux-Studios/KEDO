@@ -1,0 +1,542 @@
+asset canyon
+    kind = texture
+    path = "art/canyon-v1.png"
+    hash 1eab29e2fcf4b0f8a81cce255b005f8f
+asset drylands
+    kind = texture
+    path = "art/drylands-v1.png"
+    hash 2ea5a05cdcdb2a30c2150b0a5df2464f
+asset portrait_default
+    kind = texture
+    path = "art/mender-stand-v2.png"
+    region
+        x = 320
+        y = 60
+        w = 420
+        h = 420
+    hash 6d27bb89aac8cd5adbf22e7c883b91cb
+asset refuge_bar
+    kind = texture
+    path = "art/refuge-bar-v1.png"
+    hash b57f019ba157c1a94a56355c90a6b3b1
+asset refuge_guild
+    kind = texture
+    path = "art/refuge-guild-v1.png"
+    hash fe7379658076d57a02c0f4220fc411de
+asset refuge_hospital
+    kind = texture
+    path = "art/refuge-hospital-v1.png"
+    hash 8f673ff79ee593a4c119e5ef2cb82d06
+asset refuge_market
+    kind = texture
+    path = "art/refuge-market-v1.png"
+    hash 6fabbd5dcd2e124c358f41df934c9dfc
+asset refuge_plaza
+    kind = texture
+    path = "art/refuge-plaza-v1.png"
+    hash a72c24659cccefe6df839d4c77c3e5ae
+asset riverbed
+    kind = texture
+    path = "art/riverbed-v1.png"
+    hash b93c6886e5f4c9c64c8c76dcb39f8dd6
+campaign prototype_9 [errors]
+    version = 9
+    rules = ruleset:prototype
+    guild_node = place:city_a
+    guilds [set] [guild:menders, guild:scouts]
+    world
+        nodes [set] [place:city_a, place:city_b, place:bridge_west, place:bridge_east]
+        edges [keyed]
+            - item
+                id = bridge_link
+                from = place:bridge_west
+                to = place:bridge_east
+                minutes = 20
+                structure = structure:bridge
+        local_places [keyed]
+            - item
+                id = plaza
+                parent = place:city_a
+                name_key = "refuge.place.plaza"
+                description_key = "refuge.scene.plaza"
+                scene = asset:refuge_plaza
+                x = 200
+                y = 110
+            - item
+                id = market
+                parent = place:city_a
+                name_key = "refuge.place.market"
+                description_key = "refuge.scene.market"
+                scene = asset:refuge_market
+                x = 60
+                y = 65
+            - item
+                id = guild
+                parent = place:city_a
+                name_key = "refuge.place.guild"
+                description_key = "refuge.scene.guild"
+                scene = asset:refuge_guild
+                x = 340
+                y = 65
+            - item
+                id = bar
+                parent = place:city_a
+                name_key = "refuge.place.bar"
+                description_key = "refuge.scene.bar"
+                scene = asset:refuge_bar
+                x = 65
+                y = 180
+            - item
+                id = hospital
+                parent = place:city_a
+                name_key = "refuge.place.hospital"
+                description_key = "refuge.scene.hospital"
+                scene = asset:refuge_hospital
+                x = 335
+                y = 180
+    scenes
+        by_role [atomic]
+            - item
+                key = bridge_west
+                scene = asset:riverbed
+            - item
+                key = bridge_east
+                scene = asset:riverbed
+            - item
+                key = city_b
+                scene = asset:drylands
+        by_biome [atomic]
+            - item
+                key = mountain
+                scene = asset:canyon
+            - item
+                key = steppe
+                scene = asset:canyon
+        default = asset:drylands
+    starting_inventory
+        water = 60
+        rations = 40
+        materials = 8
+        items [set] [item:cargo_crate]
+    hash acecc21c42062c8ac365e25e9c4cb6d2
+campaign test_1 <- campaign:prototype_9 [errors]
+    version = 1
+    rules = ruleset:prototype
+    guild_node = place:city_a
+    guilds [set] [guild:testers]
+    world
+        nodes [set] [place:city_a, place:city_b, place:bridge_west, place:bridge_east]
+        edges [keyed]
+            - item
+                id = bridge_link
+                from = place:bridge_west
+                to = place:bridge_east
+                minutes = 20
+                structure = structure:bridge
+        local_places [keyed]
+            - item
+                id = plaza
+                parent = place:city_a
+                name_key = "refuge.place.plaza"
+                description_key = "refuge.scene.plaza"
+                scene = asset:refuge_plaza
+                x = 200
+                y = 110
+            - item
+                id = market
+                parent = place:city_a
+                name_key = "refuge.place.market"
+                description_key = "refuge.scene.market"
+                scene = asset:refuge_market
+                x = 60
+                y = 65
+            - item
+                id = guild
+                parent = place:city_a
+                name_key = "refuge.place.guild"
+                description_key = "refuge.scene.guild"
+                scene = asset:refuge_guild
+                x = 340
+                y = 65
+            - item
+                id = bar
+                parent = place:city_a
+                name_key = "refuge.place.bar"
+                description_key = "refuge.scene.bar"
+                scene = asset:refuge_bar
+                x = 65
+                y = 180
+            - item
+                id = hospital
+                parent = place:city_a
+                name_key = "refuge.place.hospital"
+                description_key = "refuge.scene.hospital"
+                scene = asset:refuge_hospital
+                x = 335
+                y = 180
+    scenes
+        by_role [atomic]
+            - item
+                key = bridge_west
+                scene = asset:riverbed
+            - item
+                key = bridge_east
+                scene = asset:riverbed
+            - item
+                key = city_b
+                scene = asset:drylands
+        by_biome [atomic]
+            - item
+                key = mountain
+                scene = asset:canyon
+            - item
+                key = steppe
+                scene = asset:canyon
+        default = asset:drylands
+    starting_inventory
+        water = 999
+        rations = 999
+        materials = 999
+        items [set] [item:cargo_crate]
+    test_points = 999
+    hash d478439d3bcf67786abfc1cd6bd5f853
+abstract character expeditionary
+    lifecycle = available
+    level = 1
+    attributes
+        strength = 10
+        endurance = 10
+        agility = 10
+        perception = 10
+        intelligence = 10
+        resolve = 10
+    portrait = asset:portrait_default
+    hash 8a49e13cb03dc7d83ea441c1e3f7134b
+character ilan <- character:expeditionary
+    lifecycle = available
+    level = 1
+    attributes
+        strength = 10
+        endurance = 10
+        agility = 10
+        perception = 10
+        intelligence = 10
+        resolve = 10
+    portrait = asset:portrait_default
+    name = "Ilan"
+    title_key = "title.scout"
+    occupation_family = gathering
+    training
+        survival = 3
+    hash 017e784240854af992f73ee07f3b24ba
+character mara <- character:expeditionary
+    lifecycle = available
+    level = 1
+    attributes
+        strength = 14
+        endurance = 10
+        agility = 10
+        perception = 10
+        intelligence = 14
+        resolve = 10
+    portrait = asset:portrait_default
+    name = "Mara"
+    title_key = "title.mender"
+    occupation_family = repair_construction
+    known_practices [set] [footbridge_bracing]
+    training
+        repair = 2
+        survival = 2
+    starting_gear = gear_kit:mender_basic
+    hash 262fc4b1429cb53287513f3dc5ba19e6
+character teo <- character:expeditionary
+    lifecycle = available
+    level = 1
+    attributes
+        strength = 10
+        endurance = 10
+        agility = 10
+        perception = 10
+        intelligence = 10
+        resolve = 10
+    portrait = asset:portrait_default
+    name = "Teo"
+    title_key = "title.scout"
+    occupation_family = gathering
+    hash b43c24a06dbe62f38dcaf3c56e03c8df
+character tester <- character:mara <- character:expeditionary
+    lifecycle = available
+    level = 999
+    attributes
+        strength = 20
+        endurance = 20
+        agility = 20
+        perception = 20
+        intelligence = 20
+        resolve = 20
+    portrait = asset:portrait_default
+    name = "Tester"
+    title_key = "title.mender"
+    occupation_family = repair_construction
+    known_practices [set] [footbridge_bracing]
+    training
+        repair = 2
+        survival = 2
+    starting_gear = gear_kit:mender_basic
+    hash 0199e35e22534852b004385dd8288fc4
+gear_kit mender_basic
+    equipped [set] [item:backpack_basic, item:belt_basic, item:pants_basic]
+    carried [atomic]
+        - item
+            item = item:rope
+            count = 1
+    hash b1bb3a661d1ddd35083a6b69880a03e3
+guild menders
+    name_key = "guild.menders"
+    description_key = "guild.menders.detail"
+    resources
+        water = 20
+        rations = 10
+        materials = 8
+    roster [set] [character:mara, character:ilan]
+    recruit
+        costs
+            rations = 4
+            materials = 2
+        minutes = 60
+        attributes
+            strength = 10
+            endurance = 10
+            agility = 10
+            perception = 10
+            intelligence = 10
+            resolve = 10
+        names [set] ["Tomás", "Lía", "Bruno", "Irene", "Ciro", "Vera"]
+        title_key = "title.recruit"
+    upgrades [keyed]
+        - item
+            id = workshop_1
+            costs
+                materials = 8
+            minutes = 120
+            recruit_bonus
+                strength = 1
+                endurance = 1
+                intelligence = 1
+        - item
+            id = workshop_2
+            costs
+                materials = 12
+            minutes = 120
+            recruit_bonus
+                strength = 1
+                endurance = 1
+                intelligence = 1
+    hash 0f3ad257d9bf4033e18f961d8f0f3049
+guild scouts <- guild:menders
+    name_key = "guild.scouts"
+    description_key = "guild.scouts.detail"
+    resources
+        water = 20
+        rations = 10
+        materials = 8
+    roster [set] [character:teo, character:ilan]
+    recruit
+        costs
+            rations = 4
+            materials = 2
+        minutes = 60
+        attributes
+            strength = 10
+            endurance = 10
+            agility = 10
+            perception = 10
+            intelligence = 10
+            resolve = 10
+        names [set] ["Tomás", "Lía", "Bruno", "Irene", "Ciro", "Vera"]
+        title_key = "title.recruit"
+    upgrades [keyed]
+        - item
+            id = workshop_1
+            costs
+                materials = 8
+            minutes = 120
+            recruit_bonus
+                agility = 1
+                perception = 1
+                endurance = 1
+        - item
+            id = workshop_2
+            costs
+                materials = 12
+            minutes = 120
+            recruit_bonus
+                strength = 1
+                endurance = 1
+                intelligence = 1
+    hash 3a00fc6339e74f39d7d1aae53d1e81de
+guild testers <- guild:menders
+    name_key = "guild.testers"
+    description_key = "guild.menders.detail"
+    resources
+        water = 20
+        rations = 10
+        materials = 8
+    roster [set] [character:tester]
+    recruit
+        costs
+            rations = 4
+            materials = 2
+        minutes = 60
+        attributes
+            strength = 10
+            endurance = 10
+            agility = 10
+            perception = 10
+            intelligence = 10
+            resolve = 10
+        names [set] ["Tomás", "Lía", "Bruno", "Irene", "Ciro", "Vera"]
+        title_key = "title.recruit"
+    upgrades [keyed]
+        - item
+            id = workshop_1
+            costs
+                materials = 8
+            minutes = 120
+            recruit_bonus
+                strength = 1
+                endurance = 1
+                intelligence = 1
+        - item
+            id = workshop_2
+            costs
+                materials = 12
+            minutes = 120
+            recruit_bonus
+                strength = 1
+                endurance = 1
+                intelligence = 1
+    hash 0aa87de3c987191d234076bdc5faa4fb
+item backpack_basic <- item:container_base
+    tags [set] [container]
+    weight_g = 1500
+    size
+        w = 4
+        h = 5
+    equip_slot = back
+    grid
+        w = 12
+        h = 8
+    hash d363d2ce9a7701855f3a73dbe990941f
+item belt_basic <- item:container_base
+    tags [set] [container]
+    weight_g = 400
+    size
+        w = 4
+        h = 1
+    equip_slot = belt
+    grid
+        w = 6
+        h = 1
+    hash 3f69b121d0410996dad45ae30aebaf5f
+item cargo_crate
+    weight_g = 9000
+    size
+        w = 3
+        h = 3
+    tags [set] [mission, unique]
+    hash 7bb12e54bdf3ca3ff793416e77f58b6d
+abstract item container_base
+    tags [set] [container]
+    hash 912eeb62e2a99acdc7714dbf0f45214c
+item pants_basic
+    weight_g = 600
+    size
+        w = 2
+        h = 3
+    equip_slot = legs
+    pockets [atomic]
+        - item
+            w = 1
+            h = 2
+        - item
+            w = 1
+            h = 2
+    hash 4d3a1483204ba3237fb38053cb3320cc
+item rope
+    weight_g = 800
+    size
+        w = 1
+        h = 2
+    tags [set] [tool]
+    hash 3763018247fa7b3d115e6f6411218f43
+place bridge_east <- place:campaign_node
+    role = special
+    name_key = "place.east"
+    campaign_role = bridge_east
+    hash aaedf1922c99e23be4d28ee43a92844c
+place bridge_west <- place:campaign_node
+    role = special
+    name_key = "place.west"
+    campaign_role = bridge_west
+    tags [set] [bridge]
+    hash 049c0299079e075f872cf9e8fe061ab3
+abstract place campaign_node
+    role = main
+    hash 1afb32be7bb4ac0c5f1151a2d9382ca8
+place city_a <- place:campaign_node
+    role = main
+    name_key = "place.city_a"
+    campaign_role = city_a
+    tags [set] [shelter]
+    hash 48dddb9f674398ee31624794415f045f
+place city_b <- place:campaign_node
+    role = main
+    name_key = "place.city_b"
+    campaign_role = city_b
+    hash 6ed8bec894716f252291bb1a21bbf736
+ruleset prototype
+    supplies
+        water_minutes_per_unit = 60
+        food_minutes_per_unit = 120
+        deprivation_damage_per_unit = 10
+    carry
+        base_kg = 10
+        kg_per_strength = 2
+        overload_limit_percent = 130
+        overload_travel_percent = 125
+        overload_agility_penalty = 2
+    progression
+        max_level = 12
+        milestones_per_level = 2
+        attribute_gain = 2
+        attribute_max = 20
+    health
+        max = 100
+    hash 5d0a757db807a8ed570134cf7af071f5
+service plaza_lore
+    place = plaza
+    kind = info
+    minutes = 5
+    hash 77f9442b20d65a2e7366d2cc830bb2a3
+service rations
+    place = market
+    kind = trade
+    minutes = 5
+    costs
+        materials = 1
+    rewards
+        rations = 2
+    menu = "ui.menu.barter"
+    hash 9d6ee8222b3a359897a359fdb61d515c
+service water
+    place = market
+    kind = trade
+    minutes = 5
+    costs
+        materials = 1
+    rewards
+        water = 4
+    menu = "ui.menu.barter"
+    hash 1118ed4e2f56baf34113f1dd278838af
+catalog 63c3e1c4ca30d8f63b39e497dd32f299

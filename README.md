@@ -2,7 +2,7 @@
 
 Lenguaje y toolchain propios de Kaux Studios para definir contenido de juego enriquecido: objetos declarativos con herencia de valores, importación, mixins y componentes; expresiones; funciones y triggers que compilan a un IR determinista con continuaciones guardables; referencias a assets de cualquier clase. Independiente del motor. El primer cliente es [Project Patriark](https://github.com/Kaux-Studios/Project-Patriark).
 
-Estado: **inicialización** (15/10/2026). Hay esqueleto de solución, principios, política de versiones e investigación de origen. No hay gramática ni parser todavía.
+Estado: **alpha** (16/10/2026). Spec v0.1 aceptada; lexer, parser, formateador, resolver (capas, mezcla, borrado, procedencia, validación, hash) y CLI `parse | check | resolve | explain | fmt` funcionando sobre los ejemplos de Patriark. Pendientes: `kedo schema`, IR/VM, MCP, addon de Godot, benchmarks.
 
 ## Principios (en orden)
 
@@ -39,6 +39,10 @@ dotnet restore --locked-mode
 dotnet build Kedo.sln -c Release
 dotnet test tests/Kedo.Tests/Kedo.Tests.csproj
 dotnet run --project src/Kedo.Cli -- version
+dotnet run --project src/Kedo.Cli -- check spec/ejemplos            # parse + resolve + validate (modo permisivo)
+dotnet run --project src/Kedo.Cli -- resolve spec/ejemplos          # catálogo resuelto
+dotnet run --project src/Kedo.Cli -- explain spec/ejemplos event:road.sentinel.depot "options[risk].check.difficulty"
+dotnet run --project src/Kedo.Cli -- fmt spec/ejemplos --check
 ```
 
 ## Documentación

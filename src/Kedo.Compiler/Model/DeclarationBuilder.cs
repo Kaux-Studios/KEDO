@@ -31,7 +31,7 @@ public static class DeclarationBuilder
 
         private string? File => _t.Source.Path;
 
-        private Origin OriginOf(int node) => new(File, _t.SpanOf(node));
+        private Origin OriginOf(int node) => Origin.Of(_t, node);
 
         private string Text(int token) => _t.TextOf(token);
 

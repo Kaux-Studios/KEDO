@@ -1,0 +1,3 @@
+error K2004 8:1 parent `base` of `actor:a` does not exist
+error K2004 8:1 mixin `m1` used by `actor:a` does not exist
+error K2004 8:1 mixin `m2` used by `actor:a` does not exist

@@ -21,21 +21,16 @@ campaign prototype_9 {
     guilds = [guild:menders, guild:scouts]
 
     world = {
-        nodes = [
-            { id = city_a  name_key = "place.city_a"  role = main  campaign_role = city_a  tags = [shelter] }
-            { id = city_b  name_key = "place.city_b"  role = main  campaign_role = city_b }
-            { id = bridge_west  name_key = "place.west"  role = special  campaign_role = bridge_west  tags = [bridge] }
-            { id = bridge_east  name_key = "place.east"  role = special  campaign_role = bridge_east }
-        ]
+        nodes = [place:city_a, place:city_b, place:bridge_west, place:bridge_east]
         edges = [
-            { id = bridge_link  from = bridge_west  to = bridge_east  minutes = 20  structure = structure:bridge }
+            { id = bridge_link  from = place:bridge_west  to = place:bridge_east  minutes = 20  structure = structure:bridge }
         ]
         local_places = [
-            { id = plaza  parent = city_a  name_key = "refuge.place.plaza"  description_key = "refuge.scene.plaza"  scene = asset:refuge_plaza  x = 200  y = 110 }
-            { id = market  parent = city_a  name_key = "refuge.place.market"  description_key = "refuge.scene.market"  scene = asset:refuge_market  x = 60  y = 65 }
-            { id = guild  parent = city_a  name_key = "refuge.place.guild"  description_key = "refuge.scene.guild"  scene = asset:refuge_guild  x = 340  y = 65 }
-            { id = bar  parent = city_a  name_key = "refuge.place.bar"  description_key = "refuge.scene.bar"  scene = asset:refuge_bar  x = 65  y = 180 }
-            { id = hospital  parent = city_a  name_key = "refuge.place.hospital"  description_key = "refuge.scene.hospital"  scene = asset:refuge_hospital  x = 335  y = 180 }
+            { id = plaza  parent = place:city_a  name_key = "refuge.place.plaza"  description_key = "refuge.scene.plaza"  scene = asset:refuge_plaza  x = 200  y = 110 }
+            { id = market  parent = place:city_a  name_key = "refuge.place.market"  description_key = "refuge.scene.market"  scene = asset:refuge_market  x = 60  y = 65 }
+            { id = guild  parent = place:city_a  name_key = "refuge.place.guild"  description_key = "refuge.scene.guild"  scene = asset:refuge_guild  x = 340  y = 65 }
+            { id = bar  parent = place:city_a  name_key = "refuge.place.bar"  description_key = "refuge.scene.bar"  scene = asset:refuge_bar  x = 65  y = 180 }
+            { id = hospital  parent = place:city_a  name_key = "refuge.place.hospital"  description_key = "refuge.scene.hospital"  scene = asset:refuge_hospital  x = 335  y = 180 }
         ]
     }
 
@@ -56,6 +51,13 @@ campaign test_1 extends prototype_9 {
     guilds =! [guild:testers]
     starting_inventory = { water = 999  rations = 999  materials = 999 }
 }
+
+/// Lugares fijos del esqueleto: roles de campaña que el generador exige.
+abstract place campaign_node { role = main }
+place city_a extends campaign_node { name_key = "place.city_a"  campaign_role = city_a  tags = [shelter] }
+place city_b extends campaign_node { name_key = "place.city_b"  campaign_role = city_b }
+place bridge_west extends campaign_node { name_key = "place.west"  role = special  campaign_role = bridge_west  tags = [bridge] }
+place bridge_east extends campaign_node { name_key = "place.east"  role = special  campaign_role = bridge_east }
 
 guild menders {
     name_key = "guild.menders"
@@ -122,6 +124,7 @@ abstract item container_base {
 item backpack_basic extends container_base { weight_g = 1500  size = { w = 4  h = 5 }  equip_slot = back  grid = { w = 12  h = 8 } }
 item belt_basic extends container_base { weight_g = 400  size = { w = 4  h = 1 }  equip_slot = belt  grid = { w = 6  h = 1 } }
 item pants_basic { weight_g = 600  size = { w = 2  h = 3 }  equip_slot = legs  pockets = [{ w = 1  h = 2 }, { w = 1  h = 2 }] }
+item rope { weight_g = 800  size = { w = 1  h = 2 }  tags = [tool] }
 item cargo_crate { weight_g = 9000  size = { w = 3  h = 3 }  tags = [mission, unique] }
 
 gear_kit mender_basic {

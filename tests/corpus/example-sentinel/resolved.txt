@@ -1,0 +1,137 @@
+actor depot_sentinel <- actor:sentinel_machine
+    name_key = "actor.sentinel.depot"
+    tags [set] [machine, hostile, depot]
+    component health
+        max = 60
+        regen = 0
+    component sense
+        range = 8
+        thermal = true
+    component sprite
+        sheet = asset:sentinel_sheet
+    on arrive (input.kedo)
+    hash c86cff5118c0652b03adb52245cc9a4c
+abstract actor sentinel_machine
+    name_key = "actor.sentinel"
+    tags [set] [machine, hostile]
+    component health
+        max = 40
+        regen = 0
+    component sense
+        range = 8
+        thermal = true
+    component patrol
+        radius = 6
+        interval = 10min
+    hash c99007ea296fbf540c8d2e39460fdb46
+asset sentinel_sheet
+    kind = texture
+    path = "art/sentinel-sheet-v1.png"
+    hash 6491a349ab4d77449b016855e9ef4a47
+effect alarm_raised
+    params [atomic]
+        - item
+            name = place
+            type = place
+    hash f244301767e85c1dbadbd95d23740164
+event road.sentinel
+    version = 2
+    family = machine_crossing
+    context = travel
+    text_key = "scene.hazard"
+    repeat_scope = expedition
+    options [keyed]
+        - item
+            id = safe
+            label_key = "action.safe"
+            duration = 30min
+            resolution = deterministic
+            exit = arrive
+            completes = true
+        - item
+            id = risk
+            label_key = "action.risk"
+            duration = 0min
+            resolution = d20
+            exit = arrive
+            completes = true
+            check
+                attribute = agility
+                skill = survival
+                difficulty = 12
+                attribute_dice [atomic]
+                    - item
+                        attribute = agility
+                        min = 1
+            failure_effects [atomic]
+                - item
+                    op = die
+            critical_failure_effects [atomic]
+                - item
+                    op = die
+        - item
+            id = retreat
+            label_key = "action.retreat"
+            duration = 0min
+            resolution = deterministic
+            exit = retreat
+            completes = true
+    hash 6b2a9921f0f62c7054cc81ae9151ebc4
+event road.sentinel.depot <- event:road.sentinel
+    version = 2
+    family = machine_crossing
+    context = travel
+    text_key = "scene.hazard"
+    repeat_scope = expedition
+    options [keyed]
+        - item
+            id = safe
+            label_key = "action.safe"
+            duration = 30min
+            resolution = deterministic
+            exit = arrive
+            completes = true
+        - item
+            id = risk
+            label_key = "action.risk"
+            duration = 0min
+            resolution = d20
+            exit = arrive
+            completes = true
+            check
+                attribute = agility
+                skill = survival
+                difficulty = 14
+                attribute_dice [atomic]
+                    - item
+                        attribute = agility
+                        min = 1
+            failure_effects [atomic]
+                - item
+                    op = die
+            critical_failure_effects [atomic]
+                - item
+                    op = die
+        - item
+            id = retreat
+            label_key = "action.retreat"
+            duration = 0min
+            resolution = deterministic
+            exit = retreat
+            completes = true
+        - item
+            id = distract
+            label_key = "action.distract"
+            duration = 15min
+            resolution = d20
+            exit = arrive
+            completes = true
+            requirements [atomic]
+                - item
+                    op = item_at
+                    target = noise_maker
+            check
+                attribute = intelligence
+                difficulty = 12
+    hash 38f648980e51712e791672b3d2459707
+catalog cacc8695ec80289d7274a6c5bf0338d2
