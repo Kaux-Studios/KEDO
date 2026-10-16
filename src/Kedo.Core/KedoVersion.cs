@@ -4,7 +4,7 @@ namespace Kedo;
 public static class KedoVersion
 {
     /// <summary>Toolchain version string.</summary>
-    public const string Current = "1.0.0-alpha.0";
+    public const string Current = "1.0.0-alpha.1";
 
     /// <summary>Language major. Content written for major N is readable by every N.x toolchain.</summary>
     public const int LanguageMajor = 1;
