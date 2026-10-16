@@ -26,7 +26,7 @@ spec/            especificación del lenguaje, principios, ADR
 src/Kedo.Core    valores, diagnósticos, lector del pack, VM determinista, host  (net8.0, AOT, superficie mínima)
 src/Kedo.Compiler lexer, parser, AST, resolver, formateador, esquema, escritor del pack  (net8.0, AOT)
 src/Kedo.Cli     herramienta `kedo`: parse | check | resolve | explain | compile | build | schema | fmt (todo con --json)
-addons/kedo      addon genérico de Godot (GDScript): biblioteca de contenido, formularios, diagnósticos, undo
+addons/kedo      addon de Godot (GDScript, sin cargar el ensamblado del juego): biblioteca de objetos, editor con resaltado, check/fmt vía CLI, diagnósticos con salto, cambios pendientes y borradores
 tests/           golden corpus + xUnit + tests GDScript headless
 samples/         mini-juego de muestra, distinto de Patriark, para probar que el núcleo es genérico
 docs/research    investigación (origen Patriark y posteriores); docs/plans planes por bloque
@@ -48,6 +48,10 @@ dotnet run --project src/Kedo.Cli -- compile --schema=spec/ejemplos/schema spec/
 dotnet run --project src/Kedo.Cli -- build --schema=spec/ejemplos/schema spec/ejemplos --out=patriark.kpk
 dotnet run --project src/Kedo.Cli -- schema spec/ejemplos/schema --json              # JSON Schema para formularios y agentes
 ```
+
+## Addon de Godot
+
+`addons/kedo` es un plugin de pantalla principal escrito en GDScript que habla con la CLI (`Editor Settings > kedo/command`, `kedo/content_paths`, `kedo/schema_paths`): lista los objetos del catálogo por tipo con filtro, abre el archivo en un `CodeEdit` con resaltado KEDO, ejecuta Check y Format, muestra diagnósticos con salto a línea, integra los cambios pendientes en el diálogo de cierre del editor, guarda borradores en `user://` y bloquea Play si el contenido tiene errores. Los formularios generados desde el esquema quedan para una entrega posterior. Tests headless: `tools/godot-test.ps1 -GodotPath <godot 4.6>`.
 
 ## Herramientas para agentes de IA
 

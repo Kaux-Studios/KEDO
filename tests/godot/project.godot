@@ -1,0 +1,11 @@
+; Minimal Godot project that hosts the addon for headless tests (tools/godot-test.ps1).
+config_version=5
+
+[application]
+
+config/name="KEDO addon tests"
+config/features=PackedStringArray("4.6")
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/kedo/plugin.cfg")

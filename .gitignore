@@ -20,3 +20,5 @@ BenchmarkDotNet.Artifacts/
 
 # Local benchmark logs.
 /bench-run.log
+/tests/godot/addons/
+/tests/godot/.godot/

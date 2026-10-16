@@ -42,6 +42,8 @@ try
             return Compile(positional.Skip(1).ToArray(), json);
         case "mcp":
             return await Kedo.Cli.McpServer.RunAsync();
+        case "catalog":
+            return Catalog(positional.Skip(1).ToArray(), json);
         case "import-json":
             return ImportJson(positional.Skip(1).ToArray(), valued);
         case "build":
@@ -69,6 +71,7 @@ static void PrintUsage()
     Console.WriteLine("  check <paths>      Parse, resolve and validate; print diagnostics.");
     Console.WriteLine("  resolve <paths>    Like check, then print the resolved catalog (--provenance adds origins).");
     Console.WriteLine("  explain <paths> <type:id> <path>   Show where a resolved value came from.");
+    Console.WriteLine("  catalog <paths>    List objects (type, id, file, line, chain, mixins, hash) and mixins; with --json for tools.");
     Console.WriteLine("  compile <paths>    Resolve and compile hooks and functions to IR; print the disassembly.");
     Console.WriteLine("  build <paths> --out=<file.kpk>   Resolve, compile and write the KEDO Pack binary.");
     Console.WriteLine("  import-json <file.json> --out=<dir> --module=<name> [--map=events:event,items:item] [--enums=f1,f2] [--pack-type=pack]   Draft .kedo files from existing JSON content.");
@@ -264,6 +267,77 @@ static int Build(string[] paths, bool json, string? outPath)
         Console.WriteLine(written
             ? $"wrote {outPath}: {size} bytes, {catalog.Concrete.Count()} object(s), {programs.Count} program(s), catalog {catalog.Hash}"
             : $"not written: {bag.Items.Count(d => d.IsError)} error(s)");
+    }
+
+    return bag.HasErrors ? 1 : 0;
+}
+
+static int Catalog(string[] paths, bool json)
+{
+    if (paths.Length == 0)
+    {
+        Console.Error.WriteLine("expected at least one file or directory");
+        return 2;
+    }
+
+    var bag = new DiagnosticBag();
+    var trees = new List<SyntaxTree>();
+    var catalog = Load(paths, bag, trees);
+    if (json)
+    {
+        using var stream = Console.OpenStandardOutput();
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+        writer.WriteStartObject();
+        writer.WriteString("catalog_hash", catalog.Hash);
+        writer.WriteStartArray("objects");
+        foreach (var o in catalog.Objects)
+        {
+            writer.WriteStartObject();
+            writer.WriteString("type", o.Type);
+            writer.WriteString("id", o.Id);
+            writer.WriteString("key", o.Key);
+            writer.WriteBoolean("abstract", o.IsAbstract);
+            writer.WriteString("file", o.Declaration.Origin.File);
+            writer.WriteNumber("line", o.Declaration.Origin.Line);
+            writer.WriteString("doc", o.Declaration.Doc);
+            writer.WriteString("parent", o.Chain.Count > 1 ? o.Chain[^2] : null);
+            writer.WriteStartArray("mixins");
+            foreach (var m in o.Mixins) writer.WriteStringValue(m);
+            writer.WriteEndArray();
+            writer.WriteStartArray("hooks");
+            foreach (var h in o.Hooks) writer.WriteStringValue(h.HookId);
+            writer.WriteEndArray();
+            writer.WriteString("hash", o.Hash);
+            writer.WriteBoolean("errors", o.HasErrors);
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+        writer.WriteStartArray("mixins");
+        foreach (var m in catalog.Mixins.Values.OrderBy(m => m.Id, StringComparer.Ordinal))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("id", m.Id);
+            writer.WriteString("file", m.Origin.File);
+            writer.WriteNumber("line", m.Origin.Line);
+            writer.WriteString("doc", m.Doc);
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+        WriteDiagnosticsJson(writer, bag, trees);
+        writer.WriteEndObject();
+        writer.Flush();
+        Console.WriteLine();
+    }
+    else
+    {
+        foreach (var o in catalog.Objects)
+        {
+            Console.WriteLine($"{(o.IsAbstract ? "abstract " : "")}{o.Key}  {Path.GetFileName(o.Declaration.Origin.File)}:{o.Declaration.Origin.Line}{(o.Chain.Count > 1 ? "  extends " + o.Chain[^2] : "")}{(o.Mixins.Count > 0 ? "  with " + string.Join(", ", o.Mixins) : "")}");
+        }
+
+        WriteDiagnosticsText(bag, trees);
     }
 
     return bag.HasErrors ? 1 : 0;
