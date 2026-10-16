@@ -2,7 +2,7 @@
 
 Lenguaje y toolchain propios de Kaux Studios para definir contenido de juego enriquecido: objetos declarativos con herencia de valores, importación, mixins y componentes; expresiones; funciones y triggers que compilan a un IR determinista con continuaciones guardables; referencias a assets de cualquier clase. Independiente del motor. El primer cliente es [Project Patriark](https://github.com/Kaux-Studios/Project-Patriark).
 
-Estado: **alpha** (16/10/2026). Spec v0.1 aceptada; lexer, parser, formateador, resolver (capas, mezcla, borrado, procedencia, validación, hash) y CLI `parse | check | resolve | explain | fmt` funcionando sobre los ejemplos de Patriark. Pendientes: `kedo schema`, IR/VM, MCP, addon de Godot, benchmarks.
+Estado: **alpha** (16/10/2026). Spec v0.1 aceptada; lexer, parser, formateador, resolver (capas, mezcla, borrado, procedencia, validación, hash), esquema como dato (`kedo_type`…) con `kedo schema`, compilador de hooks y funciones a IR, VM de registros con frames guardables, KEDO Pack binario (`kedo build`) y CLI completa, todo probado sobre los ejemplos de Patriark. Pendientes: benchmarks, MCP y skills, addon de Godot, corpus de Patriark, sample.
 
 ## Principios (en orden)
 
@@ -25,7 +25,7 @@ SemVer. **1.x nunca rompe**: gramática, AST serializado, IR, frames y API públ
 spec/            especificación del lenguaje, principios, ADR
 src/Kedo.Core    valores, diagnósticos, lector del pack, VM determinista, host  (net8.0, AOT, superficie mínima)
 src/Kedo.Compiler lexer, parser, AST, resolver, formateador, esquema, escritor del pack  (net8.0, AOT)
-src/Kedo.Cli     herramienta `kedo`: parse | check | fmt | build | schema | mcp
+src/Kedo.Cli     herramienta `kedo`: parse | check | resolve | explain | compile | build | schema | fmt (todo con --json)
 addons/kedo      addon genérico de Godot (GDScript): biblioteca de contenido, formularios, diagnósticos, undo
 tests/           golden corpus + xUnit + tests GDScript headless
 samples/         mini-juego de muestra, distinto de Patriark, para probar que el núcleo es genérico
@@ -43,6 +43,10 @@ dotnet run --project src/Kedo.Cli -- check spec/ejemplos            # parse + re
 dotnet run --project src/Kedo.Cli -- resolve spec/ejemplos          # catálogo resuelto
 dotnet run --project src/Kedo.Cli -- explain spec/ejemplos event:road.sentinel.depot "options[risk].check.difficulty"
 dotnet run --project src/Kedo.Cli -- fmt spec/ejemplos --check
+dotnet run --project src/Kedo.Cli -- check --schema=spec/ejemplos/schema spec/ejemplos   # con esquema cerrado
+dotnet run --project src/Kedo.Cli -- compile --schema=spec/ejemplos/schema spec/ejemplos # IR de hooks y funciones
+dotnet run --project src/Kedo.Cli -- build --schema=spec/ejemplos/schema spec/ejemplos --out=patriark.kpk
+dotnet run --project src/Kedo.Cli -- schema spec/ejemplos/schema --json              # JSON Schema para formularios y agentes
 ```
 
 ## Documentación

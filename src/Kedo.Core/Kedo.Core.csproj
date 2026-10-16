@@ -7,4 +7,8 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Description>KEDO core runtime: value model, diagnostics, pack reader, deterministic VM, host interfaces. Minimal, strictly versioned surface.</Description>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Official .NET extension library (dotnet/runtime); used for pack integrity hashing. -->
+    <PackageReference Include="System.IO.Hashing" Version="9.0.0" />
+  </ItemGroup>
 </Project>

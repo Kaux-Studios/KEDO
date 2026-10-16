@@ -21,7 +21,10 @@
         "contentHash": "seeO8icDfED/Qwl9PDFUx2Gf/7xv7dPsMnw5PnRwNZuz4EWMpy0wIVohC4MfCcTIoJgp+KUrWG4WH3NPSusQOA=="
       },
       "kedo.core": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "System.IO.Hashing": "[9.0.0, )"
+        }
       }
     }
   }

@@ -122,7 +122,10 @@
         }
       },
       "kedo.core": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "System.IO.Hashing": "[9.0.0, )"
+        }
       }
     }
   }
