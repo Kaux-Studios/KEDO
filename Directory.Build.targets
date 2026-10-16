@@ -7,6 +7,10 @@
     <WarningsNotAsErrors>$(WarningsNotAsErrors);RS0016;RS0017</WarningsNotAsErrors>
     <KedoTracksPublicApi Condition="'$(IsTestProject)' != 'true' and '$(IsPackable)' != 'false'">true</KedoTracksPublicApi>
   </PropertyGroup>
+  <!-- IsAotCompatible pulls the SDK-bundled ILLink package; pin it so restore in locked mode does not depend on the SDK patch level. -->
+  <ItemGroup Condition="'$(IsAotCompatible)' == 'true'">
+    <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="8.0.32" PrivateAssets="all" />
+  </ItemGroup>
   <ItemGroup Condition="'$(KedoTracksPublicApi)' == 'true'">
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" PrivateAssets="all" />
     <AdditionalFiles Include="PublicAPI.Shipped.txt" />
