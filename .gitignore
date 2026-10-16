@@ -1,0 +1,19 @@
+# .NET build output and local IDE state.
+**/bin/
+**/obj/
+/.vs/
+/.idea/
+*.user
+*.suo
+TestResults/
+*.trx
+BenchmarkDotNet.Artifacts/
+
+# Godot cache for the addon sample project.
+**/.godot/
+
+# Scratch work and secrets.
+/tmp/
+.env
+.env.*
+!.env.example

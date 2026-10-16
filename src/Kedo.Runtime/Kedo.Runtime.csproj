@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Kedo.Runtime</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>KEDO runtime: IR, deterministic VM, serializable frames, host interfaces.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Kedo.Core/Kedo.Core.csproj" />
+  </ItemGroup>
+</Project>

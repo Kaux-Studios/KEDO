@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Kedo</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>KEDO language core: lexer, parser, AST, resolver, diagnostics, formatter.</Description>
+  </PropertyGroup>
+</Project>

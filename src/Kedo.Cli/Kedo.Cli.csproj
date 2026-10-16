@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Kedo.Cli</RootNamespace>
+    <AssemblyName>kedo</AssemblyName>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>kedo</ToolCommandName>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <Description>KEDO command line: parse, check, fmt, build, schema, mcp.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Kedo.Core/Kedo.Core.csproj" />
+    <ProjectReference Include="../Kedo.Runtime/Kedo.Runtime.csproj" />
+  </ItemGroup>
+</Project>

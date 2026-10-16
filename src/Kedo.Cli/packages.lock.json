@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net8.0": {
+      "kedo.core": {
+        "type": "Project"
+      },
+      "kedo.runtime": {
+        "type": "Project",
+        "dependencies": {
+          "Kedo.Core": "[1.0.0-alpha.0, )"
+        }
+      }
+    }
+  }
+}

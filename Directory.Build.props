@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>12</LangVersion>
+    <Deterministic>true</Deterministic>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionSuffix>alpha.0</VersionSuffix>
+    <Authors>Kaux Studios</Authors>
+    <Company>Kaux Studios</Company>
+    <Copyright>Copyright (c) 2026 Kaux Studios. All rights reserved.</Copyright>
+  </PropertyGroup>
+</Project>
