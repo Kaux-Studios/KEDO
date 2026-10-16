@@ -60,6 +60,23 @@ Presupuestos iniciales (a refinar con las primeras mediciones reales):
 | Guardar/restaurar 100 frames | ≤ 50 µs, sin asignaciones fuera del buffer | ≤ 250 µs |
 | Heap gestionado con 100k objetos cargados | ≤ 64 MB | ≤ 96 MB |
 
+**Medido el 16/10/2026** (escritorio x64, .NET 8, `tests/Kedo.Benchmarks`, corpus sintético de 10k objetos ≈ 5 MB, un hilo):
+
+| Métrica | Medido | Presupuesto | Estado |
+|---|---|---|---|
+| Lexer 10k objetos | 10,1 ms (~500 MB/s) | ≥ 50 MB/s | cumple |
+| Parser 10k objetos | 55,5 ms, 95,7 MB asignados | — | tiempo bien; asignación alta (listas de tokens y nodos, una lista por frame del árbol): optimizar |
+| Parser + declaraciones 10k | 90,4 ms | — | — |
+| Resolver 10k | 198 ms, 146 MB asignados | parse + resolve ≤ 500 ms | cumple en tiempo (≈ 290 ms en total); `OrderedFields.With` copia por escritura: optimizar |
+| Formateador 10k | 23,5 ms | — | — |
+| Escritura del pack 10k | 71 ms | — | — |
+| Carga del pack 10k | 45,9 ms, 37,6 MB | ≤ 20 ms | **no cumple**: la decodificación es ansiosa; pasar a decodificación por objeto bajo demanda |
+| Carga del pack 1k | 0,9 ms | — | — |
+| VM, instrucciones enteras | 2,4 ns por instrucción (~410 M/s) | ≥ 50 M/s | cumple |
+| VM, asignaciones por instrucción | 0 B | 0 B | cumple (la primera versión asignaba 56 B por el `with` del frame; corregido) |
+
+Android y NativeAOT: sin medir todavía.
+
 ### D11. Diagnósticos y formateador
 
 Diagnóstico como `readonly record struct` con código `Kxxxx`, severidad, span primario, etiquetas secundarias, notas y arreglos con aplicabilidad (`MachineApplicable`, `MaybeIncorrect`, `HasPlaceholders`) al estilo rustc; mensajes en minúscula, sin punto final, identificadores entre comillas invertidas; acumulados por etapa y cacheados con el resultado. Formateador sin opciones (estilo gofmt) sobre el array de tokens sin pérdida; respeta los saltos de línea del autor; `fmt(fmt(x)) == fmt(x)` y `parse(fmt(x)) ≡ parse(x)` módulo trivia, en CI.

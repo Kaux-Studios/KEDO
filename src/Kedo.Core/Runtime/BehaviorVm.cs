@@ -4,7 +4,8 @@ namespace Kedo.Runtime;
 
 /// <summary>
 /// Register VM (ADR-0007 D6): single dense switch dispatch, 64-bit integer registers over one array, no allocations per
-/// instruction, step budget in the loop, suspension by returning a status. Frames serialise to JSON and resume by label.
+/// instruction (the program counter lives in a local and is written back to the call stack only on calls, returns and
+/// suspensions), step budget in the loop, suspension by returning a status. Frames serialise to JSON and resume by label.
 /// </summary>
 public sealed class BehaviorVm
 {
@@ -230,7 +231,6 @@ public sealed class BehaviorVm
 
     private BehaviorFrame Snapshot(AwaitRequest pending)
     {
-        var top = _stack[^1];
         var used = 0;
         foreach (var f in _stack)
         {
@@ -267,16 +267,23 @@ public sealed class BehaviorVm
         return args;
     }
 
+    private RunResult Suspend(CallFrame frame, int pc, AwaitRequest pending)
+    {
+        _stack[^1] = frame with { Pc = pc };
+        return new RunResult(RunStatus.Suspended, Snapshot(pending), null, _trace.ToArray());
+    }
+
     private RunResult Run()
     {
         var code = _program.Code;
         var regs = _regs;
         var sym = _isSymbol;
+        var frame = _stack[^1];
+        var pc = frame.Pc;
+        var rb = frame.RegisterBase;
+
         while (true)
         {
-            var frame = _stack[^1];
-            var pc = frame.Pc;
-            var rb = frame.RegisterBase;
             if (pc < 0 || pc >= code.Length)
             {
                 return Fail("fell off the end of the code", pc);
@@ -378,7 +385,10 @@ public sealed class BehaviorVm
                     }
 
                     _stack[^1] = frame with { Pc = pc + 2 };
-                    _stack.Add(new CallFrame(fnIndex, info.Name, newBase, info.RegisterCount, a, null, info.Entry));
+                    frame = new CallFrame(fnIndex, info.Name, newBase, info.RegisterCount, a, null, info.Entry);
+                    _stack.Add(frame);
+                    pc = info.Entry;
+                    rb = newBase;
                     continue;
                 }
 
@@ -392,14 +402,16 @@ public sealed class BehaviorVm
                         return new RunResult(RunStatus.Completed, null, null, _trace.ToArray());
                     }
 
-                    var caller = _stack[^1];
                     if (frame.ReturnRegister >= 0)
                     {
                         regs[frame.ReturnRegister] = value;
                         sym[frame.ReturnRegister] = isSym;
                     }
 
-                    continue;   // caller.Pc already points after the call
+                    frame = _stack[^1];
+                    pc = frame.Pc;      // already points after the call
+                    rb = frame.RegisterBase;
+                    continue;
                 }
 
                 case OpCode.Query:
@@ -441,9 +453,7 @@ public sealed class BehaviorVm
                 case OpCode.WaitMinutes:
                 {
                     var label = _program.LabelAt(pc) ?? $"pc{pc}";
-                    _stack[^1] = frame with { Pc = pc };
-                    var pending = new AwaitRequest(AwaitKind.Minutes, label, _host.NowMinutes + regs[a], null, Array.Empty<string>(), -1);
-                    return new RunResult(RunStatus.Suspended, Snapshot(pending), null, _trace.ToArray());
+                    return Suspend(frame, pc, new AwaitRequest(AwaitKind.Minutes, label, _host.NowMinutes + regs[a], null, Array.Empty<string>(), -1));
                 }
 
                 case OpCode.WaitDecision:
@@ -458,25 +468,19 @@ public sealed class BehaviorVm
                         options[i] = _program.Strings[first + i];
                     }
 
-                    _stack[^1] = frame with { Pc = pc };
-                    var pending = new AwaitRequest(AwaitKind.Decision, label, 0, _program.Strings[Instr.Imm(w)], options, Instr.A(w));
-                    return new RunResult(RunStatus.Suspended, Snapshot(pending), null, _trace.ToArray());
+                    return Suspend(frame, pc, new AwaitRequest(AwaitKind.Decision, label, 0, _program.Strings[Instr.Imm(w)], options, Instr.A(w)));
                 }
 
                 case OpCode.WaitRoll:
                 {
                     var label = _program.LabelAt(pc) ?? $"pc{pc}";
-                    _stack[^1] = frame with { Pc = pc };
-                    var pending = new AwaitRequest(AwaitKind.Roll, label, 0, _program.Strings[Instr.Imm(w)], Array.Empty<string>(), Instr.A(w));
-                    return new RunResult(RunStatus.Suspended, Snapshot(pending), null, _trace.ToArray());
+                    return Suspend(frame, pc, new AwaitRequest(AwaitKind.Roll, label, 0, _program.Strings[Instr.Imm(w)], Array.Empty<string>(), Instr.A(w)));
                 }
 
                 case OpCode.WaitSignal:
                 {
                     var label = _program.LabelAt(pc) ?? $"pc{pc}";
-                    _stack[^1] = frame with { Pc = pc };
-                    var pending = new AwaitRequest(AwaitKind.Signal, label, 0, _program.Strings[Instr.Imm(w)], Array.Empty<string>(), Instr.A(w));
-                    return new RunResult(RunStatus.Suspended, Snapshot(pending), null, _trace.ToArray());
+                    return Suspend(frame, pc, new AwaitRequest(AwaitKind.Signal, label, 0, _program.Strings[Instr.Imm(w)], Array.Empty<string>(), Instr.A(w)));
                 }
 
                 case OpCode.Stop:
@@ -489,7 +493,7 @@ public sealed class BehaviorVm
                     return Fail($"unknown opcode {Instr.Op(w)}", pc);
             }
 
-            _stack[^1] = frame with { Pc = next };
+            pc = next;
         }
     }
 }
