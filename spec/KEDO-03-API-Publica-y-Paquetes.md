@@ -34,6 +34,10 @@ Prerelease durante la inicialización: `1.0.0-alpha.N`. Sin garantía entre alph
 
 ## Consumo desde un juego
 
+**Hoy (decisión del 16/10/2026, [ADR-0002](adr/0002-repositorio-aislado.md)):** por código fuente fijado. El juego referencia `src/Kedo.Core` y `src/Kedo.Compiler` desde un clon de KEDO en un commit o tag fijado (propiedad MSBuild `KedoRoot`), y su CI clona el repositorio público en ese commit, sin credenciales. Al subir de versión se cambian a la vez el commit fijado y lo que regenere el juego.
+
+**Por paquete (cuando haga falta):** GitHub Packages exige credenciales incluso para paquetes públicos, con este `nuget.config`:
+
 `nuget.config` del juego:
 
 ```xml
