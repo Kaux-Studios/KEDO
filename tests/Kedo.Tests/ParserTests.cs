@@ -120,11 +120,13 @@ public class ParserTests
     }
 
     [Fact]
-    public void QualifiedIdsAcceptNumericSegments()
+    public void QualifiedIdsAcceptNumericSegmentsAndReservedWords()
     {
-        var (tree, bag) = Parse("kedo 1\nmodule m\nmessage place.gen.plains.1 { text = \"x\"  next = message:place.gen.plains.2 }\n");
+        var (tree, bag) = Parse("kedo 1\nmodule m\nmessage place.gen.plains.1 { text = \"x\"  next = message:place.gen.plains.2 }\nmessage action.return { text = \"y\" }\n");
         Assert.False(bag.HasErrors, Errors(bag));
-        Assert.Contains("Name `place` `.` `gen` `.` `plains` `.` `1`", SyntaxDump.Dump(tree));
+        var dump = SyntaxDump.Dump(tree);
+        Assert.Contains("Name `place` `.` `gen` `.` `plains` `.` `1`", dump);
+        Assert.Contains("Name `action` `.` `return`", dump);
     }
 
     [Fact]

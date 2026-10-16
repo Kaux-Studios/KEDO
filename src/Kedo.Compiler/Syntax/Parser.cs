@@ -283,8 +283,9 @@ public sealed class Parser
         {
             Advance();
             // Segments after the first may be numeric (`place.gen.plains.1`): message keys and generated ids use them.
-            while (At(TokenKind.Dot) && Peek(1) is TokenKind.Identifier or TokenKind.Integer)
+            while (At(TokenKind.Dot) && (Peek(1) is TokenKind.Identifier or TokenKind.Integer || _tokens[_sig[Math.Min(_pos + 1, _sig.Length - 1)]].IsKeyword))
             {
+                // Later segments may also be reserved words (`action.return`): only the first segment is a plain identifier.
                 Advance();
                 Advance();
             }
