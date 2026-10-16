@@ -43,7 +43,7 @@ actor depot_sentinel extends sentinel_machine {
 | Espacios | Insignificantes salvo como separador de tokens y como terminador de sentencias dentro de `on` y `function` (§8) |
 | Comentarios | `// línea`, `/* bloque */` (sin anidar), `/// documentación` adherida a la siguiente declaración |
 | Identificador | `[a-z_][a-z0-9_]*`. Minúsculas y guion bajo; el formateador no lo cambia, el parser lo exige (K1003) |
-| Id calificado | `ident ('.' ident)*`, por ejemplo `bridge.reinforce`. Solo en cabeceras de declaración y en referencias |
+| Id calificado | `ident ('.' (ident | entero))*`, por ejemplo `bridge.reinforce` o `place.gen.plains.1`. Solo en cabeceras de declaración y en referencias |
 | Ruta de módulo | `ident '/' id-calificado`, por ejemplo `core/basic_item`. Solo en referencias a otro módulo |
 | Entero | `[0-9]+` con `_` opcional como separador (`1_500`). Un `-` pegado a un entero o duración en posición de valor forma un literal negativo (`mood_shift = -1`); cualquier otra expresión con `-` va entre paréntesis. Sin flotantes en 1.x |
 | Duración | entero seguido sin espacio de `s`, `min`, `h` o `d` (`30min`, `2h`). Un solo token; se baja a entero en la unidad base del esquema (minutos por defecto) |

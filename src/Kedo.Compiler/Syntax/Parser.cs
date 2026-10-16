@@ -282,7 +282,8 @@ public sealed class Parser
         if (At(TokenKind.Identifier))
         {
             Advance();
-            while (At(TokenKind.Dot) && Peek(1) == TokenKind.Identifier)
+            // Segments after the first may be numeric (`place.gen.plains.1`): message keys and generated ids use them.
+            while (At(TokenKind.Dot) && Peek(1) is TokenKind.Identifier or TokenKind.Integer)
             {
                 Advance();
                 Advance();

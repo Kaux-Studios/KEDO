@@ -120,6 +120,17 @@ public class ParserTests
     }
 
     [Fact]
+    public void QualifiedIdsAcceptNumericSegments()
+    {
+        var (tree, bag) = Parse("kedo 1
+module m
+message place.gen.plains.1 { text = \"x\"  next = message:place.gen.plains.2 }
+");
+        Assert.False(bag.HasErrors, Errors(bag));
+        Assert.Contains("Name `place` `.` `gen` `.` `plains` `.` `1`", SyntaxDump.Dump(tree));
+    }
+
+    [Fact]
     public void WaitFormsParse()
     {
         var (tree, bag) = Parse("""

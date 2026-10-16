@@ -347,7 +347,7 @@ static int ImportJson(string[] args, Dictionary<string, string> valued)
 {
     if (args.Length != 1 || !valued.TryGetValue("--out", out var outDir))
     {
-        Console.Error.WriteLine("usage: kedo import-json <file.json> --out=<dir> --module=<name> [--map=coll:type,...] [--enums=field,...] [--pack-type=pack] [--pack-id=id]");
+        Console.Error.WriteLine("usage: kedo import-json <file.json> --out=<dir> --module=<name> [--map=coll:type,...] [--enums=field,...] [--pack-type=pack] [--pack-id=id] [--id-field=id]");
         return 2;
     }
 
@@ -356,6 +356,7 @@ static int ImportJson(string[] args, Dictionary<string, string> valued)
         Module = valued.TryGetValue("--module", out var m) ? m : "imported",
         PackType = valued.TryGetValue("--pack-type", out var pt) ? pt : "pack",
         PackId = valued.TryGetValue("--pack-id", out var pid) ? pid : null,
+        IdField = valued.TryGetValue("--id-field", out var idField) ? idField : "id",
     };
     if (valued.TryGetValue("--map", out var map))
     {
