@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "kedo": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": ["run", "--project", "src/Kedo.Cli", "-c", "Release", "--no-build", "--", "mcp"]
+    }
+  }
+}

@@ -11,6 +11,24 @@ public static class ResolvedDump
         var sb = new StringBuilder();
         foreach (var obj in catalog.Objects)
         {
+            DumpObject(sb, obj, withProvenance);
+        }
+
+        sb.Append("catalog ").Append(catalog.Hash).Append('\n');
+        return sb.ToString();
+    }
+
+    /// <summary>Dump of one object.</summary>
+    public static string DumpObject(ResolvedObject obj, bool withProvenance = false)
+    {
+        var sb = new StringBuilder();
+        DumpObject(sb, obj, withProvenance);
+        return sb.ToString();
+    }
+
+    private static void DumpObject(StringBuilder sb, ResolvedObject obj, bool withProvenance)
+    {
+        {
             sb.Append(obj.IsAbstract ? "abstract " : "").Append(obj.Type).Append(' ').Append(obj.Id);
             if (obj.Chain.Count > 1)
             {
@@ -42,9 +60,6 @@ public static class ResolvedDump
 
             sb.Append("    hash ").Append(obj.Hash).Append('\n');
         }
-
-        sb.Append("catalog ").Append(catalog.Hash).Append('\n');
-        return sb.ToString();
     }
 
     private static void WriteRecord(StringBuilder sb, RRecord record, int depth, bool prov)

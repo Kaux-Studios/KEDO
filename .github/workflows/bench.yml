@@ -1,0 +1,21 @@
+name: bench
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet restore --locked-mode
+      - run: dotnet build Kedo.sln -c Release --no-restore
+      - name: Run benchmarks (short job; hosted runners are noisy, so time gates are loose and allocation gates are exact)
+        run: dotnet run -c Release --no-build --project tests/Kedo.Benchmarks -- --filter '*' --job short --exporters json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmarks
+          path: BenchmarkDotNet.Artifacts/results/

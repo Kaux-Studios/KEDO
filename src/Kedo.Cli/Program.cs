@@ -40,6 +40,8 @@ try
             return Schema(positional.Skip(1).ToArray(), json);
         case "compile":
             return Compile(positional.Skip(1).ToArray(), json);
+        case "mcp":
+            return await Kedo.Cli.McpServer.RunAsync();
         case "build":
             return Build(positional.Skip(1).ToArray(), json, valued.TryGetValue("--out", out var outPath) ? outPath : null);
         case "fmt":
@@ -67,6 +69,7 @@ static void PrintUsage()
     Console.WriteLine("  explain <paths> <type:id> <path>   Show where a resolved value came from.");
     Console.WriteLine("  compile <paths>    Resolve and compile hooks and functions to IR; print the disassembly.");
     Console.WriteLine("  build <paths> --out=<file.kpk>   Resolve, compile and write the KEDO Pack binary.");
+    Console.WriteLine("  mcp                Start the stdio MCP server (stateless; tools kedo_check, kedo_format, kedo_resolve, kedo_explain, kedo_catalog, kedo_compile, kedo_schema).");
     Console.WriteLine("  fmt <paths>        Rewrite files in canonical form; with --check only report files that would change.");
     Console.WriteLine("Without a registered schema the resolver runs in permissive mode (any type and field; list strategies inferred).");
 }

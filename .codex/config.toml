@@ -1,0 +1,5 @@
+# Codex: KEDO MCP server (stdio). Trusted projects only.
+[mcp_servers.kedo]
+command = "dotnet"
+args = ["run", "--project", "src/Kedo.Cli", "-c", "Release", "--no-build", "--", "mcp"]
+tool_timeout_sec = 120

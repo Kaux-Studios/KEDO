@@ -10,6 +10,10 @@
     <Description>KEDO command line: parse, check, fmt, build, schema, explain, mcp.</Description>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../Kedo.Core/Kedo.Core.csproj" />
     <ProjectReference Include="../Kedo.Compiler/Kedo.Compiler.csproj" />
   </ItemGroup>

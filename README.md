@@ -49,6 +49,12 @@ dotnet run --project src/Kedo.Cli -- build --schema=spec/ejemplos/schema spec/ej
 dotnet run --project src/Kedo.Cli -- schema spec/ejemplos/schema --json              # JSON Schema para formularios y agentes
 ```
 
+## Herramientas para agentes de IA
+
+- **Skills** en `.agents/skills/` (Codex, Cursor) espejadas en `.claude/skills/` (Claude Code; `tools/sync-skills.ps1` las sincroniza y un test impide que diverjan): `kedo-syntax` (gramática y ejemplos), `kedo-author-content` (bucle escribir → `kedo check` → corregir → `kedo fmt` → `kedo resolve`), `kedo-toolchain` (cómo extender el compilador).
+- **Servidor MCP** `kedo mcp` (stdio, sin estado, SDK oficial 2.2): herramientas `kedo_check`, `kedo_format`, `kedo_resolve`, `kedo_explain`, `kedo_catalog`, `kedo_compile`, `kedo_schema`. Registrado para Claude Code en `.mcp.json` y para Codex en `.codex/config.toml` (requiere `dotnet build -c Release` previo).
+- Toda la CLI acepta `--json`; los diagnósticos llevan código, posición y sugerencia para cerrar el bucle de corrección sin intervención humana.
+
 ## Documentación
 
 - [Principios y alcance](spec/KEDO-00-Principios-y-Alcance.md)

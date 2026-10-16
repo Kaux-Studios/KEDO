@@ -1,0 +1,42 @@
+---
+name: kedo-toolchain
+description: How the KEDO toolchain repository is organised and how to extend it - adding a syntax form, a diagnostic code, a resolver rule, a schema field kind, an opcode or a CLI/MCP tool, with the tests and documents that must change together. Use when changing C# code under src/Kedo.Core, src/Kedo.Compiler or src/Kedo.Cli, or the golden corpus under tests/corpus.
+---
+
+# Working on the KEDO toolchain
+
+Read `AGENTS.md`, `spec/KEDO-00-Principios-y-Alcance.md` and the ADRs in `spec/adr/` first. Priorities: performance > ease of use > scalability > flexibility. 1.x is additive: never remove or change the meaning of syntax, AST kinds, IR opcodes, frame fields, diagnostic codes or public API; mark obsolete instead.
+
+## Map
+
+| Area | Where | Tests |
+|---|---|---|
+| Lexer, parser, syntax tree, formatter | `src/Kedo.Compiler/Syntax/*`, `Formatting/Formatter.cs` | `tests/Kedo.Tests/LexerTests.cs`, `ParserTests.cs`, golden corpus `tests/corpus/<case>/{input.kedo, tree.txt, diagnostics.txt, formatted.kedo, resolved.txt}` |
+| Declarations model | `src/Kedo.Compiler/Model/*` | via resolver tests |
+| Resolver (layers, merge, deletion, provenance, validation, hash) | `src/Kedo.Compiler/Resolution/*` | `ResolverTests.cs`, corpus `resolved.txt`, `examples-module/` |
+| Schema registry and schema-as-data | `src/Kedo.Core/Schema/Schema.cs`, `src/Kedo.Compiler/Schema/*` | `SchemaTests.cs`, `spec/ejemplos/schema/patriark.kedo` |
+| IR, VM, frames, host contract | `src/Kedo.Core/Runtime/*` | `BehaviorTests.cs` |
+| Behaviour compiler | `src/Kedo.Compiler/Behaviors/BehaviorCompiler.cs` | `BehaviorTests.cs` |
+| KEDO Pack binary | `src/Kedo.Core/Pack/*`, `src/Kedo.Compiler/Pack/PackWriter.cs` | `PackTests.cs` |
+| CLI and MCP server | `src/Kedo.Cli/Program.cs`, `McpServer.cs` | manual probes; keep both over the same core |
+| Benchmarks | `tests/Kedo.Benchmarks` | `dotnet run -c Release --project tests/Kedo.Benchmarks -- --filter '*' --job short` |
+
+## Recipes
+
+- **New syntax form**: add tokens in `Token.cs` and `Lexer.cs` (keyword table), a `NodeKind`, parser rule in `Parser.cs` (one token of lookahead; keep `FIRST` sets disjoint), formatter spacing rule if needed, `DeclarationBuilder` mapping, a golden corpus case, and the EBNF in `spec/KEDO-01-Gramatica.md`.
+- **New diagnostic**: pick the next free code in its range (K1 lexical/parse, K2 declaration, K3 resolution, K4 validation, K5 logic), message lowercase without final period with identifiers in backticks and a hint, a test that triggers it and one that does not, and the row in the spec table.
+- **New resolver rule**: implement in `Resolver.cs` (`ApplyField`, `MergeRecord`, list helpers), add a case to `ResolverTests` and, if it changes output, regenerate golden files with `KEDO_UPDATE_GOLDEN=1 dotnet test` and review the diff.
+- **New schema field kind or list strategy**: `ValueKind`/`ListStrategy` in `Schema.cs`, `MetaSchema.cs` (enum values), `SchemaLoader.cs`, `JsonSchemaWriter.cs`, resolver `Lower`/`Check`, and the example schema.
+- **New opcode**: `OpCode` + `Instr` encoding in `Runtime/Program.cs`, verifier and dispatch in `BehaviorVm.cs`, `Disassembler.cs`, emission in `BehaviorCompiler.cs`, a `BehaviorTests` case with suspend/resume if it touches frames. Keep zero allocations per instruction.
+- **New CLI command / MCP tool**: implement over the core (no logic in the adapter), add `--json` output, update `PrintUsage`, add the tool with a stable `kedo_` name and a when-to-use description (never rename tools; add `_v2`).
+
+## Verify before claiming done
+
+```
+dotnet build Kedo.sln -c Release      # zero warnings allowed (TreatWarningsAsErrors)
+dotnet test tests/Kedo.Tests/Kedo.Tests.csproj
+dotnet run --project src/Kedo.Cli -- check --schema=spec/ejemplos/schema spec/ejemplos
+dotnet run --project src/Kedo.Cli -- fmt spec/ejemplos --check
+```
+
+Commit messages describe what changed and what was verified; docs and spec change in the same commit as the code.
