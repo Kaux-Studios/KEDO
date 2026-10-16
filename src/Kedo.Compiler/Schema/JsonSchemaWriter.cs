@@ -159,6 +159,13 @@ public static class JsonSchemaWriter
                 w.WriteString("type", "integer");
                 if (f.Min is { } min) w.WriteNumber("minimum", min);
                 if (f.Max is { } max) w.WriteNumber("maximum", max);
+                if (f.OneOf is { } ints)
+                {
+                    w.WriteStartArray("enum");
+                    foreach (var value in ints) w.WriteNumberValue(long.Parse(value, System.Globalization.CultureInfo.InvariantCulture));
+                    w.WriteEndArray();
+                }
+
                 if (f.DefaultInt is { } di) w.WriteNumber("default", di);
                 break;
             case ValueKind.Bool:
@@ -181,8 +188,8 @@ public static class JsonSchemaWriter
             case ValueKind.Decimal:
                 w.WriteString("type", "number");
                 w.WriteNumber("multipleOf", 1m / (decimal)Math.Pow(10, f.Scale));
-                if (f.Min is { } dmin) w.WriteNumber("minimum", dmin);
-                if (f.Max is { } dmax) w.WriteNumber("maximum", dmax);
+                if ((f.MinDecimal ?? f.Min) is { } dmin) w.WriteNumber("minimum", dmin);
+                if ((f.MaxDecimal ?? f.Max) is { } dmax) w.WriteNumber("maximum", dmax);
                 break;
             case ValueKind.Map:
                 w.WriteString("type", "object");

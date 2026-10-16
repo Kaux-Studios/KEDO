@@ -113,6 +113,16 @@ public static class SchemaLoader
             Report(d, catalog, owner, $"field `{f.Name}` of `{owner}` uses unknown record `{f.RecordId}`");
         }
 
+        if ((f.MinDecimal is not null || f.MaxDecimal is not null) && f.Kind != ValueKind.Decimal)
+        {
+            Report(d, catalog, owner, $"field `{f.Name}` of `{owner}` has a decimal bound; decimal bounds are only for kind = decimal");
+        }
+
+        if (f.OneOf is not null && f.Kind is not (ValueKind.Text or ValueKind.Int))
+        {
+            Report(d, catalog, owner, $"field `{f.Name}` of `{owner}` has `one_of`; it applies to kind = text or int");
+        }
+
         if (f.Kind == ValueKind.Map)
         {
             if (f.Element is null)
@@ -214,6 +224,8 @@ public static class SchemaLoader
             Doc = Text(item, "doc"),
             Min = Int(item, "min"),
             Max = Int(item, "max"),
+            MinDecimal = Decimal(item, "min"),
+            MaxDecimal = Decimal(item, "max"),
             DefaultInt = def is RInt di ? di.Number : def is RDuration dd ? dd.Minutes : null,
             DefaultBool = def is RBool db ? db.Flag : null,
             DefaultText = def is RText dt ? dt.Text : def is REnum de ? de.Name : null,
@@ -239,6 +251,9 @@ public static class SchemaLoader
     private static bool? Bool(RRecord r, string name) => r.Fields.TryGetValue(name, out var v) && v is RBool b ? b.Flag : null;
 
     private static long? Int(RRecord r, string name) => r.Fields.TryGetValue(name, out var v) && v is RInt i ? i.Number : null;
+
+    private static decimal? Decimal(RRecord r, string name)
+        => r.Fields.TryGetValue(name, out var v) && v is RDecimal d ? decimal.Parse(d.CanonicalText, System.Globalization.CultureInfo.InvariantCulture) : null;
 
     private static string[] Strings(RRecord r, string name)
         => r.Fields.TryGetValue(name, out var v) && v is RList l ? l.Items.Select(i => i is RText t ? t.Text : i.CanonicalText).ToArray() : Array.Empty<string>();

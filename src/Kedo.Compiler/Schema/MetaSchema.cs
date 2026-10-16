@@ -29,8 +29,8 @@ public static class MetaSchema
             .Add(new FieldSchema("kind", ValueKind.Enum) { EnumId = "kedo_kind", Required = true })
             .Add(new FieldSchema("required", ValueKind.Bool) { DefaultBool = false })
             .Add(new FieldSchema("doc", ValueKind.Text))
-            .Add(new FieldSchema("min", ValueKind.Int))
-            .Add(new FieldSchema("max", ValueKind.Int))
+            .Add(new FieldSchema("min", ValueKind.Any) { Doc = "Inclusive minimum: an integer, or a decimal for kind = decimal." })
+            .Add(new FieldSchema("max", ValueKind.Any) { Doc = "Inclusive maximum: an integer, or a decimal for kind = decimal." })
             .Add(new FieldSchema("default", ValueKind.Any) { Doc = "Default value (int, bool, text or enum value)." })
             .Add(new FieldSchema("enum", ValueKind.Enum) { Doc = "Enum id for kind = enum." })
             .Add(new FieldSchema("target", ValueKind.Enum) { Doc = "Target type for kind = reference." })
@@ -45,7 +45,7 @@ public static class MetaSchema
             .Add(new FieldSchema("max_items", ValueKind.Int) { Min = 0, Doc = "Maximum items of a list or entries of a map." })
             .Add(new FieldSchema("min_length", ValueKind.Int) { Min = 0, Doc = "Minimum length of a text (Unicode characters)." })
             .Add(new FieldSchema("max_length", ValueKind.Int) { Min = 0, Doc = "Maximum length of a text (Unicode characters)." })
-            .Add(new FieldSchema("one_of", ValueKind.List) { ListStrategy = ListStrategy.Set, Element = new FieldSchema("item", ValueKind.Text), Doc = "Allowed values of a text." });
+            .Add(new FieldSchema("one_of", ValueKind.List) { ListStrategy = ListStrategy.Set, Element = new FieldSchema("item", ValueKind.Any), Doc = "Allowed values of a text or int field." });
         r.AddRecord(field);
 
         var fields = new FieldSchema("fields", ValueKind.List) { ListStrategy = ListStrategy.Keyed, KeyField = "name", Element = new FieldSchema("item", ValueKind.Record) { RecordId = "kedo_field" } };

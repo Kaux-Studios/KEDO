@@ -23,6 +23,8 @@ public class DecimalAndMapTests
         kedo_type terrain {
             fields = [
                 { name = cost  kind = decimal  scale = 2  min = 0  max = 9 }
+                { name = weight  kind = decimal  scale = 2  min = 0.01 }
+                { name = die  kind = int  one_of = [4, 6, 20] }
                 { name = by_biome  kind = map  keys = biome  element = { kind = decimal  scale = 2 } }
                 { name = scenes  kind = map  element = { kind = enum }  min_items = 1 }
                 { name = tags  kind = list  strategy = set  element = { kind = enum }  max_items = 2 }
@@ -128,6 +130,21 @@ public class DecimalAndMapTests
     }
 
     [Fact]
+    public void DecimalBoundsAndIntOneOfAreChecked()
+    {
+        var (_, bag) = Resolve("terrain a { weight = 0  die = 5 }\nterrain b { weight = 0.01  die = 20 }");
+        Assert.Contains(bag.Items, d => d.Code == "K4004" && d.Message.Contains("terrain:a.weight") && d.Message.Contains("[0.01,"));
+        Assert.Contains(bag.Items, d => d.Code == "K4012" && d.Message.Contains("terrain:a.die") && d.Message.Contains("4, 6, 20"));
+        Assert.DoesNotContain(bag.Items, d => d.Message.Contains("terrain:b"));
+
+        var loader = new DiagnosticBag();
+        var text = "kedo 1\nmodule s\nkedo_type t { fields = [{ name = n  kind = int  min = 0.5 }, { name = f  kind = bool  one_of = [1] }] }";
+        SchemaLoader.Load(new[] { DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(text, "s.kedo"), loader), loader) }, loader);
+        Assert.Contains(loader.Items, d => d.Message.Contains("decimal bounds are only for kind = decimal"));
+        Assert.Contains(loader.Items, d => d.Message.Contains("applies to kind = text or int"));
+    }
+
+    [Fact]
     public void ListAndTextConstraintsAreChecked()
     {
         var (_, bag) = Resolve("""terrain a { tags = [x, y, z]  rules = "refuge-3"  title = "a" }""");
@@ -173,6 +190,8 @@ public class DecimalAndMapTests
         Assert.Equal(2, fields.GetProperty("tags").GetProperty("maxItems").GetInt32());
         Assert.Equal("refuge-2", fields.GetProperty("rules").GetProperty("enum")[1].GetString());
         Assert.Equal(5, fields.GetProperty("title").GetProperty("maxLength").GetInt32());
+        Assert.Equal(0.01m, fields.GetProperty("weight").GetProperty("minimum").GetDecimal());
+        Assert.Equal(6, fields.GetProperty("die").GetProperty("enum")[1].GetInt32());
     }
 
     [Fact]

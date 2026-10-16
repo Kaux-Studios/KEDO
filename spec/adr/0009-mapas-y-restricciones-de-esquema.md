@@ -21,7 +21,8 @@ Cómo lo resuelven otros:
 - **Mezcla:** un mapa se mezcla como un record (clave a clave, recursivo); `=!` lo reemplaza; `remove campo.clave` quita una clave identificador. La forma canónica escribe entre comillas las claves que no son identificadores.
 - **Restricciones nuevas del descriptor de campo:**
   - listas y mapas: `min_items`, `max_items` (K4010);
-  - textos: `min_length`, `max_length`, medidos en caracteres Unicode (K4011), y `one_of = ["refuge-1", …]` (K4012).
+  - textos: `min_length`, `max_length`, medidos en caracteres Unicode (K4011), y `one_of = ["refuge-1", …]` (K4012);
+  - enteros: `one_of = [4, 6, 20]` (K4012), desde 1.0.0-alpha.2.
 - **Pack binario:** un mapa es un record (sin etiqueta nueva).
 - **JSON Schema generado:** `object` con `additionalProperties` y, si hay `keys`, `propertyNames` con el enum; `minItems`/`maxItems`, `minProperties`/`maxProperties`, `minLength`/`maxLength` y `enum` para `one_of`.
 

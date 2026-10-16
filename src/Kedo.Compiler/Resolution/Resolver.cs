@@ -1163,14 +1163,20 @@ public sealed class Resolver
                     AddOnce(WithProvenance("K4004", $"`{path}` = {i.Number} is out of range [{fs.Min?.ToString() ?? "-∞"}, {fs.Max?.ToString() ?? "∞"}]", obj, value));
                 }
 
+                if (fs.OneOf is { } allowedInts && !allowedInts.Contains(i.CanonicalText))
+                {
+                    AddOnce(WithProvenance("K4012", $"`{path}` = {i.Number} is not one of {string.Join(", ", allowedInts)}", obj, value));
+                }
+
                 break;
             case RDecimal dec when fs is not null:
             {
-                var factor = 1L;
-                for (var i = 0; i < dec.Scale; i++) factor *= 10;
-                if ((fs.Min is { } dmn && dec.Units < dmn * factor) || (fs.Max is { } dmx && dec.Units > dmx * factor))
+                var number = decimal.Parse(dec.CanonicalText, System.Globalization.CultureInfo.InvariantCulture);
+                var low = fs.MinDecimal ?? fs.Min;
+                var high = fs.MaxDecimal ?? fs.Max;
+                if ((low is { } dmn && number < dmn) || (high is { } dmx && number > dmx))
                 {
-                    AddOnce(WithProvenance("K4004", $"`{path}` = {dec.CanonicalText} is out of range [{fs.Min?.ToString() ?? "-∞"}, {fs.Max?.ToString() ?? "∞"}]", obj, value));
+                    AddOnce(WithProvenance("K4004", $"`{path}` = {dec.CanonicalText} is out of range [{low?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "-∞"}, {high?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "∞"}]", obj, value));
                 }
 
                 break;

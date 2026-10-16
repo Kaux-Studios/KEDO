@@ -18,7 +18,7 @@ Cómo lo resuelven otros:
 
 - **Literal decimal:** `[0-9_]+ '.' [0-9_]+`, con signo opcional en posición de valor como los enteros (`-0.5`), hasta 9 decimales (más es K1006). No se reconoce después de un `.` (dentro de un id calificado `place.1.5` siguen siendo segmentos).
 - **Valor:** entero de 64 bits de unidades más una escala (`RDecimal(Units, Scale)`, valor = `Units / 10^Scale`). Nada de coma flotante en el compilador ni en el pack.
-- **Esquema:** `kind = decimal  scale = N` (0 a 9, por defecto 2). Un literal con menos decimales se lleva a la escala (`1.5` con escala 2 son 150 unidades); con más es error K4009, nunca redondeo silencioso. Un entero también vale (`2` → `2.00`). `min` y `max` son enteros y se comparan contra el valor.
+- **Esquema:** `kind = decimal  scale = N` (0 a 9, por defecto 2). Un literal con menos decimales se lleva a la escala (`1.5` con escala 2 son 150 unidades); con más es error K4009, nunca redondeo silencioso. Un entero también vale (`2` → `2.00`). `min` y `max` se comparan contra el valor y pueden escribirse como decimales (`min = 0.01` expresa "mayor que cero" con escala 2; agregado en 1.0.0-alpha.2 para no perder `exclusiveMinimum` al generar el JSON Schema de un juego).
 - **Sin esquema** (modo permisivo) el decimal conserva la escala escrita: `1.0` y `1.00` son valores distintos para el hash. El modo permisivo es para migrar, no para publicar.
 - **Forma canónica y hash:** el texto canónico es el número con exactamente `Scale` decimales (`1.25`); el hash binario escribe unidades y escala.
 - **Pack binario:** etiqueta nueva `Decimal` (9): unidades `i64` + escala `u8`. El formato del pack pasa a 2 (`KedoPack.FormatVersion`); el lector acepta 1 y 2, así que los packs anteriores siguen cargando.

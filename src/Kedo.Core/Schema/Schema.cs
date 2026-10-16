@@ -118,8 +118,14 @@ public sealed class FieldSchema
     /// <summary>Maximum length of a text, in Unicode scalar values.</summary>
     public int? MaxLength { get; init; }
 
-    /// <summary>Allowed values of a text field; null accepts any text.</summary>
+    /// <summary>Allowed values of a text or int field (ints as their decimal text); null accepts any value.</summary>
     public IReadOnlyList<string>? OneOf { get; init; }
+
+    /// <summary>Inclusive minimum of a <see cref="ValueKind.Decimal"/> field written as a decimal (`min = 0.01`); overrides <see cref="Min"/>.</summary>
+    public decimal? MinDecimal { get; init; }
+
+    /// <summary>Inclusive maximum of a <see cref="ValueKind.Decimal"/> field written as a decimal; overrides <see cref="Max"/>.</summary>
+    public decimal? MaxDecimal { get; init; }
 }
 
 /// <summary>A named set of fields: the body of a type, a component or a nested record.</summary>
