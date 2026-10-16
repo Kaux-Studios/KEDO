@@ -1,6 +1,6 @@
 # KEDO-01 — Gramática v0.1
 
-Revisado: 15/10/2026 · Estado: **propuesta para revisión** (issue [#1](https://github.com/Kaux-Studios/KEDO/issues/1)). Base: anexos [H](../docs/research/anexos/H-Encuesta-de-sintaxis.md) e [I](../docs/research/anexos/I-Semantica-de-herencia-y-mezcla.md); principios en [KEDO-00](KEDO-00-Principios-y-Alcance.md). La semántica de resolución está en [KEDO-02](KEDO-02-Resolucion.md). Los ejemplos completos en [ejemplos/](ejemplos/).
+Revisado: 15/10/2026 · Estado: **v0.1 aceptada por el creador el 15/10/2026** (issue [#1](https://github.com/Kaux-Studios/KEDO/issues/1)); las decisiones de §11 quedan como propuestas aceptadas salvo cambio posterior. Base: anexos [H](../docs/research/anexos/H-Encuesta-de-sintaxis.md) e [I](../docs/research/anexos/I-Semantica-de-herencia-y-mezcla.md); principios en [KEDO-00](KEDO-00-Principios-y-Alcance.md). La semántica de resolución está en [KEDO-02](KEDO-02-Resolucion.md). Los ejemplos completos en [ejemplos/](ejemplos/).
 
 ## 1. Forma general
 

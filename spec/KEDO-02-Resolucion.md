@@ -1,6 +1,6 @@
 # KEDO-02 — Resolución v0.1
 
-Revisado: 15/10/2026 · Estado: **propuesta para revisión** (issue [#1](https://github.com/Kaux-Studios/KEDO/issues/1)). Base: anexo [I](../docs/research/anexos/I-Semantica-de-herencia-y-mezcla.md) (CUE, Nickel, Jsonnet, Pkl, Dhall, Kubernetes, Nix, Terraform, CSS, Unreal, Unity, C3) y anexo [D](../docs/research/anexos/D-Patrones-de-datos-en-otros-juegos.md). Gramática en [KEDO-01](KEDO-01-Gramatica.md).
+Revisado: 15/10/2026 · Estado: **v0.1 aceptada por el creador el 15/10/2026** (issue [#1](https://github.com/Kaux-Studios/KEDO/issues/1)); las decisiones de §12 quedan como propuestas aceptadas salvo cambio posterior. Base: anexo [I](../docs/research/anexos/I-Semantica-de-herencia-y-mezcla.md) (CUE, Nickel, Jsonnet, Pkl, Dhall, Kubernetes, Nix, Terraform, CSS, Unreal, Unity, C3) y anexo [D](../docs/research/anexos/D-Patrones-de-datos-en-otros-juegos.md). Gramática en [KEDO-01](KEDO-01-Gramatica.md).
 
 Define cómo un conjunto de declaraciones se convierte en un **catálogo resuelto**: objetos inmutables, completos, validados y hasheados, que el juego consume sin volver a interpretar herencia ni mixins.
 

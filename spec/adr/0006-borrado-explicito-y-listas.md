@@ -1,6 +1,6 @@
 # ADR-0006 — Borrado explícito y estrategias de lista declaradas por el esquema
 
-Fecha: 15/10/2026 · Estado: propuesto (issue #1) · Base: anexos D §1, H, I §3–4.
+Fecha: 15/10/2026 · Estado: aceptado 15/10/2026 (issue #1) · Base: anexos D §1, H, I §3–4.
 
 ## Contexto
 

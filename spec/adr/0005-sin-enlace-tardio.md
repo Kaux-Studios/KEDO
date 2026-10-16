@@ -1,6 +1,6 @@
 # ADR-0005 — Sin enlace tardío en la mezcla; campos calculados en pasada posterior
 
-Fecha: 15/10/2026 · Estado: propuesto (issue #1) · Base: anexo I §5.
+Fecha: 15/10/2026 · Estado: aceptado 15/10/2026 (issue #1) · Base: anexo I §5.
 
 ## Contexto
 

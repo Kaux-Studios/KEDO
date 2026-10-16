@@ -1,6 +1,6 @@
 # ADR-0004 — Sintaxis de bloques tipados con palabra clave inicial
 
-Fecha: 15/10/2026 · Estado: propuesto (issue #1) · Base: anexo H.
+Fecha: 15/10/2026 · Estado: aceptado 15/10/2026 (issue #1) · Base: anexo H.
 
 ## Contexto
 
