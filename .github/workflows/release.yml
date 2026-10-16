@@ -23,7 +23,7 @@ jobs:
           dotnet pack src/Kedo.Core/Kedo.Core.csproj --no-build -c Release -p:Version=${KEDO_VERSION} -o out
           dotnet pack src/Kedo.Compiler/Kedo.Compiler.csproj --no-build -c Release -p:Version=${KEDO_VERSION} -o out
           dotnet pack src/Kedo.Cli/Kedo.Cli.csproj --no-build -c Release -p:Version=${KEDO_VERSION} -o out
-      - name: Push to GitHub Packages (private feed of Kaux-Studios)
+      - name: Push to GitHub Packages (Kaux-Studios feed)
         run: dotnet nuget push "out/*.nupkg" --source "https://nuget.pkg.github.com/Kaux-Studios/index.json" --api-key "${{ secrets.GITHUB_TOKEN }}" --skip-duplicate
       - uses: softprops/action-gh-release@v2
         with:

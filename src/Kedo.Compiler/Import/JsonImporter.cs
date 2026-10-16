@@ -28,7 +28,7 @@ public sealed class JsonImportOptions
 }
 
 /// <summary>
-/// Generic JSON → KEDO importer for migrating existing data-driven content (anexo C, Patriark Plan 02). It produces one
+/// Generic JSON → KEDO importer for migrating existing data-driven content (first used for Patriark's pack). It produces one
 /// file per collection with ids preserved, plus a pack object holding every other top-level key. It is a starting
 /// point, not a faithful schema: inheritance, mixins and asset keys are added by hand afterwards.
 /// </summary>

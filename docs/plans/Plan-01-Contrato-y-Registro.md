@@ -1,6 +1,6 @@
 # GDO-Plan-01 — Contrato común de GDO y registro de tipos
 
-Preparado: 15/10/2026 · Issue [#3](https://github.com/Kaux-Studios/Project-Patriark/issues/3) · Estado: **plan para revisión previa**. Base: [GDO-01](../research/01-Investigacion-origen-Patriark.md) decisiones D2, D3, D4; evidencia en anexos [C](anexos/C-Patriark-Codigo-actual.md) y [D](../research/anexos/D-Patrones-de-datos-en-otros-juegos.md).
+Preparado: 15/10/2026 · Issue [#3](https://github.com/Kaux-Studios/Project-Patriark/issues/3) · Estado: **plan para revisión previa**. Base: [01 — Origen](../research/01-Origen.md) decisiones D2, D3, D4; evidencia en el anexo [D](../research/anexos/D-Patrones-de-datos-en-otros-juegos.md) y en el mapa del código de Patriark (anexo C, en ese repositorio).
 
 ## Objetivo
 

@@ -1,8 +1,8 @@
 # KEDO — Kaux Enriched Data Object
 
-Lenguaje y toolchain propios de Kaux Studios para definir contenido de juego enriquecido: objetos declarativos con herencia de valores, importación, mixins y componentes; expresiones; funciones y triggers que compilan a un IR determinista con continuaciones guardables; referencias a assets de cualquier clase. Independiente del motor. El primer cliente es [Project Patriark](https://github.com/Kaux-Studios/Project-Patriark).
+Lenguaje y toolchain propios de Kaux Studios para definir contenido de juego enriquecido: objetos declarativos con herencia de valores, importación, mixins y componentes; expresiones; funciones y triggers que compilan a un IR determinista con continuaciones guardables; referencias a assets de cualquier clase. Independiente del motor. El primer cliente es Project Patriark, un juego de Kaux Studios (repositorio privado).
 
-Estado: **alpha** (16/10/2026). Spec v0.1 aceptada; lexer, parser, formateador, resolver (capas, mezcla, borrado, procedencia, validación, hash), esquema como dato (`kedo_type`…) con `kedo schema`, compilador de hooks y funciones a IR, VM de registros con frames guardables, KEDO Pack binario (`kedo build`) y CLI completa, todo probado sobre los ejemplos de Patriark. Pendientes: benchmarks, MCP y skills, addon de Godot, corpus de Patriark, sample.
+Estado: **alpha** (16/10/2026). Spec v0.1 aceptada; lexer, parser, formateador, resolver (capas, mezcla, borrado, procedencia, validación, hash), esquema como dato (`kedo_type`…) con `kedo schema`, compilador de hooks y funciones a IR, VM de registros con frames guardables, KEDO Pack binario (`kedo build`) y CLI completa, benchmarks, servidor MCP y skills, addon de Godot y el mini-juego `samples/outpost`. Patriark compila todo su contenido con KEDO desde su propio repositorio. Pendientes: [backlog](https://github.com/Kaux-Studios/KEDO/issues).
 
 ## Principios (en orden)
 
@@ -29,7 +29,7 @@ src/Kedo.Cli     herramienta `kedo`: parse | check | resolve | explain | compile
 addons/kedo      addon de Godot (GDScript, sin cargar el ensamblado del juego): biblioteca de objetos, editor con resaltado, check/fmt vía CLI, diagnósticos con salto, cambios pendientes y borradores
 tests/           golden corpus + xUnit + tests GDScript headless
 samples/         mini-juego de muestra, distinto de Patriark, para probar que el núcleo es genérico
-docs/research    investigación (origen Patriark y posteriores); docs/plans planes por bloque
+docs/research    investigación (origen y anexos A, B, D–I); docs/plans planes por bloque
 ```
 
 ## Comandos
@@ -66,4 +66,4 @@ dotnet run --project src/Kedo.Cli -- schema spec/ejemplos/schema --json         
 - [Investigación](docs/research/00-LEEME.md) y [planes](docs/plans/)
 - [Cómo contribuir](CONTRIBUTING.md) · [AGENTS.md](AGENTS.md)
 
-Propietario. Ver [LICENSE](LICENSE).
+Repositorio público desde el 16/10/2026; el código sigue siendo propietario de Kaux Studios: verlo no concede permisos de uso, copia ni distribución. Ver [LICENSE](LICENSE).

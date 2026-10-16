@@ -1,6 +1,6 @@
 # GDO-Plan-06 — Contratos de extensión y comportamientos
 
-Preparado: 15/10/2026 · Issue [#3](https://github.com/Kaux-Studios/Project-Patriark/issues/3) · Estado: **plan para revisión previa**. Base: [GDO-01](../research/01-Investigacion-origen-Patriark.md) decisiones D3, D6 (extensión) y D8; anexos [E](../research/anexos/E-Comportamientos-y-scripting.md) completo, [B](../research/anexos/B-Plugins-de-editor-y-undo-redo.md) §7, [D](../research/anexos/D-Patrones-de-datos-en-otros-juegos.md) §4, §8.
+Preparado: 15/10/2026 · Issue [#3](https://github.com/Kaux-Studios/Project-Patriark/issues/3) · Estado: **plan para revisión previa**. Base: [01 — Origen](../research/01-Origen.md) decisiones D3, D6 (extensión) y D8; anexos [E](../research/anexos/E-Comportamientos-y-scripting.md) completo, [B](../research/anexos/B-Plugins-de-editor-y-undo-redo.md) §7, [D](../research/anexos/D-Patrones-de-datos-en-otros-juegos.md) §4, §8.
 
 ## Objetivo
 

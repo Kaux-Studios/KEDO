@@ -48,7 +48,7 @@ Cuando dos prioridades chocan, gana la de número menor, y la decisión se regis
 ## Decisiones iniciales fijadas
 
 - Lenguaje de texto propio con extensión `.kedo`. El AST se serializa a JSON como artefacto de intercambio y compilado; nadie edita ese JSON a mano. [ADR-0003](adr/0003-json-solo-como-artefacto.md).
-- Repositorio aislado de Patriark, consumido como paquete NuGet privado con SemVer. [ADR-0002](adr/0002-repositorio-aislado.md).
+- Repositorio aislado de Patriark (público desde el 16/10/2026, licencia propietaria), consumido como paquete NuGet con SemVer. [ADR-0002](adr/0002-repositorio-aislado.md).
 - Valores enteros en el modelo de la VM. Porcentajes en puntos básicos. Sin flotantes en 1.x.
 - Hooks: catálogo cerrado y versionado del juego; señales encoladas, nunca recursivas; efectos idempotentes por clave; presupuesto de pasos en el bucle de despacho.
 - Herramientas para IA desde el inicio: `--json` en toda la CLI, servidor MCP sobre el mismo núcleo, skills y ejemplos dorados en el repo.

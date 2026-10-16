@@ -30,7 +30,7 @@ Prerelease durante la inicialización: `1.0.0-alpha.N`. Sin garantía entre alph
 2. **Package validation** (`EnablePackageValidation`) en `dotnet pack`: compara con `PackageValidationBaselineVersion` (se fija al publicar `1.0.0`); en ramas de servicio, `EnableStrictModeForBaselineValidation`. Rupturas intencionales (solo en un nuevo major) se registran con `ApiCompatGenerateSuppressionFile`.
 3. **Reglas de cambio** (dotnet/runtime `breaking-change-rules.md`): permitido añadir miembros, implementaciones de interfaz, ampliar visibilidad; prohibido quitar o renombrar, cambiar parámetros, añadir miembros abstractos a tipos extensibles, cambiar struct↔class, cambiar valores de enum, añadir `virtual`/`static`.
 4. **Golden corpus**: los casos de `tests/corpus` nunca se borran dentro de un major; un cambio de salida en minor es error.
-5. **Release por tag**: `git tag vX.Y.Z` dispara `.github/workflows/release.yml`: build, tests, `pack` (con validación), push a GitHub Packages de `Kaux-Studios` (privado, `GITHUB_TOKEN`) y GitHub Release con los `.nupkg`.
+5. **Release por tag**: `git tag vX.Y.Z` dispara `.github/workflows/release.yml`: build, tests, `pack` (con validación), push a GitHub Packages de `Kaux-Studios` (`GITHUB_TOKEN`) y GitHub Release con los `.nupkg`. GitHub Packages exige token para restaurar incluso paquetes públicos; si eso estorba a la CI de los juegos, #18 decide entre ese feed y nuget.org.
 
 ## Consumo desde un juego
 

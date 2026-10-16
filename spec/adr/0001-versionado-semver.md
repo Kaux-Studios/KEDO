@@ -23,5 +23,5 @@ Varios juegos consumirán KEDO a lo largo de años. Patriark empieza con 1.0. Un
 
 ## Consecuencias
 
-- Diseñar con cuidado antes de 1.0: lo que entra queda hasta 2.0. La spec v0.1 y el corpus de Patriark son la prueba previa.
+- Diseñar con cuidado antes de 1.0: lo que entra queda hasta 2.0. La spec v0.1 y la conversión del contenido de Patriark (que corre en ese repositorio) son la prueba previa.
 - El costo de mantener dos majors en paralelo se acepta solo cuando exista un segundo juego que lo necesite.

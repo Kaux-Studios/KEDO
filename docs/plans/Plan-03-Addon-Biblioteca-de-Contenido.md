@@ -1,6 +1,6 @@
 # GDO-Plan-03 — Plugin de editor y biblioteca de contenido
 
-Preparado: 15/10/2026 · Issue [#3](https://github.com/Kaux-Studios/Project-Patriark/issues/3) · Estado: **plan para revisión previa**. Base: [GDO-01](../research/01-Investigacion-origen-Patriark.md) decisión D6; anexo [B](../research/anexos/B-Plugins-de-editor-y-undo-redo.md) §1, §2, §4, §5, §6, §8.
+Preparado: 15/10/2026 · Issue [#3](https://github.com/Kaux-Studios/Project-Patriark/issues/3) · Estado: **plan para revisión previa**. Base: [01 — Origen](../research/01-Origen.md) decisión D6; anexo [B](../research/anexos/B-Plugins-de-editor-y-undo-redo.md) §1, §2, §4, §5, §6, §8.
 
 ## Objetivo
 
