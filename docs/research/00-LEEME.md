@@ -8,8 +8,8 @@
 | [Anexo C — Código actual de Patriark](anexos/C-Patriark-Codigo-actual.md) | Mapa del primer cliente: pack, validador, lógica de campaña en código, assets, guardado, tests, costuras de integración | Vigente para la integración |
 | [Anexo D — Patrones de datos en otros juegos](anexos/D-Patrones-de-datos-en-otros-juegos.md) | Herencia y composición en RimWorld, CDDA, Qud, Paradox, Minecraft, DF, Unity, Unreal; versionado; ids; hashing; registro AOT; diagnósticos; contrato de GDO | Vigente |
 | [Anexo E — Comportamientos y scripting](anexos/E-Comportamientos-y-scripting.md) | Runtimes bajo NativeAOT, continuaciones serializables, grafos, hooks, determinismo, contrato de ejecución | Vigente |
-| Anexo F — Rendimiento y arquitectura del toolchain | Lexer/parser, AST, incremental, VM, serialización, benchmarks, compatibilidad de API | En curso (15/10/2026) |
-| Anexo G — Herramientas para IA | MCP, LSP, skills, diseño de lenguaje amigable para modelos, bucles con validador | En curso (15/10/2026) |
+| [Anexo F — Rendimiento y arquitectura del toolchain](anexos/F-Rendimiento-y-arquitectura-del-toolchain.md) | Lexer/parser a mano sobre spans UTF-8, AST en arena plana, incrementalidad por archivo estilo Salsa, VM de registros con instrucciones de 32 bits, binario seccionado + XxHash128, BenchmarkDotNet en CI, PublicApiAnalyzers + package validation; arquitectura v1 recomendada y presupuestos | Vigente |
+| [Anexo G — Herramientas para IA](anexos/G-Herramientas-para-IA.md) | MCP (spec 2026-07-28 sin estado, SDK C# 2.2.0), CLI primero → MCP → LSP; ≤10 herramientas; skills `SKILL.md` en `.agents/skills/` + plugin Claude Code; evidencia sobre LLM y DSL (ejemplos > gramática, validar en bucle, no restringir decodificación); distribución como dotnet tool; arquitectura v1 y lista de herramientas | Vigente |
 
 Los anexos están en inglés con cada afirmación marcada VERIFIED (con URL) o INFERRED. Los documentos de síntesis y las decisiones están en español.
 
