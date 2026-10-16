@@ -1,0 +1,140 @@
+kedo 1
+module patriark
+
+// Ejemplo 3 — Campaña: mundo, gremios, personajes, servicios, objetos y presentación.
+// Mapea 1:1 a los bloques world, guilds, characters, refuge_services, item_catalog,
+// scene_table y rules del pack prototype-9. test-1 se expresa como variante.
+
+/// Reglas de balance del prototipo (hoy: bloque rules del pack).
+ruleset prototype {
+    supplies    = { water_minutes_per_unit = 60  food_minutes_per_unit = 120  deprivation_damage_per_unit = 10 }
+    carry       = { base_kg = 10  kg_per_strength = 2  overload_limit_percent = 130  overload_travel_percent = 125  overload_agility_penalty = 2 }
+    progression = { max_level = 12  milestones_per_level = 2  attribute_gain = 2  attribute_max = 20 }
+    health      = { max = 100 }
+}
+
+/// Esqueleto fijo del mapa: roles de campaña que el generador exige.
+campaign prototype_9 {
+    version = 9
+    rules = ruleset:prototype
+    guild_node = place:city_a
+    guilds = [guild:menders, guild:scouts]
+
+    world = {
+        nodes = [
+            { id = city_a       name_key = "place.city_a"  role = main     campaign_role = city_a       tags = [shelter] }
+            { id = city_b       name_key = "place.city_b"  role = main     campaign_role = city_b }
+            { id = bridge_west  name_key = "place.west"    role = special  campaign_role = bridge_west  tags = [bridge] }
+            { id = bridge_east  name_key = "place.east"    role = special  campaign_role = bridge_east }
+        ]
+        edges = [
+            { id = bridge_link  from = bridge_west  to = bridge_east  minutes = 20  structure = structure:bridge }
+        ]
+        local_places = [
+            { id = plaza     parent = city_a  name_key = "refuge.place.plaza"     description_key = "refuge.scene.plaza"     scene = asset:refuge_plaza     x = 200  y = 110 }
+            { id = market    parent = city_a  name_key = "refuge.place.market"    description_key = "refuge.scene.market"    scene = asset:refuge_market    x = 60   y = 65 }
+            { id = guild     parent = city_a  name_key = "refuge.place.guild"     description_key = "refuge.scene.guild"     scene = asset:refuge_guild     x = 340  y = 65 }
+            { id = bar       parent = city_a  name_key = "refuge.place.bar"       description_key = "refuge.scene.bar"       scene = asset:refuge_bar       x = 65   y = 180 }
+            { id = hospital  parent = city_a  name_key = "refuge.place.hospital"  description_key = "refuge.scene.hospital"  scene = asset:refuge_hospital  x = 335  y = 180 }
+        ]
+    }
+
+    /// Presentación: fondo por rol o bioma (hoy: scene_table).
+    scenes = {
+        by_role  = [ { key = bridge_west  scene = asset:riverbed }, { key = bridge_east  scene = asset:riverbed }, { key = city_b  scene = asset:drylands } ]
+        by_biome = [ { key = mountain  scene = asset:canyon }, { key = steppe  scene = asset:canyon } ]
+        default  = asset:drylands
+    }
+
+    starting_inventory = { water = 60  rations = 40  materials = 8  items = [item:cargo_crate] }
+}
+
+/// Campaña de pruebas: misma fuente, un gremio y un personaje de nivel máximo.
+campaign test_1 extends prototype_9 {
+    version = 1
+    test_points = 999
+    guilds =! [guild:testers]
+    starting_inventory = { water = 999  rations = 999  materials = 999 }
+}
+
+guild menders {
+    name_key = "guild.menders"
+    description_key = "guild.menders.detail"
+    resources = { water = 20  rations = 10  materials = 8 }
+    roster = [character:mara, character:ilan]
+    recruit = {
+        costs = { rations = 4  materials = 2 }
+        minutes = 60
+        attributes = { strength = 10  endurance = 10  agility = 10  perception = 10  intelligence = 10  resolve = 10 }
+        names = ["Tomás", "Lía", "Bruno", "Irene", "Ciro", "Vera"]
+        title_key = "title.recruit"
+    }
+    upgrades = [
+        { id = workshop_1  costs = { materials = 8 }   minutes = 120  recruit_bonus = { strength = 1  endurance = 1  intelligence = 1 } }
+        { id = workshop_2  costs = { materials = 12 }  minutes = 120  recruit_bonus = { strength = 1  endurance = 1  intelligence = 1 } }
+    ]
+}
+
+guild scouts extends menders {
+    name_key = "guild.scouts"
+    description_key = "guild.scouts.detail"
+    roster =! [character:teo, character:ilan]
+    upgrades[workshop_1] { recruit_bonus =! { agility = 1  perception = 1  endurance = 1 } }
+}
+
+guild testers extends menders {
+    name_key = "guild.testers"
+    roster =! [character:tester]
+}
+
+/// Plantilla de personaje: definición inmutable; el juego crea el estado inicial.
+abstract character expeditionary {
+    lifecycle = available
+    level = 1
+    attributes = { strength = 10  endurance = 10  agility = 10  perception = 10  intelligence = 10  resolve = 10 }
+    portrait = asset:portrait_default
+}
+
+character mara extends expeditionary {
+    name = "Mara"
+    title_key = "title.mender"
+    occupation_family = repair_construction
+    known_practices = [footbridge_bracing]
+    attributes = { strength = 14  intelligence = 14 }
+    training = { repair = 2  survival = 2 }
+    starting_gear = gear_kit:mender_basic
+}
+
+character ilan extends expeditionary { name = "Ilan"   title_key = "title.scout"  occupation_family = gathering  training = { survival = 3 } }
+character teo  extends expeditionary { name = "Teo"    title_key = "title.scout"  occupation_family = gathering }
+character tester extends mara        { name = "Tester" level = 999  attributes = { strength = 20  endurance = 20  agility = 20  perception = 20  intelligence = 20  resolve = 20 } }
+
+/// Servicios del refugio: kind cerrado por el juego; los mensajes refuge.* se derivan del id.
+service plaza_lore { place = plaza   kind = info   minutes = 5 }
+service water      { place = market  kind = trade  minutes = 5  costs = { materials = 1 }  rewards = { water = 4 }    menu = "ui.menu.barter" }
+service rations    { place = market  kind = trade  minutes = 5  costs = { materials = 1 }  rewards = { rations = 2 }  menu = "ui.menu.barter" }
+
+/// Objetos: contenedores comparten una base.
+abstract item container_base {
+    tags = [container]
+}
+
+item backpack_basic extends container_base { weight_g = 1500  size = { w = 4  h = 5 }  equip_slot = back  grid = { w = 12  h = 8 } }
+item belt_basic     extends container_base { weight_g = 400   size = { w = 4  h = 1 }  equip_slot = belt  grid = { w = 6   h = 1 } }
+item pants_basic    { weight_g = 600  size = { w = 2  h = 3 }  equip_slot = legs  pockets = [ { w = 1  h = 2 }, { w = 1  h = 2 } ] }
+item cargo_crate    { weight_g = 9000  size = { w = 3  h = 3 }  tags = [mission, unique] }
+
+gear_kit mender_basic {
+    equipped = [item:backpack_basic, item:belt_basic, item:pants_basic]
+    carried  = [ { item = item:rope  count = 1 } ]
+}
+
+asset refuge_plaza    { kind = texture  path = "art/refuge-plaza-v1.png" }
+asset refuge_market   { kind = texture  path = "art/refuge-market-v1.png" }
+asset refuge_guild    { kind = texture  path = "art/refuge-guild-v1.png" }
+asset refuge_bar      { kind = texture  path = "art/refuge-bar-v1.png" }
+asset refuge_hospital { kind = texture  path = "art/refuge-hospital-v1.png" }
+asset riverbed        { kind = texture  path = "art/riverbed-v1.png" }
+asset drylands        { kind = texture  path = "art/drylands-v1.png" }
+asset canyon          { kind = texture  path = "art/canyon-v1.png" }
+asset portrait_default { kind = texture  path = "art/mender-stand-v2.png"  region = { x = 320  y = 60  w = 420  h = 420 } }

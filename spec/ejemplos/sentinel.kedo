@@ -1,0 +1,74 @@
+kedo 1
+module patriark
+
+// Ejemplo 1 — Centinela de ruta.
+// Hoy en Patriark es el único evento `travel` del pack (road.sentinel v2) más un
+// comportamiento futuro. Los tipos (event, actor, effect...) y los hooks los registra
+// Patriark; KEDO solo aporta la gramática, la resolución y la VM.
+
+/// Máquina centinela genérica: base abstracta para variantes.
+abstract actor sentinel_machine {
+    name_key = "actor.sentinel"
+    tags = [machine, hostile]
+
+    component health { max = 40  regen = 0 }
+    component sense  { range = 8  thermal = true }
+    component patrol { radius = 6  interval = 10min }
+}
+
+/// Centinela apostado en un depósito: no patrulla, resiste más, tiene sprite.
+actor depot_sentinel extends sentinel_machine {
+    name_key = "actor.sentinel.depot"
+    tags += [depot]
+
+    component health { max = 60 }
+    remove component patrol
+    component sprite { sheet = asset:sentinel_sheet }
+
+    /// Al llegar un personaje al lugar del centinela: alerta diferida.
+    on arrive(ctx) {
+        if (ctx.character.detected_by(actor:depot_sentinel)) {
+            wait 30min
+            apply effect:alarm_raised(ctx.place)
+        }
+    }
+}
+
+/// Evento de viaje: cruce de una máquina en la ruta. Mapea 1:1 a road.sentinel v2.
+event road.sentinel {
+    version = 2
+    family = machine_crossing
+    context = travel
+    text_key = "scene.hazard"
+    repeat_scope = expedition
+
+    options = [
+        { id = safe     label_key = "action.safe"     duration = 30min  resolution = deterministic  exit = arrive   completes = true }
+        { id = risk     label_key = "action.risk"     duration = 0min   resolution = d20            exit = arrive   completes = true
+          check = { attribute = agility  skill = survival  difficulty = 12  attribute_dice = [ { attribute = agility  min = 1 } ] }
+          failure_effects = [ { op = die } ]
+          critical_failure_effects = [ { op = die } ] }
+        { id = retreat  label_key = "action.retreat"  duration = 0min   resolution = deterministic  exit = retreat  completes = true }
+    ]
+}
+
+/// Variante del mismo cruce para un centinela de depósito: hereda las tres opciones
+/// (lista keyed(id)) y endurece la tirada sin repetir el resto.
+event road.sentinel.depot extends road.sentinel {
+    options[risk] { check = { difficulty = 14 } }
+    options += [
+        { id = distract  label_key = "action.distract"  duration = 15min  resolution = d20  exit = arrive  completes = true
+          requirements = [ { op = item_at  target = noise_maker } ]
+          check = { attribute = intelligence  difficulty = 12 } }
+    ]
+}
+
+/// Efecto registrado por el juego; aquí solo se declara su firma para los ejemplos.
+effect alarm_raised {
+    params = [ { name = place  type = place } ]
+}
+
+asset sentinel_sheet {
+    kind = texture
+    path = "art/sentinel-sheet-v1.png"
+}
