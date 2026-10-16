@@ -33,6 +33,9 @@ public sealed class ResolvedCatalog
 
     /// <summary>Concrete (non-abstract) objects.</summary>
     public IEnumerable<ResolvedObject> Concrete => Objects.Where(o => !o.IsAbstract);
+
+    /// <summary>All objects in declaration order (<see cref="ResolvedObject.Order"/>), for adapters whose output follows authoring order.</summary>
+    public IEnumerable<ResolvedObject> InDeclarationOrder => Objects.OrderBy(o => o.Order);
 }
 
 /// <summary>
@@ -51,6 +54,12 @@ public sealed class Resolver
     private readonly Dictionary<string, MixinDeclaration> _mixins = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ResolvedObject> _resolved = new(StringComparer.Ordinal);
     private readonly HashSet<string> _failed = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, int> _order = new(StringComparer.Ordinal);
+
+    // `objectKey.path` of fields that were written but rejected, so stage B does not also report them missing (ADR-0010).
+    private readonly HashSet<string> _invalid = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _warned = new(StringComparer.Ordinal);
+    private string _current = "";
 
     private Resolver(SchemaRegistry schema, DiagnosticBag diagnostics)
     {
@@ -98,6 +107,7 @@ public sealed class Resolver
                 }
 
                 _objects.Add(obj.Key, obj);
+                _order[obj.Key] = _order.Count;
             }
 
             foreach (var mixin in file.Mixins)
@@ -257,6 +267,7 @@ public sealed class Resolver
 
     private void ResolveObject(string key)
     {
+        _current = key;
         var decl = _objects[key];
         if (_failed.Contains(key))
         {
@@ -325,7 +336,7 @@ public sealed class Resolver
             hooks.AddRange(parent.Hooks.Where(ph => hooks.All(h => h.HookId != ph.HookId)));
         }
 
-        _resolved[key] = new ResolvedObject(decl, body, components, hooks, functions, chain, mixins);
+        _resolved[key] = new ResolvedObject(decl, body, components, hooks, functions, chain, mixins) { Order = _order[key] };
     }
 
     private static RRecord Defaults(RecordSchema schema, Origin origin)
@@ -467,7 +478,7 @@ public sealed class Resolver
 
     // ----- merging -----
 
-    private RRecord MergeRecord(RRecord existing, RecordValue authored, RecordSchema? schema, Provenance prov, string pathPrefix, int nesting, Dictionary<string, string>? written, string? mixinId)
+    private RRecord MergeRecord(RRecord existing, RecordValue authored, RecordSchema? schema, Provenance prov, string pathPrefix, int nesting, Dictionary<string, string>? written, string? mixinId, FieldSchema? mapOf = null)
     {
         if (nesting > MaxNesting)
         {
@@ -482,8 +493,15 @@ public sealed class Resolver
             {
                 case FieldEntry fe:
                 {
-                    var fs = schema?.Find(fe.Name);
-                    if (fs is null && schema is { Closed: true } && !_schema.Permissive)
+                    // A map (ADR-0009): free keys, optionally from an enum; every value follows the element descriptor.
+                    if (mapOf is { KeysEnumId: { } keysEnum } && _schema.FindEnum(keysEnum) is { } keys && !keys.Values.Contains(fe.Name))
+                    {
+                        _d.Error("K4003", $"key `{fe.Name}` is not a value of enum `{keysEnum}` ({string.Join(", ", keys.Values)})", fe.Origin.File, fe.Origin.Span);
+                        continue;
+                    }
+
+                    var fs = mapOf is not null ? mapOf.Element : schema?.Find(fe.Name);
+                    if (fs is null && mapOf is null && schema is { Closed: true } && !_schema.Permissive)
                     {
                         var suggestion = Suggest(fe.Name, schema.Fields.Select(f => f.Name));
                         _d.Error("K2005", $"unknown field `{fe.Name}` in `{schema.Id}`{(suggestion is null ? "" : $"; did you mean `{suggestion}`?")}", fe.Origin.File, fe.Origin.Span);
@@ -496,6 +514,10 @@ public sealed class Resolver
                     if (updated is not null)
                     {
                         fields = fields.With(fe.Name, updated);
+                    }
+                    else if (current is null)
+                    {
+                        _invalid.Add($"{_current}.{path}");
                     }
 
                     break;
@@ -549,10 +571,15 @@ public sealed class Resolver
             {
                 if (current is RRecord cr && fe.Value is RecordValue rv)
                 {
-                    return MergeRecord(cr, rv, fs?.RecordId is { } rid ? _schema.FindRecord(rid) : null, p, path, nesting + 1, written, mixinId);
+                    if (rv.Entries.Count == 0 && cr.Fields.Count > 0 && cr.Provenance.Layer != LayerKind.Default && _warned.Add($"K3015|{fe.Origin.File}|{fe.Origin.Span.Start}"))
+                    {
+                        _d.Warning("K3015", $"`{path} = {{ }}` merges nothing into the inherited record; write `=! {{ }}` to clear it", fe.Origin.File, fe.Origin.Span);
+                    }
+
+                    return MergeRecord(cr, rv, fs?.RecordId is { } rid ? _schema.FindRecord(rid) : null, p, path, nesting + 1, written, mixinId, fs is { Kind: ValueKind.Map } ? fs : null);
                 }
 
-                var lowered = Lower(fe.Value, fs, p, current, nesting);
+                var lowered = Lower(fe.Value, fs, p, current, nesting, path);
                 if (lowered is null)
                 {
                     return null;
@@ -570,8 +597,10 @@ public sealed class Resolver
 
                             return nl with { Shadowed = new[] { cl } };
                         case ListStrategy.Set:
+                            WarnMerge(cl, nl, path, fe.Origin);
                             return AddToSet(cl, nl, p);
                         case ListStrategy.Keyed:
+                            WarnMerge(cl, nl, path, fe.Origin);
                             return MergeKeyed(cl, nl, p, path, fs, nesting, written, mixinId, fe.Origin);
                         case ListStrategy.Append:
                             return cl with { Items = cl.Items.Concat(nl.Items).ToList(), Provenance = p };
@@ -605,7 +634,7 @@ public sealed class Resolver
                     return null;
                 }
 
-                var lowered = Lower(fe.Value, fs, p, null, nesting);
+                var lowered = Lower(fe.Value, fs, p, null, nesting, path);
                 return lowered is null ? null : current is null ? lowered : lowered with { Shadowed = new[] { current } };
             }
 
@@ -809,7 +838,7 @@ public sealed class Resolver
 
     // ----- lowering authored values -----
 
-    private ResolvedValue? Lower(Value value, FieldSchema? fs, Provenance p, ResolvedValue? current, int nesting)
+    private ResolvedValue? Lower(Value value, FieldSchema? fs, Provenance p, ResolvedValue? current, int nesting, string path = "")
     {
         var prov = p with { Origin = value.Origin };
         switch (value)
@@ -817,7 +846,7 @@ public sealed class Resolver
             case ExprValue ev:
             {
                 var folded = ConstEvaluator.Evaluate(ev, _d);
-                return folded is null ? null : Lower(folded, fs, p, current, nesting);
+                return folded is null ? null : Lower(folded, fs, p, current, nesting, path);
             }
 
             case IntValue iv:
@@ -826,7 +855,29 @@ public sealed class Resolver
                     return new RDuration(prov, iv.Number);
                 }
 
+                if (fs is { Kind: ValueKind.Decimal })
+                {
+                    return Scaled(iv.Number, 0, fs.Scale, value) is { } whole ? new RDecimal(prov, whole, fs.Scale) : null;
+                }
+
                 return Check(fs, ValueKind.Int, value) ? new RInt(prov, iv.Number) : null;
+            case DecimalValue dv:
+            {
+                if (fs is { Kind: ValueKind.Decimal })
+                {
+                    if (dv.Scale > fs.Scale)
+                    {
+                        _d.Error("K4009", $"`{RDecimal.Format(dv.Units, dv.Scale)}` has {dv.Scale} decimal places; field `{fs.Name}` keeps {fs.Scale}", value.Origin.File, value.Origin.Span);
+                        return null;
+                    }
+
+                    return Scaled(dv.Units, dv.Scale, fs.Scale, value) is { } units ? new RDecimal(prov, units, fs.Scale) : null;
+                }
+
+                // Without a schema the decimal keeps the scale it was written with (ADR-0008).
+                return Check(fs, ValueKind.Decimal, value) ? new RDecimal(prov, dv.Units, dv.Scale) : null;
+            }
+
             case DurationValue dv:
                 return Check(fs, ValueKind.Duration, value) ? new RDuration(prov, dv.Minutes) : null;
             case TextValue tv:
@@ -857,9 +908,14 @@ public sealed class Resolver
                     return null;
                 }
 
+                if (fs is { Kind: ValueKind.Map })
+                {
+                    return MergeRecord(RRecord.Empty(prov), rec, null, p, path, nesting + 1, null, null, fs);
+                }
+
                 var recordSchema = fs?.RecordId is { } rid ? _schema.FindRecord(rid) : null;
                 var start = recordSchema is null ? RRecord.Empty(prov) : Defaults(recordSchema, value.Origin);
-                return MergeRecord(start, rec, recordSchema, p, "", nesting + 1, null, null);
+                return MergeRecord(start, rec, recordSchema, p, path, nesting + 1, null, null);
             }
 
             case ListValue lv:
@@ -872,7 +928,7 @@ public sealed class Resolver
                 var items = new List<ResolvedValue>(lv.Items.Count);
                 foreach (var item in lv.Items)
                 {
-                    var lowered = Lower(item, fs?.Element, p, null, nesting + 1);
+                    var lowered = Lower(item, fs?.Element, p, null, nesting + 1, path + "[]");
                     if (lowered is not null)
                     {
                         items.Add(lowered);
@@ -922,9 +978,58 @@ public sealed class Resolver
         return ListStrategy.Atomic;
     }
 
+    /// <summary>
+    /// K3014 (ADR-0010): `=` that adds items to an inherited set or keyed list merges silently. Updating keyed items by key
+    /// is not warned. Once per authored entry, even when a mixin applies it to many objects.
+    /// </summary>
+    private void WarnMerge(RList inherited, RList authored, string path, Origin origin)
+    {
+        if (inherited.Items.Count == 0 || inherited.Provenance.Layer == LayerKind.Default || !_warned.Add($"K3014|{origin.File}|{origin.Span.Start}"))
+        {
+            return;
+        }
+
+        if (inherited.Strategy == ListStrategy.Set)
+        {
+            _d.Warning("K3014", $"`{path} = [...]` merges with {inherited.Items.Count} inherited item(s) of a set list; write `+=` to add or `=!` to replace", origin.File, origin.Span);
+            return;
+        }
+
+        var keys = inherited.Items.Select(i => RList.KeyOf(i, inherited.KeyField)).ToHashSet(StringComparer.Ordinal);
+        var added = authored.Items.Count(i => !keys.Contains(RList.KeyOf(i, inherited.KeyField)));
+        if (added == authored.Items.Count)
+        {
+            _d.Warning("K3014", $"`{path} = [...]` adds {added} item(s) to an inherited keyed list of {inherited.Items.Count}; write `+=` to add or `=!` to replace", origin.File, origin.Span);
+        }
+        else if (added > 0)
+        {
+            _d.Warning("K3014", $"`{path} = [...]` adds {added} item(s) and changes {authored.Items.Count - added} of an inherited keyed list; write `+=` for the new ones and `{path}[key] {{ }}` to change existing ones", origin.File, origin.Span);
+        }
+    }
+
+    /// <summary>Units at a larger scale (`15`, 1 → 2 gives `150`); null with K4001 on overflow.</summary>
+    private long? Scaled(long units, int from, int to, Value value)
+    {
+        try
+        {
+            var result = units;
+            for (var i = from; i < to; i++)
+            {
+                result = checked(result * 10);
+            }
+
+            return result;
+        }
+        catch (OverflowException)
+        {
+            _d.Error("K4001", "decimal value is out of range", value.Origin.File, value.Origin.Span);
+            return null;
+        }
+    }
+
     private bool Check(FieldSchema? fs, ValueKind actual, Value value)
     {
-        if (fs is null || fs.Kind == ValueKind.Any || fs.Kind == actual)
+        if (fs is null || fs.Kind == ValueKind.Any || fs.Kind == actual || (fs.Kind == ValueKind.Map && actual == ValueKind.Record))
         {
             return true;
         }
@@ -936,6 +1041,7 @@ public sealed class Resolver
     private static string Describe(Value v) => v switch
     {
         IntValue => "an integer",
+        DecimalValue => "a decimal",
         DurationValue => "a duration",
         TextValue => "text",
         BoolValue => "a boolean",
@@ -949,6 +1055,7 @@ public sealed class Resolver
     private static string Describe(ResolvedValue v) => v switch
     {
         RInt => "an integer",
+        RDecimal => "a decimal",
         RDuration => "a duration",
         RText => "text",
         RBool => "a boolean",
@@ -1028,7 +1135,7 @@ public sealed class Resolver
         {
             foreach (var f in schema.Fields)
             {
-                if (f.Required && !record.Fields.TryGetValue(f.Name, out _))
+                if (f.Required && !record.Fields.TryGetValue(f.Name, out _) && !_invalid.Contains($"{path}.{f.Name}"))
                 {
                     _d.Error("K4002", $"`{path}` is missing required field `{f.Name}`", obj.Declaration.Origin.File, obj.Declaration.Origin.Span);
                 }
@@ -1054,6 +1161,34 @@ public sealed class Resolver
                 }
 
                 break;
+            case RDecimal dec when fs is not null:
+            {
+                var factor = 1L;
+                for (var i = 0; i < dec.Scale; i++) factor *= 10;
+                if ((fs.Min is { } dmn && dec.Units < dmn * factor) || (fs.Max is { } dmx && dec.Units > dmx * factor))
+                {
+                    _d.Add(WithProvenance("K4004", $"`{path}` = {dec.CanonicalText} is out of range [{fs.Min?.ToString() ?? "-∞"}, {fs.Max?.ToString() ?? "∞"}]", obj, value));
+                }
+
+                break;
+            }
+
+            case RText text when fs is not null:
+            {
+                var length = text.Text.EnumerateRunes().Count();
+                if ((fs.MinLength is { } minLength && length < minLength) || (fs.MaxLength is { } maxLength && length > maxLength))
+                {
+                    _d.Add(WithProvenance("K4011", $"`{path}` has {length} character(s); the field allows [{fs.MinLength?.ToString() ?? "0"}, {fs.MaxLength?.ToString() ?? "∞"}]", obj, value));
+                }
+
+                if (fs.OneOf is { } allowed && !allowed.Contains(text.Text))
+                {
+                    _d.Add(WithProvenance("K4012", $"`{path}` = {text.CanonicalText} is not one of {string.Join(", ", allowed.Select(a => "\"" + a + "\""))}", obj, value));
+                }
+
+                break;
+            }
+
             case RDuration du when fs is not null:
                 if ((fs.Min is { } dmin && du.Minutes < dmin) || (fs.Max is { } dmax && du.Minutes > dmax))
                 {
@@ -1081,15 +1216,32 @@ public sealed class Resolver
             }
 
             case RList l:
+                CheckCount(l.Items.Count, fs, obj, value, path);
                 foreach (var item in l.Items)
                 {
                     ValidateValue(item, fs?.Element, obj, path + "[]", catalog);
                 }
 
                 break;
+            case RRecord map when fs is { Kind: ValueKind.Map }:
+                CheckCount(map.Fields.Count(), fs, obj, value, path);
+                foreach (var kv in map.Fields)
+                {
+                    ValidateValue(kv.Value, fs.Element, obj, $"{path}.{RRecord.KeyText(kv.Key)}", catalog);
+                }
+
+                break;
             case RRecord rec:
                 ValidateRecord(rec, fs?.RecordId is { } rid ? _schema.FindRecord(rid) : null, obj, path, catalog);
                 break;
+        }
+    }
+
+    private void CheckCount(int count, FieldSchema? fs, ResolvedObject obj, ResolvedValue value, string path)
+    {
+        if (fs is not null && ((fs.MinItems is { } min && count < min) || (fs.MaxItems is { } max && count > max)))
+        {
+            _d.Add(WithProvenance("K4010", $"`{path}` has {count} item(s); the field allows [{fs.MinItems?.ToString() ?? "0"}, {fs.MaxItems?.ToString() ?? "∞"}]", obj, value));
         }
     }
 
@@ -1159,12 +1311,32 @@ public sealed class Resolver
         }
 
         var sb = new System.Text.StringBuilder();
-        sb.Append($"{key}.{path} = {value!.CanonicalText} from {value.Provenance}");
+        sb.Append($"{key}.{path} = {value!.CanonicalText} from {From(value.Provenance, key)}");
         foreach (var shadowed in value.Shadowed)
         {
-            sb.Append($"\n  shadowed: {shadowed.CanonicalText} from {shadowed.Provenance}");
+            sb.Append($"\n  shadowed: {shadowed.CanonicalText} from {From(shadowed.Provenance, key)}");
+        }
+
+        // Lists and maps mix layers: each element says where it came from (ADR-0010).
+        if (value is RList items)
+        {
+            foreach (var item in items.Items)
+            {
+                sb.Append($"\n  item: {item.CanonicalText} from {From(item.Provenance, key)}");
+            }
+        }
+        else if (value is RRecord entries && entries.Fields.Any(kv => kv.Value is not RRecord and not RList))
+        {
+            foreach (var kv in entries.Fields)
+            {
+                sb.Append($"\n  entry: {RRecord.KeyText(kv.Key)} = {kv.Value.CanonicalText} from {From(kv.Value.Provenance, key)}");
+            }
         }
 
         return sb.ToString();
     }
+
+    /// <summary>A provenance as seen from <paramref name="key"/>: another object's own layer is that object's contribution as an ancestor.</summary>
+    private static string From(Provenance p, string key)
+        => p.Layer == LayerKind.Own && p.LayerName.Length > 0 && p.LayerName != key ? $"parent {p.LayerName} ({p.Origin})" : p.ToString();
 }

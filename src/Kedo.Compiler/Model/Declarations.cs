@@ -44,6 +44,9 @@ public sealed record DurationValue(Origin Origin, long Amount, string Unit) : Va
     public long Minutes => Unit switch { "s" => Amount / 60, "h" => Amount * 60, "d" => Amount * 1440, _ => Amount };
 }
 
+/// <summary>Fixed-point decimal literal: <see cref="Units"/> / 10^<see cref="Scale"/> (ADR-0008).</summary>
+public sealed record DecimalValue(Origin Origin, long Units, int Scale) : Value(Origin);
+
 /// <summary>String literal (unescaped).</summary>
 public sealed record TextValue(Origin Origin, string Text) : Value(Origin);
 

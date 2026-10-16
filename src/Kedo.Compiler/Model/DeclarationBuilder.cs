@@ -293,7 +293,9 @@ public static class DeclarationBuilder
                         TokenKind.MinusEquals => FieldOp.Remove,
                         _ => FieldOp.Assign,
                     };
-                    return new FieldEntry(OriginOf(node), Text(own[0]), op, BuildValue(children[0]));
+                    // A quoted key (`"role:city_b" = x`) names a map entry that is not an identifier (ADR-0009).
+                    var name = _t.Tokens[own[0]].Kind == TokenKind.String ? Unescape(Text(own[0])) : Text(own[0]);
+                    return new FieldEntry(OriginOf(node), name, op, BuildValue(children[0]));
                 }
 
                 case NodeKind.KeyedEntry:
@@ -410,6 +412,11 @@ public static class DeclarationBuilder
                     var tk = negative ? own[1] : own[0];
                     var token = _t.Tokens[tk];
                     var text = Text(tk);
+                    if (token.Kind == TokenKind.Decimal)
+                    {
+                        return ParseDecimal(origin, text, token.Span, negative);
+                    }
+
                     if (negative)
                     {
                         return token.Kind == TokenKind.Duration
@@ -460,6 +467,20 @@ public static class DeclarationBuilder
                 default:
                     return new ExprValue(origin, _t, node);
             }
+        }
+
+        private DecimalValue ParseDecimal(Origin origin, string text, TextSpan span, bool negative)
+        {
+            var digits = text.Replace("_", "");
+            var dot = digits.IndexOf('.');
+            var scale = digits.Length - dot - 1;
+            if (!long.TryParse(digits.Remove(dot, 1), NumberStyles.None, CultureInfo.InvariantCulture, out var units))
+            {
+                _d.Error("K4001", $"decimal `{text}` is out of range", File, span);
+                units = 0;
+            }
+
+            return new DecimalValue(origin, negative ? -units : units, scale);
         }
 
         private long ParseInt(string text, TextSpan span)

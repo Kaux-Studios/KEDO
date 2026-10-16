@@ -15,7 +15,7 @@ crisis coolant_leak extends base_crisis {
     title = "Coolant leak"
     severity = major
     room = room:reactor
-    choices = [
+    choices += [
         { id = patch  label = "Patch the line"  requires_role = engineer  duration = 30min  costs = [{ resource = parts  amount = 2 }]  mood_shift = 1 }
         { id = vent  label = "Vent the loop"  duration = 10min  costs = [{ resource = water  amount = 5 }] }
     ]
@@ -48,7 +48,7 @@ crisis coolant_leak_minor extends coolant_leak {
 crisis blight extends base_crisis {
     title = "Greenhouse blight"
     room = room:greenhouse
-    choices = [
+    choices += [
         { id = prune  label = "Prune the beds"  requires_role = botanist  duration = 2h  mood_shift = 0 }
         { id = burn  label = "Burn the infected beds"  duration = 1h  costs = [{ resource = oxygen  amount = 3 }]  mood_shift = -1 }
     ]

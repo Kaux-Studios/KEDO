@@ -23,6 +23,10 @@ public enum ValueKind
     Record,
     /// <summary>List; <see cref="FieldSchema.Element"/> describes items and <see cref="FieldSchema.ListStrategy"/> the merge.</summary>
     List,
+    /// <summary>Fixed-point decimal with <see cref="FieldSchema.Scale"/> fractional digits (ADR-0008).</summary>
+    Decimal,
+    /// <summary>Record with free keys; <see cref="FieldSchema.Element"/> describes values, <see cref="FieldSchema.KeysEnumId"/> may restrict keys (ADR-0009).</summary>
+    Map,
 }
 
 /// <summary>How a list field merges across layers (KEDO-02 §3, ADR-0006).</summary>
@@ -95,6 +99,27 @@ public sealed class FieldSchema
 
     /// <summary>Key field for <see cref="ListStrategy.Keyed"/> lists of records (default <c>id</c>).</summary>
     public string KeyField { get; init; } = "id";
+
+    /// <summary>Fractional digits of a <see cref="ValueKind.Decimal"/> field (0-9, default 2).</summary>
+    public int Scale { get; init; } = 2;
+
+    /// <summary>Enum the keys of a <see cref="ValueKind.Map"/> must belong to; null accepts any identifier or text.</summary>
+    public string? KeysEnumId { get; init; }
+
+    /// <summary>Minimum number of items of a list or entries of a map.</summary>
+    public int? MinItems { get; init; }
+
+    /// <summary>Maximum number of items of a list or entries of a map.</summary>
+    public int? MaxItems { get; init; }
+
+    /// <summary>Minimum length of a text, in Unicode scalar values.</summary>
+    public int? MinLength { get; init; }
+
+    /// <summary>Maximum length of a text, in Unicode scalar values.</summary>
+    public int? MaxLength { get; init; }
+
+    /// <summary>Allowed values of a text field; null accepts any text.</summary>
+    public IReadOnlyList<string>? OneOf { get; init; }
 }
 
 /// <summary>A named set of fields: the body of a type, a component or a nested record.</summary>

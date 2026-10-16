@@ -60,6 +60,7 @@ public static class CatalogHasher
             case RBool b: h.Append(b.Flag ? "T"u8 : "F"u8); break;
             case RText t: h.Append("s"u8); WriteString(h, t.Text); break;
             case RDuration d: h.Append("d"u8); WriteInt(h, d.Minutes); break;
+            case RDecimal m: h.Append("m"u8); WriteInt(h, m.Units); WriteInt(h, m.Scale); break;
             case REnum e: h.Append("e"u8); WriteString(h, e.Name); break;
             case RRef r: h.Append("r"u8); WriteString(h, r.CanonicalText); break;
             case RList l:

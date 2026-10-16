@@ -21,6 +21,8 @@ public enum PackTag : byte
     List = 7,
     /// <summary>Record.</summary>
     Record = 8,
+    /// <summary>Fixed-point decimal: units (i64) and scale (u8). Format 2 (ADR-0008).</summary>
+    Decimal = 9,
 }
 
 /// <summary>A decoded value from a pack. Immutable; built on demand per object.</summary>
@@ -35,6 +37,13 @@ public sealed record PackInt(long Number, bool IsDuration) : PackValue
 {
     /// <inheritdoc />
     public override PackTag Tag => IsDuration ? PackTag.Duration : PackTag.Int;
+}
+
+/// <summary>Fixed-point decimal: <see cref="Units"/> / 10^<see cref="Scale"/> (ADR-0008).</summary>
+public sealed record PackDecimal(long Units, byte Scale) : PackValue
+{
+    /// <inheritdoc />
+    public override PackTag Tag => PackTag.Decimal;
 }
 
 /// <summary>Boolean.</summary>

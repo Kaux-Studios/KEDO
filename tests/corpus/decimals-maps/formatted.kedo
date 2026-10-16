@@ -1,0 +1,17 @@
+kedo 1
+module m
+
+// Fixed-point decimals (ADR-0008) and quoted map keys (ADR-0009).
+terrain plains_cost {
+    cost = 1.25
+    climb = -0.5
+    big = 1_000.000_5
+    by_biome = { plains = 1.0  mountain = 2.25 }
+    scenes = {
+        "role:bridge_west" = riverbed
+        "biome:swamp" = "marsh"
+    }
+}
+
+// Numeric segments of a qualified id are not decimals.
+terrain place.1.5 { next = terrain:place.1.5 }

@@ -113,6 +113,23 @@ public static class SchemaLoader
             Report(d, catalog, owner, $"field `{f.Name}` of `{owner}` uses unknown record `{f.RecordId}`");
         }
 
+        if (f.Kind == ValueKind.Map)
+        {
+            if (f.Element is null)
+            {
+                Report(d, catalog, owner, $"map field `{f.Name}` of `{owner}` needs an `element` descriptor for its values");
+            }
+            else
+            {
+                CheckField(f.Element, registry, d, catalog, owner);
+            }
+
+            if (f.KeysEnumId is not null && registry.FindEnum(f.KeysEnumId) is null)
+            {
+                Report(d, catalog, owner, $"map field `{f.Name}` of `{owner}` uses unknown enum `{f.KeysEnumId}` for its keys");
+            }
+        }
+
         if (f.Kind == ValueKind.List)
         {
             if (f.Element is null)
@@ -173,6 +190,8 @@ public static class SchemaLoader
             "asset" => ValueKind.Asset,
             "record" => ValueKind.Record,
             "list" => ValueKind.List,
+            "decimal" => ValueKind.Decimal,
+            "map" => ValueKind.Map,
             _ => ValueKind.Any,
         };
         var strategy = Text(item, "strategy") switch
@@ -205,6 +224,13 @@ public static class SchemaLoader
             ListStrategy = strategy,
             KeyField = Text(item, "key") ?? "id",
             Element = element,
+            Scale = (int)(Int(item, "scale") ?? 2),
+            KeysEnumId = Text(item, "keys"),
+            MinItems = (int?)Int(item, "min_items"),
+            MaxItems = (int?)Int(item, "max_items"),
+            MinLength = (int?)Int(item, "min_length"),
+            MaxLength = (int?)Int(item, "max_length"),
+            OneOf = item.Fields.TryGetValue("one_of", out _) ? Strings(item, "one_of") : null,
         };
     }
 

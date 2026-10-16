@@ -113,14 +113,19 @@ public static class JsonImporter
     {
         if (value.ValueKind == JsonValueKind.Null)
         {
+            // KEDO has no null: the field is left out, and the comment keeps the difference visible in review.
+            sb.Append(' ', depth * 4).Append("// ").Append(name).Append(" = null in the JSON: KEDO has no null, the field is omitted\n");
             return;
         }
 
-        var fieldName = Identifier.IsMatch(name) ? name : Sanitize(name);
-        sb.Append(' ', depth * 4).Append(fieldName).Append(" = ");
-        WriteValue(sb, depth, fieldName, value, options);
+        sb.Append(' ', depth * 4).Append(Key(name)).Append(" = ");
+        WriteValue(sb, depth, name, value, options);
         sb.Append('\n');
     }
+
+    /// <summary>A key as KEDO writes it: identifiers bare, anything else quoted (ADR-0009), never renamed.</summary>
+    private static string Key(string name)
+        => Identifier.IsMatch(name) ? name : "\"" + name.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
 
     private static void WriteValue(StringBuilder sb, int depth, string fieldName, JsonElement value, JsonImportOptions options)
     {
@@ -135,8 +140,20 @@ public static class JsonImporter
                 }
                 else
                 {
-                    // KEDO has no floats: keep two decimals as hundredths and flag it.
-                    sb.Append(((long)Math.Round(value.GetDouble() * 100)).ToString(CultureInfo.InvariantCulture)).Append(" /* TODO: was ").Append(value.GetRawText()).Append(", stored as hundredths */");
+                    // Fixed-point decimal (ADR-0008), written as the JSON wrote it so `1.0` stays `1.0`.
+                    var raw = value.GetRawText();
+                    var text = raw.Contains('e') || raw.Contains('E')
+                        ? (value.TryGetDecimal(out var m) ? m.ToString(CultureInfo.InvariantCulture) : raw)
+                        : raw;
+                    var dot = text.IndexOf('.');
+                    if (dot > 0 && text.Length - dot - 1 <= 9 && !text.Contains('e') && !text.Contains('E'))
+                    {
+                        sb.Append(text);
+                    }
+                    else
+                    {
+                        sb.Append(((long)Math.Round(value.GetDouble())).ToString(CultureInfo.InvariantCulture)).Append(" /* TODO: was ").Append(raw).Append(", more than 9 decimal places */");
+                    }
                 }
 
                 break;
@@ -199,9 +216,10 @@ public static class JsonImporter
             case JsonValueKind.Object:
             {
                 var fields = value.EnumerateObject().Where(f => f.Value.ValueKind != JsonValueKind.Null).ToList();
+                var nulls = value.EnumerateObject().Where(f => f.Value.ValueKind == JsonValueKind.Null).Select(f => f.Name).ToList();
                 if (fields.Count == 0)
                 {
-                    sb.Append("{}");
+                    sb.Append(nulls.Count == 0 ? "{}" : $"{{ /* {string.Join(", ", nulls)} = null in the JSON: omitted */ }}");
                     break;
                 }
 
@@ -216,9 +234,13 @@ public static class JsonImporter
                             sb.Append("  ");
                         }
 
-                        var fname = Identifier.IsMatch(fields[k].Name) ? fields[k].Name : Sanitize(fields[k].Name);
-                        sb.Append(fname).Append(" = ");
-                        WriteValue(sb, depth, fname, fields[k].Value, options);
+                        sb.Append(Key(fields[k].Name)).Append(" = ");
+                        WriteValue(sb, depth, fields[k].Name, fields[k].Value, options);
+                    }
+
+                    if (nulls.Count > 0)
+                    {
+                        sb.Append("  /* ").Append(string.Join(", ", nulls)).Append(" = null in the JSON: omitted */");
                     }
 
                     sb.Append(" }");
@@ -226,7 +248,7 @@ public static class JsonImporter
                 else
                 {
                     sb.Append("{\n");
-                    foreach (var f in fields)
+                    foreach (var f in value.EnumerateObject())
                     {
                         WriteField(sb, depth + 1, f.Name, f.Value, options);
                     }

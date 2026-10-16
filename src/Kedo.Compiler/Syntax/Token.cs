@@ -29,6 +29,8 @@ public enum TokenKind : ushort
     Integer,
     /// <summary>Integer immediately followed by <c>s</c>, <c>min</c>, <c>h</c> or <c>d</c>.</summary>
     Duration,
+    /// <summary>Fixed-point decimal <c>digits '.' digits</c> (ADR-0008).</summary>
+    Decimal,
     /// <summary>Double-quoted string with escapes.</summary>
     String,
     /// <summary><c>type:id</c> or <c>type:module/id</c> as one token.</summary>

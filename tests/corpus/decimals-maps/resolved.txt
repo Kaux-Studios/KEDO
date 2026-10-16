@@ -1,0 +1,15 @@
+terrain place.1.5
+    next = terrain:place.1.5
+    hash 79fafa8b9070589ad863a57eba8e13db
+terrain plains_cost
+    cost = 1.25
+    climb = -0.5
+    big = 1000.0005
+    by_biome
+        plains = 1.0
+        mountain = 2.25
+    scenes
+        "role:bridge_west" = riverbed
+        "biome:swamp" = "marsh"
+    hash 82e6cc28d27935075677b0b6b05b8ab6
+catalog 822d35f993cabb3b2d4c091d81606863

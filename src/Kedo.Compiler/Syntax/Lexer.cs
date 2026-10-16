@@ -194,12 +194,40 @@ public static class Lexer
                     {
                         while (pos < text.Length && Digits.Contains(text[pos])) pos++;
                         kind = TokenKind.Integer;
+
+                        // `1.25` is a decimal (ADR-0008), except as a segment of a qualified id (`place.1.5`).
+                        if (pos + 1 < text.Length && text[pos] == '.' && Digits.Contains(text[pos + 1]) && text[pos + 1] != '_' && (start == 0 || text[start - 1] != '.'))
+                        {
+                            pos++;
+                            var fractionStart = pos;
+                            while (pos < text.Length && Digits.Contains(text[pos])) pos++;
+                            kind = TokenKind.Decimal;
+                            var fractionDigits = 0;
+                            for (var i = fractionStart; i < pos; i++)
+                            {
+                                if (text[i] != '_') fractionDigits++;
+                            }
+
+                            if (fractionDigits > 9)
+                            {
+                                flags |= TokenFlags.Malformed;
+                                diagnostics.Error("K1006", $"decimal `{source.GetText(new TextSpan(start, pos - start))}` has {fractionDigits} fractional digits; the limit is 9", source.Path, new TextSpan(start, pos - start));
+                            }
+                        }
+
                         var unitStart = pos;
                         while (pos < text.Length && IdentContinue.Contains(text[pos])) pos++;
                         if (pos > unitStart)
                         {
                             var unit = text[unitStart..pos];
-                            if (unit.SequenceEqual("s"u8) || unit.SequenceEqual("min"u8) || unit.SequenceEqual("h"u8) || unit.SequenceEqual("d"u8))
+                            var isUnit = unit.SequenceEqual("s"u8) || unit.SequenceEqual("min"u8) || unit.SequenceEqual("h"u8) || unit.SequenceEqual("d"u8);
+                            if (isUnit && kind == TokenKind.Decimal)
+                            {
+                                kind = TokenKind.Unknown;
+                                flags |= TokenFlags.Malformed;
+                                diagnostics.Error("K1002", $"durations are whole numbers: write `{source.GetText(new TextSpan(start, pos - start))}` in a smaller unit", source.Path, new TextSpan(start, pos - start));
+                            }
+                            else if (isUnit)
                             {
                                 kind = TokenKind.Duration;
                             }

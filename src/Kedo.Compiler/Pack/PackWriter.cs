@@ -143,6 +143,7 @@ public static class PackWriter
         {
             case RInt i: s.WriteByte((byte)PackTag.Int); W64(s, i.Number); break;
             case RDuration d: s.WriteByte((byte)PackTag.Duration); W64(s, d.Minutes); break;
+            case RDecimal m: s.WriteByte((byte)PackTag.Decimal); W64(s, m.Units); s.WriteByte((byte)m.Scale); break;
             case RBool b: s.WriteByte((byte)PackTag.Bool); s.WriteByte(b.Flag ? (byte)1 : (byte)0); break;
             case RText t: s.WriteByte((byte)PackTag.Text); W32(s, strings.Id(t.Text)); break;
             case REnum e: s.WriteByte((byte)PackTag.Enum); W32(s, strings.Id(e.Name)); break;

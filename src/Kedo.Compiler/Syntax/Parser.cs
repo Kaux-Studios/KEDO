@@ -84,6 +84,7 @@ public sealed class Parser
         TokenKind.String => "string",
         TokenKind.Integer => "number",
         TokenKind.Duration => "duration",
+        TokenKind.Decimal => "decimal",
         TokenKind.Reference => $"reference `{_source.GetText(t.Span)}`",
         _ => $"`{_source.GetText(t.Span)}`",
     };
@@ -430,6 +431,8 @@ public sealed class Parser
                 Close();
                 return;
             case TokenKind.Identifier:
+            case TokenKind.String when Peek(1) is TokenKind.Equals or TokenKind.EqualsBang or TokenKind.PlusEquals or TokenKind.MinusEquals:
+                // A quoted key (`"role:city_b" = drylands`) writes a map key that is not an identifier (ADR-0009).
                 Open(NodeKind.Field);
                 Advance();
                 if (At(TokenKind.Equals) || At(TokenKind.EqualsBang) || At(TokenKind.PlusEquals) || At(TokenKind.MinusEquals))
@@ -456,7 +459,7 @@ public sealed class Parser
     {
         switch (Peek())
         {
-            case TokenKind.Integer or TokenKind.Duration or TokenKind.String or TokenKind.KwTrue or TokenKind.KwFalse:
+            case TokenKind.Integer or TokenKind.Duration or TokenKind.Decimal or TokenKind.String or TokenKind.KwTrue or TokenKind.KwFalse:
                 Open(NodeKind.LiteralExpr);
                 Advance();
                 Close();
@@ -484,7 +487,7 @@ public sealed class Parser
                 Expect(TokenKind.RParen, "`)` to close the expression");
                 Close();
                 return;
-            case TokenKind.Minus when Peek(1) is TokenKind.Integer or TokenKind.Duration:
+            case TokenKind.Minus when Peek(1) is TokenKind.Integer or TokenKind.Duration or TokenKind.Decimal:
                 // Negative literal: `-` immediately followed by a number is one LiteralExpr (`mood_shift = -1`).
                 Open(NodeKind.LiteralExpr);
                 Advance();
@@ -630,7 +633,7 @@ public sealed class Parser
     {
         switch (Peek())
         {
-            case TokenKind.Integer or TokenKind.Duration or TokenKind.String or TokenKind.KwTrue or TokenKind.KwFalse:
+            case TokenKind.Integer or TokenKind.Duration or TokenKind.Decimal or TokenKind.String or TokenKind.KwTrue or TokenKind.KwFalse:
                 Open(NodeKind.LiteralExpr);
                 Advance();
                 Close();

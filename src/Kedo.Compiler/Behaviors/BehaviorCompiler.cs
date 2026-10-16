@@ -526,6 +526,10 @@ public sealed class BehaviorCompiler
                 var text = Text(own[0]);
                 switch (tk.Kind)
                 {
+                    case TokenKind.Decimal:
+                        // Decimals are data in 1.x (ADR-0008): the VM works with integers only.
+                        _d.Error("K5007", $"decimal `{text}` cannot be used in a hook or function; decimals are data in KEDO 1.x", _file, tk.Span);
+                        return target;
                     case TokenKind.Integer:
                         Emit(Instr.AImm(OpCode.LoadConst, target, Const(long.Parse(text.Replace("_", ""), System.Globalization.CultureInfo.InvariantCulture))), node);
                         return target;

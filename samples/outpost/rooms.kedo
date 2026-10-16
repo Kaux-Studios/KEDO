@@ -11,7 +11,7 @@ abstract room base_room {
 /// Salas presurizadas consumen oxígeno y agua por tripulante.
 mixin pressurized {
     component life_support { oxygen = -2  water = -1 }
-    tags = [pressurized]
+    tags += [pressurized]
 }
 
 /// Salas con energía propia.

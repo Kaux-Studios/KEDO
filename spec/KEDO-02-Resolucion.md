@@ -28,11 +28,12 @@ Defaults(esquema del tipo) → Resuelto(P) → M1 … Mn (aplanados) → Propio(
 
 | Clase | `k = v` | `k =! v` | `k += [..]` | `k -= [..]` | `k[clave] { }` |
 |---|---|---|---|---|---|
-| Escalar (int, bool, text, duration, enum, referencia, asset) | reemplaza | — (K3005) | — | — | — |
-| Record | mezcla recursiva campo a campo | reemplaza entero | — | — | — |
+| Escalar (int, decimal, bool, text, duration, enum, referencia, asset) | reemplaza | — (K3005) | — | — | — |
+| Record | mezcla recursiva campo a campo (`= { }` sobre uno heredado no vacío: advertencia K3015) | reemplaza entero | — | — | — |
+| Mapa (`kind = map`, ADR-0009) | mezcla clave a clave | reemplaza entero | — | — | — |
 | Lista `atomic` (default si el esquema no dice otra cosa) | reemplaza entera (K3011 advierte si la heredada no era vacía) | reemplaza | — (K3005) | — | — |
-| Lista `set` (escalares únicos) | agrega los ausentes | reemplaza | agrega los ausentes | quita por valor exacto (K3004 si falta) | — |
-| Lista `keyed(k)` (records con clave única) | mezcla por clave; claves nuevas al final | reemplaza | agrega (clave existente: K3006) | quita por clave (K3004 si falta) | mezcla sobre el elemento |
+| Lista `set` (escalares únicos) | agrega los ausentes (K3014 advierte si la heredada no era vacía) | reemplaza | agrega los ausentes | quita por valor exacto (K3004 si falta) | — |
+| Lista `keyed(k)` (records con clave única) | mezcla por clave; claves nuevas al final (K3014 advierte cuando agrega a una heredada) | reemplaza | agrega (clave existente: K3006) | quita por clave (K3004 si falta) | mezcla sobre el elemento |
 | Lista `append` | concatena | reemplaza | concatena | — (K3005) | — |
 | Componentes (`keyed(tipo)`) | `component t { }` mezcla o agrega | — | — | `remove component t` | — |
 | Tags (`set`) | agrega | reemplaza | agrega | quita | — |
@@ -42,7 +43,7 @@ Defaults(esquema del tipo) → Resuelto(P) → M1 … Mn (aplanados) → Propio(
 - R7. Listas: la estrategia la declara el **esquema del campo**. Sin estrategia es `atomic`. Nunca hay concatenación por defecto (lección de RimWorld). No hay edición por índice.
 - R8. Orden resultante en `set`/`keyed`/`append`: elementos heredados primero en su orden, luego los agregados en orden de autoría. Para el hash, el esquema decide si el orden es significativo; si no, se canonicaliza por clave.
 - R9. Las referencias son escalares: se resuelven a ids, nunca se inlinean ni mezclan el objeto apuntado.
-- R10. Tags: unión por defecto; es el único caso donde reemplazar por defecto sorprendería.
+- R10. Tags: unión por defecto; es el único caso donde reemplazar por defecto sorprendería. Revisado el 16/10/2026 ([ADR-0010](adr/0010-diagnosticos-de-mezcla-y-orden-de-declaracion.md)): la unión con `=` sigue igual pero advierte (K3014); la forma canónica de agregar es `+=` y la de reemplazar `=!`.
 
 ## 4. Borrado
 
@@ -60,7 +61,7 @@ Razón (anexo I §5): el enlace tardío obliga a cerrar cada campo en una clausu
 ## 6. Procedencia y `explain`
 
 - R16. Cada objeto resuelto conserva, fuera del hash, `ruta → { archivo, span, objeto, capa ∈ {default, parent, mixin(nombre), own, removed} }` para cada hoja, elemento de lista y componente, apuntando al **sitio de autoría original**.
-- R17. `kedo explain tipo:id.ruta` imprime el valor ganador, su origen y cada candidato sombreado en orden de capas. Es la herramienta principal para "¿de dónde salió este valor?" tanto para personas como para agentes.
+- R17. `kedo explain tipo:id.ruta` imprime el valor ganador, su origen y cada candidato sombreado en orden de capas; en listas y mapas, además, el origen de cada elemento (lo heredado aparece como `parent <objeto>`). Es la herramienta principal para "¿de dónde salió este valor?" tanto para personas como para agentes.
 - R18. Representación compacta: arrays `(índice de ruta → id de origen)` compartidos con el padre; alternativa de recálculo bajo demanda (la resolución de un objeto es barata y determinista).
 
 ## 7. Ciclos, límites y determinismo
@@ -73,7 +74,7 @@ Razón (anexo I §5): el enlace tardío obliga a cerrar cada campo en una clausu
 ## 8. Validación en dos etapas
 
 - R23. **Etapa A, por declaración** (sin resolver): errores de parseo; tipo, componente, hook o campo desconocidos (esquemas cerrados, con sugerencia); clase de valor incorrecta (K4001); operación de lista no permitida para la estrategia (K3005); padre o mixin ausente; id duplicado. Ubicación exacta de autoría.
-- R24. **Etapa B, por objeto resuelto concreto** (los `abstract` se saltan): campos obligatorios (K4002), rangos (K4004), enums (K4003), referencia inexistente (K4005) o de tipo equivocado (K4006), asset ausente del manifiesto (K4007, advertencia en modo rápido), invariantes declaradas por el esquema del juego (K4008).
+- R24. **Etapa B, por objeto resuelto concreto** (los `abstract` se saltan): campos obligatorios (K4002, salvo si el campo se escribió y su valor ya fue rechazado), rangos (K4004), escala decimal (K4009), cantidad de elementos (K4010), largo de texto (K4011), texto fuera de `one_of` (K4012), enums (K4003), referencia inexistente (K4005) o de tipo equivocado (K4006), asset ausente del manifiesto (K4007, advertencia en modo rápido), invariantes declaradas por el esquema del juego (K4008).
 - R25. Todo diagnóstico de etapa B cita el objeto resuelto y la ruta, el origen de autoría por procedencia y la cadena de herencia. Errores idénticos con el mismo origen se agrupan: "`max` fuera de rango, definido en base.kedo:12, afecta a 37 objetos".
 - R26. Los validadores **acumulan**, no lanzan; el resolver devuelve el catálogo con su lista de diagnósticos aunque haya errores; el juego rechaza cargar con algún error.
 
@@ -97,14 +98,14 @@ abstract unit creature {
 mixin elite {
     component stats { hp = 250  spd = 7 }
     component loot  { table += [ { id = trophy  weight = 1 } ]  table -= [hide] }
-    tags = [elite]
+    tags += [elite]
     abilities = [ability:roar]
 }
 
 unit wolf extends creature {
     component stats { hp = 120 }
     abilities = [ability:bite]
-    tags = [pack]
+    tags += [pack]
 }
 
 unit alpha_wolf extends wolf with elite {
@@ -137,6 +138,8 @@ Orden: `creature → wolf → alpha_wolf`.
 | K3011 | Lista `atomic` heredada no vacía reemplazada sin `=!` (advertencia) |
 | K3012 | Ciclo entre campos calculados del esquema |
 | K3013 | Anidamiento de records > 16 |
+| K3014 | `=` agrega a una lista `set` o `keyed` heredada no vacía (advertencia; `+=` o `=!`) |
+| K3015 | `= { }` sobre un record heredado no vacío no cambia nada (advertencia; `=! { }`) |
 | K4001 | Clase de valor incorrecta |
 | K4002 | Campo obligatorio ausente en objeto concreto |
 | K4003 | Valor de enumeración inválido |
@@ -145,11 +148,16 @@ Orden: `creature → wolf → alpha_wolf`.
 | K4006 | Referencia a objeto de otro tipo |
 | K4007 | Asset ausente del manifiesto |
 | K4008 | Invariante del esquema del juego incumplida |
+| K4009 | Decimal con más decimales que la escala del campo |
+| K4010 | Lista o mapa fuera de `min_items`/`max_items` |
+| K4011 | Texto fuera de `min_length`/`max_length` |
+| K4012 | Texto que no está en `one_of` |
 | K5001 | Hook: variable o campo de contexto desconocido |
 | K5002 | Función recursiva o ciclo de llamadas |
 | K5003 | Tipo incompatible en expresión |
 | K5004 | `wait` en un hook que no admite suspensión |
 | K5005 | `apply` en un hook que no admite efectos |
+| K5007 | Decimal dentro de un hook, una función o una expresión (los decimales son datos en 1.x) |
 
 ## 12. Decisiones para la revisión
 

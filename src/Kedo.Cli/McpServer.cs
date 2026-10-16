@@ -256,7 +256,7 @@ internal sealed class KedoTools
     {
         var ws = Workspace.Load(Array.Empty<string>(), schema_paths);
         using var stream = new MemoryStream();
-        using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
+        using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }))
         {
             JsonSchemaWriter.Write(ws.Schema, writer);
         }

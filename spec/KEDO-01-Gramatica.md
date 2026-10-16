@@ -45,7 +45,8 @@ actor depot_sentinel extends sentinel_machine {
 | Identificador | `[a-z_][a-z0-9_]*`. Minúsculas y guion bajo; el formateador no lo cambia, el parser lo exige (K1003) |
 | Id calificado | `ident ('.' (ident | entero | palabra-reservada))*`, por ejemplo `bridge.reinforce`, `place.gen.plains.1` o `action.return`. Solo el primer segmento debe ser un identificador no reservado. Solo en cabeceras de declaración y en referencias |
 | Ruta de módulo | `ident '/' id-calificado`, por ejemplo `core/basic_item`. Solo en referencias a otro módulo |
-| Entero | `[0-9]+` con `_` opcional como separador (`1_500`). Un `-` pegado a un entero o duración en posición de valor forma un literal negativo (`mood_shift = -1`); cualquier otra expresión con `-` va entre paréntesis. Sin flotantes en 1.x |
+| Entero | `[0-9]+` con `_` opcional como separador (`1_500`). Un `-` pegado a un entero o duración en posición de valor forma un literal negativo (`mood_shift = -1`); cualquier otra expresión con `-` va entre paréntesis |
+| Decimal | `[0-9_]+ '.' [0-9_]+`, hasta 9 decimales (K1006): `1.25`, `-0.5`, `1_000.5`. Punto fijo, nunca coma flotante; no se reconoce después de un `.` (`place.1.5` es un id calificado). Sólo como dato: dentro de hooks, funciones y expresiones es K5007 ([ADR-0008](adr/0008-decimales-de-punto-fijo.md)) |
 | Duración | entero seguido sin espacio de `s`, `min`, `h` o `d` (`30min`, `2h`). Un solo token; se baja a entero en la unidad base del esquema (minutos por defecto) |
 | Cadena | `"..."` con escapes `\" \\ \n \t \u{XXXX}`. Sin cadenas multilínea en v0.1 |
 | Booleano | `true`, `false` |
@@ -90,7 +91,7 @@ annotation  = "@" ident [ "(" [ argument { "," argument } ] ")" ] ;
 
 ```ebnf
 entry        = field | component | removal | hook | function ;
-field        = ident ( "=" | "+=" | "-=" | "=!" ) value
+field        = ( ident | string ) ( "=" | "+=" | "-=" | "=!" ) value   (* string: clave de mapa, ADR-0009 *)
              | ident "[" key "]" body ;                       (* elemento de lista con clave *)
 component    = "component" ident body ;
 removal      = "remove" ( "component" ident | ident { "." ident } ) ;
@@ -99,7 +100,8 @@ key          = ident | qualified-id | string | integer ;
 
 | Forma | Significado (detalle en KEDO-02) |
 |---|---|
-| `k = v` | Escalar: reemplaza. Record: mezcla recursiva. Lista: según estrategia del esquema (`atomic` reemplaza; `set` y `keyed` agregan) |
+| `k = v` | Escalar: reemplaza. Record o mapa: mezcla recursiva. Lista: según estrategia del esquema (`atomic` reemplaza; `set` y `keyed` agregan, con advertencia K3014 si heredaban elementos: la forma canónica de agregar es `+=`) |
+| `"clave" = v` | Entrada de un mapa cuya clave no es un identificador (`"role:city_b" = drylands`) |
 | `k =! v` | Reemplazo total de un record o lista, sin mezcla |
 | `k += [..]` | Agrega elementos (listas `set`, `keyed`, `append`) |
 | `k -= [..]` | Quita elementos por valor o por clave |
@@ -113,7 +115,7 @@ Las entradas de un cuerpo se separan por espacio en blanco o `;`. Varias entrada
 ## 6. Valores
 
 ```ebnf
-value   = integer | duration | string | boolean | ident        (* enum *)
+value   = integer | decimal | duration | string | boolean | ident   (* enum *)
         | reference | list | record | "(" expression ")" ;
 list    = "[" [ value { separator value } [ "," ] ] "]" ;
 separator = "," | newline ;
@@ -124,6 +126,7 @@ record  = body ;
 
 - Un identificador suelto en posición de valor es un **valor de enumeración** del esquema (`context = travel`, `resolution = d20`). El esquema decide si es válido (K4003). Una palabra reservada también vale como valor de enumeración (`strategy = set`), porque ningún valor empieza con palabra reservada; en cambio no puede ser nombre de objeto ni de campo.
 - Un record es un bloque `{ k = v ... }`; sus claves las fija el esquema del campo (cerrado: clave desconocida es K2005 con sugerencia).
+- Un mapa (`kind = map` en el esquema) usa el mismo bloque con claves libres; una clave que no es identificador va entre comillas: `scene_table = { "role:bridge_west" = riverbed }` ([ADR-0009](adr/0009-mapas-y-restricciones-de-esquema.md)).
 - Una expresión compuesta solo aparece entre paréntesis (§7). Así `k = v` termina sin necesidad de salto de línea significativo.
 
 ## 7. Expresiones
@@ -143,7 +146,7 @@ postfix    = primary { "." ident | "(" [ expression { "," expression } ] ")" } ;
 primary    = integer | duration | string | boolean | reference | ident | "(" expression ")" ;
 ```
 
-- Tipos: `int` (64 bits), `bool`, `text`, `duration` (entero en unidad base), referencias, enums, listas y records del esquema. Sin flotantes: división entera, `%` resto; porcentajes en puntos básicos si el esquema lo pide.
+- Tipos: `int` (64 bits), `bool`, `text`, `duration` (entero en unidad base), referencias, enums, listas y records del esquema. Sin flotantes ni decimales (K5007): división entera, `%` resto; porcentajes en puntos básicos si el esquema lo pide.
 - Un identificador en expresión es una variable (`ctx`, parámetros, `let`), nunca un enum; los enums en expresiones van calificados `tipo.valor` (`outcome.success`). El nombre del tipo de enum no puede ser una palabra reservada (`option`, `signal`): el juego elige nombres de enum que no choquen.
 - En cuerpos de declaración, las expresiones se evalúan **una vez al resolver** sobre literales y constantes del módulo; no hay `self`, `super` ni enlace tardío (ADR-0005). Referencias a otros campos del mismo objeto no están permitidas en v0.1; los campos calculados llegan como característica del esquema (KEDO-02 §5).
 
@@ -210,7 +213,7 @@ Todos los `.kedo` bajo ese directorio pertenecen al módulo. Un objeto puede her
 5. **Mixins en v0.1** (`with`), con advertencia cuando dos mixins escriben el mismo campo. Alternativa: diferir a v0.2.
 6. **Funciones sin recursión ni bucles** en v0.1. Los bucles acotados llegan con presupuesto en v0.2 si el contenido los pide.
 7. **`asset` como declaración** con id estable, resuelta por el manifiesto del motor. Alternativa: ruta literal en el campo (descartada: no sobrevive a renombres).
-8. **Durations como literal de un token** y enteros sin flotantes.
+8. **Durations como literal de un token** y enteros sin flotantes. Revisado el 16/10/2026: decimales de punto fijo como datos ([ADR-0008](adr/0008-decimales-de-punto-fijo.md)).
 
 ## 12. Códigos de diagnóstico de esta sección
 
@@ -221,6 +224,7 @@ Todos los `.kedo` bajo ese directorio pertenecen al módulo. Un objeto puede her
 | K1003 | Identificador con mayúsculas o caracteres inválidos |
 | K1004 | Cadena sin cerrar / escape inválido |
 | K1005 | Expresión compuesta fuera de paréntesis en un valor |
+| K1006 | Decimal con más de 9 decimales |
 | K2001 | Tipo no registrado |
 | K2002 | Id duplicado (dos ubicaciones) |
 | K2003 | Padre de otro tipo |

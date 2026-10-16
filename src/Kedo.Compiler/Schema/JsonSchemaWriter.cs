@@ -167,7 +167,40 @@ public static class JsonSchemaWriter
                 break;
             case ValueKind.Text:
                 w.WriteString("type", "string");
+                if (f.MinLength is { } minLength) w.WriteNumber("minLength", minLength);
+                if (f.MaxLength is { } maxLength) w.WriteNumber("maxLength", maxLength);
+                if (f.OneOf is { } oneOf)
+                {
+                    w.WriteStartArray("enum");
+                    foreach (var value in oneOf) w.WriteStringValue(value);
+                    w.WriteEndArray();
+                }
+
                 if (f.DefaultText is { } dt) w.WriteString("default", dt);
+                break;
+            case ValueKind.Decimal:
+                w.WriteString("type", "number");
+                w.WriteNumber("multipleOf", 1m / (decimal)Math.Pow(10, f.Scale));
+                if (f.Min is { } dmin) w.WriteNumber("minimum", dmin);
+                if (f.Max is { } dmax) w.WriteNumber("maximum", dmax);
+                break;
+            case ValueKind.Map:
+                w.WriteString("type", "object");
+                if (f.KeysEnumId is not null)
+                {
+                    w.WriteStartObject("propertyNames");
+                    w.WriteString("$ref", "#/$defs/enum:" + f.KeysEnumId);
+                    w.WriteEndObject();
+                }
+
+                if (f.MinItems is { } minProps) w.WriteNumber("minProperties", minProps);
+                if (f.MaxItems is { } maxProps) w.WriteNumber("maxProperties", maxProps);
+                if (f.Element is not null)
+                {
+                    w.WritePropertyName("additionalProperties");
+                    WriteField(w, f.Element);
+                }
+
                 break;
             case ValueKind.Duration:
                 w.WriteString("type", "string");
@@ -200,6 +233,8 @@ public static class JsonSchemaWriter
                 break;
             case ValueKind.List:
                 w.WriteString("type", "array");
+                if (f.MinItems is { } minItems) w.WriteNumber("minItems", minItems);
+                if (f.MaxItems is { } maxItems) w.WriteNumber("maxItems", maxItems);
                 if (f.Element is not null)
                 {
                     w.WritePropertyName("items");
@@ -222,6 +257,7 @@ public static class JsonSchemaWriter
             }
         }
 
+        if (f.Kind == ValueKind.Decimal) w.WriteNumber("scale", f.Scale);
         if (f.TargetType is not null) w.WriteString("target", f.TargetType);
         if (f.AssetKind is not null) w.WriteString("asset_kind", f.AssetKind);
         w.WriteEndObject();

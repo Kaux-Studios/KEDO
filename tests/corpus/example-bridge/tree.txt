@@ -50,7 +50,7 @@ File
         LiteralExpr `"scene.inspect"`
       Field `repeat_scope` `=`
         NameExpr `character`
-      Field `options` `=`
+      Field `options` `+=`
         ListExpr `[` `]`
           Body `{` `}`
             Field `id` `=`
@@ -91,7 +91,7 @@ File
         LiteralExpr `"scene.repair"`
       Field `repeat_scope` `=`
         NameExpr `world`
-      Field `options` `=`
+      Field `options` `+=`
         ListExpr `[` `]`
           Body `{` `}`
             Field `id` `=`

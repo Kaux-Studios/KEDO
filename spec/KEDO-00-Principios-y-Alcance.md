@@ -11,7 +11,7 @@ El núcleo no conoce ningún motor. Un juego lo consume como paquete .NET, regis
 ## Qué no es
 
 - No es un motor de reglas del juego: las reglas (dados, inventario, guardado) viven en el juego. KEDO provee datos resueltos y ejecuta lógica de contenido contra una API restringida que el juego define.
-- No es un lenguaje de propósito general: sin flotantes, sin E/S, sin reloj real, sin azar propio, sin carga dinámica de código. Las capacidades nuevas se agregan como primitivas, no como facilidades generales.
+- No es un lenguaje de propósito general: sin coma flotante (los decimales de datos son de punto fijo, [ADR-0008](adr/0008-decimales-de-punto-fijo.md)), sin E/S, sin reloj real, sin azar propio, sin carga dinámica de código. Las capacidades nuevas se agregan como primitivas, no como facilidades generales.
 - No es un formato de guardado: los frames de la VM son datos que el juego guarda dentro de su propio snapshot.
 
 ## Prioridades, en orden
@@ -38,7 +38,7 @@ Cuando dos prioridades chocan, gana la de número menor, y la decisión se regis
 | Resolver: herencia, import, mixins, componentes, ops, referencias | Catálogo de hooks del juego y sus contextos tipados |
 | Diagnósticos con código, posición y arreglo sugerido | Validadores semánticos del juego |
 | IR, VM determinista, frames serializables, presupuestos | Host: consultas, efectos, azar y reloj conectados a la simulación |
-| Modelo de valores: enteros, booleanos, texto, ids, enums, listas, records | Significado de cada id y de cada efecto |
+| Modelo de valores: enteros, decimales de punto fijo, booleanos, texto, ids, enums, listas, records, mapas | Significado de cada id y de cada efecto |
 | Claves de asset abstractas | Manifiesto y resolución de assets del motor |
 | Registro de extensiones sin reflexión, contextos JSON source-generated | Compilación del catálogo resuelto al modelo del juego |
 | CLI `kedo` y servidor MCP | Integración en el pipeline del juego |
@@ -49,7 +49,7 @@ Cuando dos prioridades chocan, gana la de número menor, y la decisión se regis
 
 - Lenguaje de texto propio con extensión `.kedo`. El AST se serializa a JSON como artefacto de intercambio y compilado; nadie edita ese JSON a mano. [ADR-0003](adr/0003-json-solo-como-artefacto.md).
 - Repositorio aislado de Patriark (público desde el 16/10/2026, licencia propietaria), consumido como paquete NuGet con SemVer. [ADR-0002](adr/0002-repositorio-aislado.md).
-- Valores enteros en el modelo de la VM. Porcentajes en puntos básicos. Sin flotantes en 1.x.
+- Valores enteros en el modelo de la VM. Porcentajes en puntos básicos. Sin coma flotante en 1.x; los decimales de punto fijo existen sólo como datos ([ADR-0008](adr/0008-decimales-de-punto-fijo.md)).
 - Hooks: catálogo cerrado y versionado del juego; señales encoladas, nunca recursivas; efectos idempotentes por clave; presupuesto de pasos en el bucle de despacho.
 - Herramientas para IA desde el inicio: `--json` en toda la CLI, servidor MCP sobre el mismo núcleo, skills y ejemplos dorados en el repo.
 

@@ -31,14 +31,14 @@ public class ResolverTests
         mixin elite {
             component stats { hp = 250  spd = 7 }
             component loot { table += [{ id = trophy  weight = 1 }]  table -= [hide] }
-            tags = [elite]
+            tags += [elite]
             abilities = [ability:roar]
         }
 
         unit wolf extends creature {
             component stats { hp = 120 }
             abilities = [ability:bite]
-            tags = [pack]
+            tags += [pack]
         }
 
         unit alpha_wolf extends wolf with elite {
@@ -73,8 +73,8 @@ public class ResolverTests
 
         var explain = Resolver.Explain(catalog, "unit:alpha_wolf", "stats.hp");
         Assert.Contains("= 250 from mixin elite", explain);
-        Assert.Contains("shadowed: 120 from own", explain);
-        Assert.Contains("shadowed: 100 from own", explain);
+        Assert.Contains("shadowed: 120 from parent unit:wolf", explain);
+        Assert.Contains("shadowed: 100 from parent unit:creature", explain);
 
         var wolf = catalog.ByKey["unit:wolf"];
         Assert.False(wolf.HasErrors, Errors(bag));
@@ -216,5 +216,98 @@ public class ResolverTests
         var child = catalog.ByKey["actor:child"];
         Assert.Equal("2", child.Body.Fields.First(f => f.Key == "x").Value.CanonicalText);
         Assert.Equal(new[] { "leave", "arrive" }, child.Hooks.Select(h => h.HookId));
+    }
+
+    // ----- ADR-0010 -----
+
+    [Fact]
+    public void AssignOnAnInheritedSetOrKeyedListWarnsAndStillMerges()
+    {
+        var (catalog, bag) = Resolve(Permissive(), ("g.kedo", """
+            kedo 1
+            module m
+            guild base { roster = [mara, ilan]  options = [{ id = a }] }
+            guild merged extends base { roster = [tester]  options = [{ id = b }] }
+            guild added extends base { roster += [tester]  options += [{ id = b }] }
+            guild replaced extends base { roster =! [tester] }
+            """));
+        Assert.Equal(2, bag.Items.Count(d => d.Code == "K3014" && d.Severity == Severity.Warning));
+        Assert.Contains(bag.Items, d => d.Code == "K3014" && d.Message.Contains("`+=` to add or `=!` to replace"));
+        Assert.Equal("[mara, ilan, tester]", catalog.ByKey["guild:merged"].Body.Fields.First(f => f.Key == "roster").Value.CanonicalText);
+        Assert.Equal("[mara, ilan, tester]", catalog.ByKey["guild:added"].Body.Fields.First(f => f.Key == "roster").Value.CanonicalText);
+        Assert.Equal("[tester]", catalog.ByKey["guild:replaced"].Body.Fields.First(f => f.Key == "roster").Value.CanonicalText);
+    }
+
+    [Fact]
+    public void AnEmptyRecordAssignedOverAnInheritedOneWarns()
+    {
+        var (catalog, bag) = Resolve(Permissive(), ("r.kedo", """
+            kedo 1
+            module m
+            guild base { resources = { water = 20 } }
+            guild empty extends base { resources = { } }
+            guild cleared extends base { resources =! { } }
+            """));
+        Assert.Single(bag.Items, d => d.Code == "K3015");
+        Assert.Equal("{  }", catalog.ByKey["guild:cleared"].Body.Fields.First(f => f.Key == "resources").Value.CanonicalText);
+    }
+
+    [Fact]
+    public void ARejectedValueIsNotAlsoReportedAsMissing()
+    {
+        var bag = new DiagnosticBag();
+        var schemaText = """
+            kedo 1
+            module s
+            kedo_enum context { values = [travel, node_action] }
+            kedo_type event { fields = [{ name = version  kind = int  required = true }, { name = context  kind = enum  enum = context  required = true }, { name = text_key  kind = text  required = true }] }
+            """;
+        var schema = Kedo.Compiler.Schema.SchemaLoader.Load(new[] { DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(schemaText, "s.kedo"), bag), bag) }, bag);
+        var (_, diagnostics) = Resolve(schema, ("e.kedo", """
+            kedo 1
+            module m
+            event e { version = "1"  context = traveling }
+            """));
+        Assert.Contains(diagnostics.Items, d => d.Code == "K4001");
+        Assert.Contains(diagnostics.Items, d => d.Code == "K4003");
+        Assert.Single(diagnostics.Items, d => d.Code == "K4002");
+        Assert.Contains(diagnostics.Items, d => d.Code == "K4002" && d.Message.Contains("text_key"));
+    }
+
+    [Fact]
+    public void ObjectsKeepTheirDeclarationOrder()
+    {
+        var (catalog, _) = Resolve(Permissive(),
+            ("b.kedo", """
+                kedo 1
+                module m
+                item zeta {}
+                item alpha {}
+                """),
+            ("a.kedo", """
+                kedo 1
+                module m
+                guild mid {}
+                item beta {}
+                """));
+        Assert.Equal(new[] { "item:alpha", "item:beta", "item:zeta", "guild:mid" }.OrderBy(k => k.Split(':')[0], StringComparer.Ordinal).ThenBy(k => k, StringComparer.Ordinal), catalog.Objects.Select(o => o.Key));
+        Assert.Equal(new[] { "item:zeta", "item:alpha", "guild:mid", "item:beta" }, catalog.InDeclarationOrder.Select(o => o.Key));
+    }
+
+    [Fact]
+    public void ExplainListsWhereEachItemCameFrom()
+    {
+        var (catalog, _) = Resolve(Permissive(), ("g.kedo", """
+            kedo 1
+            module m
+            guild base { roster = [mara, ilan] }
+            guild child extends base { roster += [tester] }
+            """));
+        var text = Resolver.Explain(catalog, "guild:child", "roster");
+        Assert.Contains("item: mara from", text);
+        Assert.Contains("item: tester from", text);
+        var lines = text.Split('\n');
+        Assert.Contains("guild:base", lines.First(l => l.Contains("item: mara")));
+        Assert.Contains("from own", lines.First(l => l.Contains("item: tester")));
     }
 }

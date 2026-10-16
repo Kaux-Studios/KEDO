@@ -1,6 +1,6 @@
 ---
 name: kedo-syntax
-description: Reference for reading and writing KEDO (.kedo) content files, the Kaux Enriched Data Object language. Use whenever you create or edit a .kedo file, need the exact syntax of declarations, extends, with (mixins), component, remove, list operators (=, =!, +=, -=, name[key]), references (type:id, asset:id), durations, expressions, hooks (on ... wait/apply/emit) or functions.
+description: Reference for reading and writing KEDO (.kedo) content files, the Kaux Enriched Data Object language. Use whenever you create or edit a .kedo file, need the exact syntax of declarations, extends, with (mixins), component, remove, list operators (=, =!, +=, -=, name[key]), references (type:id, asset:id), durations, fixed-point decimals, maps with quoted keys, expressions, hooks (on ... wait/apply/emit) or functions.
 ---
 
 # KEDO syntax (language 1)
@@ -38,18 +38,20 @@ actor depot_sentinel extends sentinel_machine with armored, fast {   // one pare
 mixin armored { component health { regen = 1 } }      // partial object, no type, applied before own fields
 ```
 
-Entries inside `{ }` are separated by whitespace or `;` (several per line allowed). Values: integers (`1_500`), durations (`30min`, `2h`, `3d`, `45s`; integer minutes at runtime), strings `"..."`, `true`/`false`, enum values (bare identifiers), references `type:id`, lists `[a, b]` (comma **or newline** separated), records `{ k = v }`, and parenthesised constant expressions `(4 + stage * 2)`.
+Entries inside `{ }` are separated by whitespace or `;` (several per line allowed). Values: integers (`1_500`), fixed-point decimals (`1.25`, `-0.5`; data only, never inside hooks, functions or `( )` expressions; the schema's `scale` sets the decimal places and more digits is an error, never rounding), durations (`30min`, `2h`, `3d`, `45s`; integer minutes at runtime), strings `"..."`, `true`/`false`, enum values (bare identifiers), references `type:id`, lists `[a, b]` (comma **or newline** separated), records `{ k = v }`, maps (records with free keys; a key that is not an identifier is quoted: `scene_table = { "role:bridge_west" = riverbed }`), and parenthesised constant expressions `(4 + stage * 2)`.
 
 ## Assignment operators (resolution semantics)
 
 | Form | Scalar | Record | List |
 |---|---|---|---|
-| `k = v` | replace | merge field by field | depends on the list strategy: `atomic` replaces, `set` unions, `keyed` merges by key, `append` concatenates |
+| `k = v` | replace | merge field by field (maps: key by key) | depends on the list strategy: `atomic` replaces, `set` unions, `keyed` merges by key, `append` concatenates |
 | `k =! v` | error | replace whole | replace whole |
 | `k += [..]` | error | error | add items (set/keyed/append) |
 | `k -= [..]` | error | error | remove by value (set) or by key (keyed); error if absent |
 | `k[key] { .. }` | — | — | merge into the keyed item `key` |
 | `remove k.sub` | removes an inherited optional field | | |
+
+To add to an inherited `set` or `keyed` list write `+=` (with `=` it still merges but warns K3014); to replace write `=!`; to change one keyed item write `k[key] { }`. `k = { }` over an inherited record changes nothing (K3015): write `k =! { }` to clear it.
 
 Layers apply in this order: schema defaults → resolved parent → mixins (in `with` order, flattened, first occurrence wins) → own entries. Later wins. There is no `null`, no `self`/`super`, no late binding.
 

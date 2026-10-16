@@ -60,6 +60,26 @@ public sealed record RText(Provenance Provenance, string Text) : ResolvedValue(P
     public override string CanonicalText => "\"" + Text.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
 }
 
+/// <summary>Fixed-point decimal: <see cref="Units"/> / 10^<see cref="Scale"/> (ADR-0008).</summary>
+public sealed record RDecimal(Provenance Provenance, long Units, int Scale) : ResolvedValue(Provenance)
+{
+    /// <inheritdoc />
+    public override string CanonicalText => Format(Units, Scale);
+
+    /// <summary>Decimal text with exactly <paramref name="scale"/> fractional digits (`125`, 2 → `1.25`).</summary>
+    public static string Format(long units, int scale)
+    {
+        if (scale == 0)
+        {
+            return units.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        var negative = units < 0;
+        var digits = (negative ? -(decimal)units : units).ToString(System.Globalization.CultureInfo.InvariantCulture).PadLeft(scale + 1, '0');
+        return (negative ? "-" : "") + digits[..^scale] + "." + digits[^scale..];
+    }
+}
+
 /// <summary>Duration in minutes.</summary>
 public sealed record RDuration(Provenance Provenance, long Minutes) : ResolvedValue(Provenance)
 {
@@ -99,7 +119,13 @@ public sealed record RList(Provenance Provenance, IReadOnlyList<ResolvedValue> I
 public sealed record RRecord(Provenance Provenance, OrderedFields Fields) : ResolvedValue(Provenance)
 {
     /// <inheritdoc />
-    public override string CanonicalText => "{ " + string.Join("  ", Fields.Select(kv => kv.Key + " = " + kv.Value.CanonicalText)) + " }";
+    public override string CanonicalText => "{ " + string.Join("  ", Fields.Select(kv => KeyText(kv.Key) + " = " + kv.Value.CanonicalText)) + " }";
+
+    /// <summary>A field or map key as written: identifiers bare, anything else quoted (ADR-0009).</summary>
+    public static string KeyText(string key)
+        => key.Length > 0 && (char.IsAsciiLetterLower(key[0]) || key[0] == '_') && key.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '_')
+            ? key
+            : "\"" + key.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
 
     /// <summary>An empty record.</summary>
     public static RRecord Empty(Provenance p) => new(p, OrderedFields.Empty);
@@ -227,4 +253,7 @@ public sealed class ResolvedObject
 
     /// <summary>True when stage-B validation found errors; the object stays resolved for tooling but is not exportable.</summary>
     public bool HasErrors { get; internal set; }
+
+    /// <summary>Position of the declaration in the resolver input: files in the order given, declarations in file order (ADR-0010).</summary>
+    public int Order { get; internal set; }
 }

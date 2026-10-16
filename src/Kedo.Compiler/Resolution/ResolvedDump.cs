@@ -66,7 +66,7 @@ public static class ResolvedDump
     {
         foreach (var kv in record.Fields)
         {
-            sb.Append(' ', depth * 4).Append(kv.Key);
+            sb.Append(' ', depth * 4).Append(RRecord.KeyText(kv.Key));
             if (kv.Value is RRecord nested)
             {
                 sb.Append('\n');

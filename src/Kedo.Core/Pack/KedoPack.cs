@@ -15,8 +15,11 @@ public sealed class KedoPack
     /// <summary>Magic bytes.</summary>
     public static ReadOnlySpan<byte> Magic => "KEDO"u8;
 
-    /// <summary>Current pack format.</summary>
-    public const int FormatVersion = 1;
+    /// <summary>Current pack format. 2 adds the decimal tag (ADR-0008); format 1 packs still load.</summary>
+    public const int FormatVersion = 2;
+
+    /// <summary>Oldest pack format this runtime reads.</summary>
+    public const int MinFormatVersion = 1;
 
     /// <summary>Section id of the string table.</summary>
     public const int SectionStrings = 1;
@@ -71,7 +74,7 @@ public sealed class KedoPack
 
         r.Pos = 4;
         var format = r.U32();
-        if (format != FormatVersion)
+        if (format < MinFormatVersion || format > FormatVersion)
         {
             throw new InvalidDataException($"pack format {format} is not supported by this runtime (format {FormatVersion}); rebuild from source");
         }
@@ -193,6 +196,7 @@ public sealed class KedoPack
             case PackTag.Int: return new PackInt(r.I64(), false);
             case PackTag.Duration: return new PackInt(r.I64(), true);
             case PackTag.Bool: return new PackBool(r.U8() != 0);
+            case PackTag.Decimal: return new PackDecimal(r.I64(), r.U8());
             case PackTag.Text or PackTag.Enum or PackTag.Ref: return new PackSymbol(strings[r.U32()], tag);
             case PackTag.List:
             {

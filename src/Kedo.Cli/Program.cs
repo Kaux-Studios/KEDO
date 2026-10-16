@@ -108,7 +108,7 @@ static int Check(string[] paths, bool json, bool dump, bool provenance)
     if (json)
     {
         using var stream = Console.OpenStandardOutput();
-        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
         writer.WriteStartObject();
         writer.WriteString("catalog_hash", catalog.Hash);
         writer.WriteNumber("objects", catalog.Concrete.Count());
@@ -173,7 +173,7 @@ static int Compile(string[] paths, bool json)
     if (json)
     {
         using var stream = Console.OpenStandardOutput();
-        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
         writer.WriteStartObject();
         writer.WriteStartArray("programs");
         foreach (var p in programs)
@@ -248,7 +248,7 @@ static int Build(string[] paths, bool json, string? outPath)
     if (json)
     {
         using var stream = Console.OpenStandardOutput();
-        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
         writer.WriteStartObject();
         writer.WriteBoolean("written", written);
         writer.WriteString("out", outPath);
@@ -286,7 +286,7 @@ static int Catalog(string[] paths, bool json)
     if (json)
     {
         using var stream = Console.OpenStandardOutput();
-        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
         writer.WriteStartObject();
         writer.WriteString("catalog_hash", catalog.Hash);
         writer.WriteStartArray("objects");
@@ -464,7 +464,7 @@ static int Schema(string[] paths, bool json)
     }
 
     using var stream = Console.OpenStandardOutput();
-    using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+    using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
     Kedo.Compiler.Schema.JsonSchemaWriter.Write(registry, writer);
     writer.Flush();
     Console.WriteLine();
@@ -494,7 +494,7 @@ static int Parse(string[] paths, bool json, bool dumpTree)
     if (json)
     {
         using var stream = Console.OpenStandardOutput();
-        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
         writer.WriteStartObject();
         if (dumpTree)
         {
@@ -562,7 +562,7 @@ static int Fmt(string[] paths, bool checkOnly, bool json)
     if (json)
     {
         using var stream = Console.OpenStandardOutput();
-        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
         writer.WriteStartObject();
         writer.WriteStartArray("changed");
         foreach (var f in changed)

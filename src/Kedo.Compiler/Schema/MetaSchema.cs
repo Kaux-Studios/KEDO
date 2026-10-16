@@ -11,7 +11,7 @@ namespace Kedo.Compiler.Schema;
 public static class MetaSchema
 {
     /// <summary>Value kinds accepted in <c>kind = ...</c>.</summary>
-    public static readonly string[] Kinds = { "any", "int", "bool", "text", "duration", "enum", "reference", "asset", "record", "list" };
+    public static readonly string[] Kinds = { "any", "int", "bool", "text", "duration", "enum", "reference", "asset", "record", "list", "decimal", "map" };
 
     /// <summary>List strategies accepted in <c>strategy = ...</c>.</summary>
     public static readonly string[] Strategies = { "atomic", "set", "keyed", "append" };
@@ -38,7 +38,14 @@ public static class MetaSchema
             .Add(new FieldSchema("record", ValueKind.Enum) { Doc = "Record id for kind = record." })
             .Add(new FieldSchema("strategy", ValueKind.Enum) { EnumId = "kedo_strategy", DefaultText = "atomic" })
             .Add(new FieldSchema("key", ValueKind.Enum) { DefaultText = "id", Doc = "Key field for keyed lists." })
-            .Add(new FieldSchema("element", ValueKind.Record) { RecordId = "kedo_field", Doc = "Item descriptor for kind = list." });
+            .Add(new FieldSchema("element", ValueKind.Record) { RecordId = "kedo_field", Doc = "Item descriptor for kind = list, value descriptor for kind = map." })
+            .Add(new FieldSchema("scale", ValueKind.Int) { Min = 0, Max = 9, Doc = "Fractional digits for kind = decimal (default 2)." })
+            .Add(new FieldSchema("keys", ValueKind.Enum) { Doc = "Enum id the keys of a map must belong to." })
+            .Add(new FieldSchema("min_items", ValueKind.Int) { Min = 0, Doc = "Minimum items of a list or entries of a map." })
+            .Add(new FieldSchema("max_items", ValueKind.Int) { Min = 0, Doc = "Maximum items of a list or entries of a map." })
+            .Add(new FieldSchema("min_length", ValueKind.Int) { Min = 0, Doc = "Minimum length of a text (Unicode characters)." })
+            .Add(new FieldSchema("max_length", ValueKind.Int) { Min = 0, Doc = "Maximum length of a text (Unicode characters)." })
+            .Add(new FieldSchema("one_of", ValueKind.List) { ListStrategy = ListStrategy.Set, Element = new FieldSchema("item", ValueKind.Text), Doc = "Allowed values of a text." });
         r.AddRecord(field);
 
         var fields = new FieldSchema("fields", ValueKind.List) { ListStrategy = ListStrategy.Keyed, KeyField = "name", Element = new FieldSchema("item", ValueKind.Record) { RecordId = "kedo_field" } };

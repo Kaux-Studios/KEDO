@@ -27,7 +27,7 @@ event bridge.inspect_damage with at_damaged_bridge, leave_option {
     text_key = "scene.inspect"
     repeat_scope = character
 
-    options = [
+    options += [
         { id = inspect  label_key = "action.inspect"  duration = 30min  resolution = deterministic  exit = node_actions  completes = true
             effects = [{ op = record_observation  target = bridge  value = plan }] }
     ]
@@ -40,7 +40,7 @@ event bridge.reinforce with at_damaged_bridge, leave_option {
     text_key = "scene.repair"
     repeat_scope = world
 
-    options = [
+    options += [
         { id = repair  label_key = "action.repair"  duration = 120min  resolution = d20  exit = node_actions  completes = true
             requirements = [
                 { op = knows_plan  target = bridge }

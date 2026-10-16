@@ -1,0 +1,30 @@
+File
+  Header `kedo` `1` `module` `m`
+  ObjectDecl
+    TypeName `terrain`
+    Name `plains_cost`
+    Body `{` `}`
+      Field `cost` `=`
+        LiteralExpr `1.25`
+      Field `climb` `=`
+        LiteralExpr `-` `0.5`
+      Field `big` `=`
+        LiteralExpr `1_000.000_5`
+      Field `by_biome` `=`
+        Body `{` `}`
+          Field `plains` `=`
+            LiteralExpr `1.0`
+          Field `mountain` `=`
+            LiteralExpr `2.25`
+      Field `scenes` `=`
+        Body `{` `}`
+          Field `"role:bridge_west"` `=`
+            NameExpr `riverbed`
+          Field `"biome:swamp"` `=`
+            LiteralExpr `"marsh"`
+  ObjectDecl
+    TypeName `terrain`
+    Name `place` `.` `1` `.` `5`
+    Body `{` `}`
+      Field `next` `=`
+        RefExpr `terrain:place.1.5`

@@ -36,6 +36,12 @@ internal static class ConstEvaluator
             {
                 var tk = t.OwnTokens(node)[0];
                 var text = t.TextOf(tk);
+                if (t.Tokens[tk].Kind == TokenKind.Decimal)
+                {
+                    d.Error("K5007", $"decimal `{text}` cannot be used in an expression; decimals are data in KEDO 1.x (write the value without parentheses)", file, t.SpanOf(node));
+                    return null;
+                }
+
                 return t.Tokens[tk].Kind switch
                 {
                     TokenKind.Integer => new IntValue(origin, long.Parse(text.Replace("_", ""), System.Globalization.CultureInfo.InvariantCulture)),
