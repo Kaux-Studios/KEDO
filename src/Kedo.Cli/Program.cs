@@ -42,6 +42,8 @@ try
             return Compile(positional.Skip(1).ToArray(), json);
         case "mcp":
             return await Kedo.Cli.McpServer.RunAsync();
+        case "import-json":
+            return ImportJson(positional.Skip(1).ToArray(), valued);
         case "build":
             return Build(positional.Skip(1).ToArray(), json, valued.TryGetValue("--out", out var outPath) ? outPath : null);
         case "fmt":
@@ -69,6 +71,7 @@ static void PrintUsage()
     Console.WriteLine("  explain <paths> <type:id> <path>   Show where a resolved value came from.");
     Console.WriteLine("  compile <paths>    Resolve and compile hooks and functions to IR; print the disassembly.");
     Console.WriteLine("  build <paths> --out=<file.kpk>   Resolve, compile and write the KEDO Pack binary.");
+    Console.WriteLine("  import-json <file.json> --out=<dir> --module=<name> [--map=events:event,items:item] [--enums=f1,f2] [--pack-type=pack]   Draft .kedo files from existing JSON content.");
     Console.WriteLine("  mcp                Start the stdio MCP server (stateless; tools kedo_check, kedo_format, kedo_resolve, kedo_explain, kedo_catalog, kedo_compile, kedo_schema).");
     Console.WriteLine("  fmt <paths>        Rewrite files in canonical form; with --check only report files that would change.");
     Console.WriteLine("Without a registered schema the resolver runs in permissive mode (any type and field; list strategies inferred).");
@@ -264,6 +267,51 @@ static int Build(string[] paths, bool json, string? outPath)
     }
 
     return bag.HasErrors ? 1 : 0;
+}
+
+static int ImportJson(string[] args, Dictionary<string, string> valued)
+{
+    if (args.Length != 1 || !valued.TryGetValue("--out", out var outDir))
+    {
+        Console.Error.WriteLine("usage: kedo import-json <file.json> --out=<dir> --module=<name> [--map=coll:type,...] [--enums=field,...] [--pack-type=pack] [--pack-id=id]");
+        return 2;
+    }
+
+    var options = new Kedo.Compiler.Import.JsonImportOptions
+    {
+        Module = valued.TryGetValue("--module", out var m) ? m : "imported",
+        PackType = valued.TryGetValue("--pack-type", out var pt) ? pt : "pack",
+        PackId = valued.TryGetValue("--pack-id", out var pid) ? pid : null,
+    };
+    if (valued.TryGetValue("--map", out var map))
+    {
+        foreach (var pair in map.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var kv = pair.Split(':');
+            options.Collections[kv[0]] = kv.Length > 1 ? kv[1] : kv[0];
+        }
+    }
+
+    if (valued.TryGetValue("--enums", out var enums))
+    {
+        foreach (var f in enums.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            options.EnumFields.Add(f);
+        }
+    }
+
+    var files = Kedo.Compiler.Import.JsonImporter.Import(File.ReadAllText(args[0]), options);
+    Directory.CreateDirectory(outDir);
+    foreach (var (name, text) in files)
+    {
+        var path = Path.Combine(outDir, name);
+        var bag = new DiagnosticBag();
+        var tree = Parser.Parse(SourceText.FromString(text, path), bag);
+        File.WriteAllText(path, bag.HasErrors ? text : Formatter.Format(tree), new UTF8Encoding(false));
+        Console.WriteLine($"wrote {path}{(bag.HasErrors ? " (with syntax errors; review)" : "")}");
+    }
+
+    return 0;
 }
 
 static int Explain(string[] args)

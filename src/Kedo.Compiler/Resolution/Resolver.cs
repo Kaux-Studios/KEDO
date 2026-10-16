@@ -758,7 +758,7 @@ public sealed class Resolver
         var items = list.Items.ToList();
         foreach (var item in incoming.Items)
         {
-            var key = item is RRecord ? RList.KeyOf(item, list.KeyField) : item.CanonicalText;
+            var key = item is RRecord ? RList.KeyOf(item, list.KeyField) : RList.KeyText(item);
             var idx = key is null ? -1 : items.FindIndex(x => RList.KeyOf(x, list.KeyField) == key);
             if (idx < 0)
             {

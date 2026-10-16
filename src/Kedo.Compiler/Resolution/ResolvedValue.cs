@@ -87,9 +87,12 @@ public sealed record RList(Provenance Provenance, IReadOnlyList<ResolvedValue> I
     /// <inheritdoc />
     public override string CanonicalText => "[" + string.Join(", ", Items.Select(i => i.CanonicalText)) + "]";
 
-    /// <summary>Key text of an item for keyed lists, or null.</summary>
+    /// <summary>Key text of an item for keyed lists, or null. Text keys compare without quotes so `options[risk]` matches `id = "risk"` and `id = risk` alike.</summary>
     public static string? KeyOf(ResolvedValue item, string keyField)
-        => item is RRecord r && r.Fields.TryGetValue(keyField, out var k) ? k.CanonicalText : null;
+        => item is RRecord r && r.Fields.TryGetValue(keyField, out var k) ? KeyText(k) : null;
+
+    /// <summary>Text used for key comparisons.</summary>
+    public static string KeyText(ResolvedValue v) => v is RText t ? t.Text : v.CanonicalText;
 }
 
 /// <summary>Record: ordered fields.</summary>
