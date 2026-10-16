@@ -267,6 +267,7 @@ public class ResolverTests
             kedo 1
             module m
             event e { version = "1"  context = traveling }
+            event child extends e { text_key = "t" }
             """));
         Assert.Contains(diagnostics.Items, d => d.Code == "K4001");
         Assert.Contains(diagnostics.Items, d => d.Code == "K4003");

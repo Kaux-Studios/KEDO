@@ -1,2 +1,1 @@
 error K4005 26:109 `campaign:prototype_9.world.edges[].structure` references `structure:bridge`, which does not exist
-error K4005 26:109 `campaign:test_1.world.edges[].structure` references `structure:bridge`, which does not exist

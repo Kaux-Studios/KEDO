@@ -60,6 +60,7 @@ public sealed class Resolver
     private readonly HashSet<string> _invalid = new(StringComparer.Ordinal);
     private readonly HashSet<string> _warned = new(StringComparer.Ordinal);
     private string _current = "";
+    private bool _objectFailed;
 
     private Resolver(SchemaRegistry schema, DiagnosticBag diagnostics)
     {
@@ -1115,6 +1116,7 @@ public sealed class Resolver
             }
 
             var before = _d.Items.Count;
+            _objectFailed = false;
             var typeSchema = _schema.FindType(obj.Type);
             ValidateRecord(obj.Body, typeSchema?.Body, obj, obj.Key, catalog);
             foreach (var kv in obj.Components)
@@ -1122,7 +1124,8 @@ public sealed class Resolver
                 ValidateRecord((RRecord)kv.Value, _schema.FindComponent(kv.Key), obj, $"{obj.Key}.{kv.Key}", catalog);
             }
 
-            if (_d.Items.Skip(before).Any(d => d.IsError))
+            // An inherited error reported on the ancestor still makes this object not exportable.
+            if (_objectFailed || _d.Items.Skip(before).Any(d => d.IsError))
             {
                 obj.HasErrors = true;
             }
@@ -1135,7 +1138,7 @@ public sealed class Resolver
         {
             foreach (var f in schema.Fields)
             {
-                if (f.Required && !record.Fields.TryGetValue(f.Name, out _) && !_invalid.Contains($"{path}.{f.Name}"))
+                if (f.Required && !record.Fields.TryGetValue(f.Name, out _) && !WasRejected(obj, $"{path}.{f.Name}"))
                 {
                     _d.Error("K4002", $"`{path}` is missing required field `{f.Name}`", obj.Declaration.Origin.File, obj.Declaration.Origin.Span);
                 }
@@ -1157,7 +1160,7 @@ public sealed class Resolver
             case RInt i when fs is not null:
                 if ((fs.Min is { } min && i.Number < min) || (fs.Max is { } max && i.Number > max))
                 {
-                    _d.Add(WithProvenance("K4004", $"`{path}` = {i.Number} is out of range [{fs.Min?.ToString() ?? "-∞"}, {fs.Max?.ToString() ?? "∞"}]", obj, value));
+                    AddOnce(WithProvenance("K4004", $"`{path}` = {i.Number} is out of range [{fs.Min?.ToString() ?? "-∞"}, {fs.Max?.ToString() ?? "∞"}]", obj, value));
                 }
 
                 break;
@@ -1167,7 +1170,7 @@ public sealed class Resolver
                 for (var i = 0; i < dec.Scale; i++) factor *= 10;
                 if ((fs.Min is { } dmn && dec.Units < dmn * factor) || (fs.Max is { } dmx && dec.Units > dmx * factor))
                 {
-                    _d.Add(WithProvenance("K4004", $"`{path}` = {dec.CanonicalText} is out of range [{fs.Min?.ToString() ?? "-∞"}, {fs.Max?.ToString() ?? "∞"}]", obj, value));
+                    AddOnce(WithProvenance("K4004", $"`{path}` = {dec.CanonicalText} is out of range [{fs.Min?.ToString() ?? "-∞"}, {fs.Max?.ToString() ?? "∞"}]", obj, value));
                 }
 
                 break;
@@ -1178,12 +1181,12 @@ public sealed class Resolver
                 var length = text.Text.EnumerateRunes().Count();
                 if ((fs.MinLength is { } minLength && length < minLength) || (fs.MaxLength is { } maxLength && length > maxLength))
                 {
-                    _d.Add(WithProvenance("K4011", $"`{path}` has {length} character(s); the field allows [{fs.MinLength?.ToString() ?? "0"}, {fs.MaxLength?.ToString() ?? "∞"}]", obj, value));
+                    AddOnce(WithProvenance("K4011", $"`{path}` has {length} character(s); the field allows [{fs.MinLength?.ToString() ?? "0"}, {fs.MaxLength?.ToString() ?? "∞"}]", obj, value));
                 }
 
                 if (fs.OneOf is { } allowed && !allowed.Contains(text.Text))
                 {
-                    _d.Add(WithProvenance("K4012", $"`{path}` = {text.CanonicalText} is not one of {string.Join(", ", allowed.Select(a => "\"" + a + "\""))}", obj, value));
+                    AddOnce(WithProvenance("K4012", $"`{path}` = {text.CanonicalText} is not one of {string.Join(", ", allowed.Select(a => "\"" + a + "\""))}", obj, value));
                 }
 
                 break;
@@ -1192,7 +1195,7 @@ public sealed class Resolver
             case RDuration du when fs is not null:
                 if ((fs.Min is { } dmin && du.Minutes < dmin) || (fs.Max is { } dmax && du.Minutes > dmax))
                 {
-                    _d.Add(WithProvenance("K4004", $"`{path}` = {du.Minutes}min is out of range", obj, value));
+                    AddOnce(WithProvenance("K4004", $"`{path}` = {du.Minutes}min is out of range", obj, value));
                 }
 
                 break;
@@ -1201,15 +1204,15 @@ public sealed class Resolver
                 var key = $"{r.Type}:{r.Id}";
                 if (!catalog.ByKey.TryGetValue(key, out var target))
                 {
-                    _d.Add(WithProvenance("K4005", $"`{path}` references `{r.CanonicalText}`, which does not exist", obj, value));
+                    AddOnce(WithProvenance("K4005", $"`{path}` references `{r.CanonicalText}`, which does not exist", obj, value));
                 }
                 else if (target.IsAbstract)
                 {
-                    _d.Add(WithProvenance("K4005", $"`{path}` references abstract `{r.CanonicalText}`; only concrete objects can be referenced", obj, value));
+                    AddOnce(WithProvenance("K4005", $"`{path}` references abstract `{r.CanonicalText}`; only concrete objects can be referenced", obj, value));
                 }
                 else if (fs is { Kind: ValueKind.Reference, TargetType: { } tt } && r.Type != tt)
                 {
-                    _d.Add(WithProvenance("K4006", $"`{path}` must reference a `{tt}`, found `{r.CanonicalText}`", obj, value));
+                    AddOnce(WithProvenance("K4006", $"`{path}` must reference a `{tt}`, found `{r.CanonicalText}`", obj, value));
                 }
 
                 break;
@@ -1237,11 +1240,28 @@ public sealed class Resolver
         }
     }
 
+    /// <summary>True when the field at <paramref name="path"/> was written in the object or an ancestor and its value was rejected (ADR-0010).</summary>
+    private bool WasRejected(ResolvedObject obj, string path)
+    {
+        var relative = path.StartsWith(obj.Key, StringComparison.Ordinal) ? path[obj.Key.Length..] : path;
+        return obj.Chain.Any(ancestor => _invalid.Contains(ancestor + relative));
+    }
+
     private void CheckCount(int count, FieldSchema? fs, ResolvedObject obj, ResolvedValue value, string path)
     {
         if (fs is not null && ((fs.MinItems is { } min && count < min) || (fs.MaxItems is { } max && count > max)))
         {
-            _d.Add(WithProvenance("K4010", $"`{path}` has {count} item(s); the field allows [{fs.MinItems?.ToString() ?? "0"}, {fs.MaxItems?.ToString() ?? "∞"}]", obj, value));
+            AddOnce(WithProvenance("K4010", $"`{path}` has {count} item(s); the field allows [{fs.MinItems?.ToString() ?? "0"}, {fs.MaxItems?.ToString() ?? "∞"}]", obj, value));
+        }
+    }
+
+    /// <summary>KEDO-02 R25: one diagnostic per authored value, even when many objects inherit it.</summary>
+    private void AddOnce(Diagnostic diagnostic)
+    {
+        _objectFailed |= diagnostic.IsError;
+        if (_warned.Add($"{diagnostic.Code}|{diagnostic.File}|{diagnostic.Span.Start}"))
+        {
+            _d.Add(diagnostic);
         }
     }
 
