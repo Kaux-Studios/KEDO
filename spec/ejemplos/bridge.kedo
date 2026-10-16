@@ -8,7 +8,7 @@ module patriark
 /// Elegibilidad común: estar en la orilla oeste con el puente dañado.
 mixin at_damaged_bridge {
     eligibility = [
-        { op = node_is            target = bridge_west }
+        { op = node_is  target = bridge_west }
         { op = structure_damaged  target = bridge }
     ]
 }
@@ -29,7 +29,7 @@ event bridge.inspect_damage with at_damaged_bridge, leave_option {
 
     options = [
         { id = inspect  label_key = "action.inspect"  duration = 30min  resolution = deterministic  exit = node_actions  completes = true
-          effects = [ { op = record_observation  target = bridge  value = plan } ] }
+            effects = [{ op = record_observation  target = bridge  value = plan }] }
     ]
 }
 
@@ -42,22 +42,22 @@ event bridge.reinforce with at_damaged_bridge, leave_option {
 
     options = [
         { id = repair  label_key = "action.repair"  duration = 120min  resolution = d20  exit = node_actions  completes = true
-          requirements = [
-              { op = knows_plan  target = bridge }
-              { op = resource    target = materials  amount = 4 }
-          ]
-          check = { attribute = intelligence  skill = repair  difficulty = 12  practice = footbridge_bracing }
-          effects = [
-              { op = consume_resource  target = materials  amount = 4 }
-              { op = repair_structure  target = bridge }
-          ]
-          failure_effects = [ { op = injury  amount = 10 } ] }
+            requirements = [
+                { op = knows_plan  target = bridge }
+                { op = resource  target = materials  amount = 4 }
+            ]
+            check = { attribute = intelligence  skill = repair  difficulty = 12  practice = footbridge_bracing }
+            effects = [
+                { op = consume_resource  target = materials  amount = 4 }
+                { op = repair_structure  target = bridge }
+            ]
+            failure_effects = [{ op = injury  amount = 10 }] }
     ]
 
     /// Propuesta (no implementada en Patriark): al completar la reparación, programar
     /// la llegada de una caravana que reactiva una oferta en el mercado.
     on check_resolved(ctx) {
-        if (ctx.outcome == outcome.success and ctx.option == option.repair) {
+        if (ctx.outcome == outcome.success and ctx.option_id == "repair") {
             emit signal:structure_repaired(ctx.structure, ctx.character)
             wait 2d
             apply effect:caravan_arrives(place:city_a)
@@ -75,13 +75,13 @@ function reinforce_cost(stage: int) -> int {
 structure bridge {
     name_key = "structure.bridge"
     stages = [
-        { id = bracing   materials = 4  minutes = 120  practice = footbridge_bracing }
-        { id = decking   materials = 6  minutes = 180 }
-        { id = railing   materials = 3  minutes = 60 }
+        { id = bracing  materials = 4  minutes = 120  practice = footbridge_bracing }
+        { id = decking  materials = 6  minutes = 180 }
+        { id = railing  materials = 3  minutes = 60 }
     ]
     damaged_scene = asset:bridge_damaged
     repaired_scene = asset:bridge_repaired
 }
 
-asset bridge_damaged  { kind = texture  path = "art/riverbed-v1.png" }
+asset bridge_damaged { kind = texture  path = "art/riverbed-v1.png" }
 asset bridge_repaired { kind = texture  path = "art/riverbed-v1.png" }

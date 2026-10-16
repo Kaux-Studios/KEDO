@@ -1,0 +1,40 @@
+File
+  Header `kedo` `1` `module` `m`
+  ObjectDecl
+    TypeName `actor`
+    Name `a`
+    Body `{` `}`
+      Field `x` `=`
+  Error `?` `?` `?` `garbage` `here`
+  ObjectDecl
+    TypeName `actor`
+    Name `b`
+    Body `{` `}`
+      Field `y` `=`
+        LiteralExpr `1`
+      Field `z`
+  MixinDecl `mixin`
+    Name `signal`
+    Body `{` `}`
+  ObjectDecl
+    TypeName `actor`
+    Name `c`
+    Body `{` `}`
+      Hook `on` `arrive` `(` `ctx` `)`
+        Block `{` `}`
+          WaitStmt `wait`
+            Error
+          StopStmt `stop`
+          Error `stop`
+          ApplyStmt `apply` `effect:x`
+            ArgList `(`
+  ObjectDecl
+    TypeName `actor`
+    Name `d`
+    ExtendsClause `extends`
+      Name
+    Body `{` `}`
+      Field `q` `=`
+        ListExpr `[` `]`
+          LiteralExpr `1`
+          LiteralExpr `2`

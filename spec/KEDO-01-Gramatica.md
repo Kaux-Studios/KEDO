@@ -115,9 +115,12 @@ Las entradas de un cuerpo se separan por espacio en blanco o `;`. Varias entrada
 ```ebnf
 value   = integer | duration | string | boolean | ident        (* enum *)
         | reference | list | record | "(" expression ")" ;
-list    = "[" [ value { "," value } [ "," ] ] "]" ;
+list    = "[" [ value { separator value } [ "," ] ] "]" ;
+separator = "," | newline ;
 record  = body ;
 ```
+
+- Los elementos de una lista se separan con coma **o** con salto de línea (un elemento por línea no necesita comas); la coma final es opcional. El formateador conserva la elección del autor.
 
 - Un identificador suelto en posición de valor es un **valor de enumeración** del esquema (`context = travel`, `resolution = d20`). El esquema decide si es válido (K4003).
 - Un record es un bloque `{ k = v ... }`; sus claves las fija el esquema del campo (cerrado: clave desconocida es K2005 con sugerencia).
@@ -141,7 +144,7 @@ primary    = integer | duration | string | boolean | reference | ident | "(" exp
 ```
 
 - Tipos: `int` (64 bits), `bool`, `text`, `duration` (entero en unidad base), referencias, enums, listas y records del esquema. Sin flotantes: división entera, `%` resto; porcentajes en puntos básicos si el esquema lo pide.
-- Un identificador en expresión es una variable (`ctx`, parámetros, `let`), nunca un enum; los enums en expresiones van calificados `tipo.valor` cuando el esquema lo exige. Pendiente de confirmar en revisión (§11).
+- Un identificador en expresión es una variable (`ctx`, parámetros, `let`), nunca un enum; los enums en expresiones van calificados `tipo.valor` (`outcome.success`). El nombre del tipo de enum no puede ser una palabra reservada (`option`, `signal`): el juego elige nombres de enum que no choquen.
 - En cuerpos de declaración, las expresiones se evalúan **una vez al resolver** sobre literales y constantes del módulo; no hay `self`, `super` ni enlace tardío (ADR-0005). Referencias a otros campos del mismo objeto no están permitidas en v0.1; los campos calculados llegan como característica del esquema (KEDO-02 §5).
 
 ## 8. Hooks y funciones

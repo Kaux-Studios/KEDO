@@ -12,7 +12,7 @@ abstract actor sentinel_machine {
     tags = [machine, hostile]
 
     component health { max = 40  regen = 0 }
-    component sense  { range = 8  thermal = true }
+    component sense { range = 8  thermal = true }
     component patrol { radius = 6  interval = 10min }
 }
 
@@ -43,12 +43,12 @@ event road.sentinel {
     repeat_scope = expedition
 
     options = [
-        { id = safe     label_key = "action.safe"     duration = 30min  resolution = deterministic  exit = arrive   completes = true }
-        { id = risk     label_key = "action.risk"     duration = 0min   resolution = d20            exit = arrive   completes = true
-          check = { attribute = agility  skill = survival  difficulty = 12  attribute_dice = [ { attribute = agility  min = 1 } ] }
-          failure_effects = [ { op = die } ]
-          critical_failure_effects = [ { op = die } ] }
-        { id = retreat  label_key = "action.retreat"  duration = 0min   resolution = deterministic  exit = retreat  completes = true }
+        { id = safe  label_key = "action.safe"  duration = 30min  resolution = deterministic  exit = arrive  completes = true }
+        { id = risk  label_key = "action.risk"  duration = 0min  resolution = d20  exit = arrive  completes = true
+            check = { attribute = agility  skill = survival  difficulty = 12  attribute_dice = [{ attribute = agility  min = 1 }] }
+            failure_effects = [{ op = die }]
+            critical_failure_effects = [{ op = die }] }
+        { id = retreat  label_key = "action.retreat"  duration = 0min  resolution = deterministic  exit = retreat  completes = true }
     ]
 }
 
@@ -58,14 +58,14 @@ event road.sentinel.depot extends road.sentinel {
     options[risk] { check = { difficulty = 14 } }
     options += [
         { id = distract  label_key = "action.distract"  duration = 15min  resolution = d20  exit = arrive  completes = true
-          requirements = [ { op = item_at  target = noise_maker } ]
-          check = { attribute = intelligence  difficulty = 12 } }
+            requirements = [{ op = item_at  target = noise_maker }]
+            check = { attribute = intelligence  difficulty = 12 } }
     ]
 }
 
 /// Efecto registrado por el juego; aquí solo se declara su firma para los ejemplos.
 effect alarm_raised {
-    params = [ { name = place  type = place } ]
+    params = [{ name = place  type = place }]
 }
 
 asset sentinel_sheet {

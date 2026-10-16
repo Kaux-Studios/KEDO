@@ -1,0 +1,207 @@
+File
+  Header `kedo` `1` `module` `patriark`
+  ObjectDecl `abstract`
+    TypeName `actor`
+    Name `sentinel_machine`
+    Body `{` `}`
+      Field `name_key` `=`
+        LiteralExpr `"actor.sentinel"`
+      Field `tags` `=`
+        ListExpr `[` `,` `]`
+          NameExpr `machine`
+          NameExpr `hostile`
+      Component `component` `health`
+        Body `{` `}`
+          Field `max` `=`
+            LiteralExpr `40`
+          Field `regen` `=`
+            LiteralExpr `0`
+      Component `component` `sense`
+        Body `{` `}`
+          Field `range` `=`
+            LiteralExpr `8`
+          Field `thermal` `=`
+            LiteralExpr `true`
+      Component `component` `patrol`
+        Body `{` `}`
+          Field `radius` `=`
+            LiteralExpr `6`
+          Field `interval` `=`
+            LiteralExpr `10min`
+  ObjectDecl
+    TypeName `actor`
+    Name `depot_sentinel`
+    ExtendsClause `extends`
+      Name `sentinel_machine`
+    Body `{` `}`
+      Field `name_key` `=`
+        LiteralExpr `"actor.sentinel.depot"`
+      Field `tags` `+=`
+        ListExpr `[` `]`
+          NameExpr `depot`
+      Component `component` `health`
+        Body `{` `}`
+          Field `max` `=`
+            LiteralExpr `60`
+      Removal `remove` `component` `patrol`
+      Component `component` `sprite`
+        Body `{` `}`
+          Field `sheet` `=`
+            RefExpr `asset:sentinel_sheet`
+      Hook `on` `arrive` `(` `ctx` `)`
+        Block `{` `}`
+          IfStmt `if`
+            ParenExpr `(` `)`
+              CallExpr
+                MemberExpr `.` `detected_by`
+                  MemberExpr `.` `character`
+                    NameExpr `ctx`
+                ArgList `(` `)`
+                  RefExpr `actor:depot_sentinel`
+            Block `{` `}`
+              WaitStmt `wait`
+                LiteralExpr `30min`
+              ApplyStmt `apply` `effect:alarm_raised`
+                ArgList `(` `)`
+                  MemberExpr `.` `place`
+                    NameExpr `ctx`
+  ObjectDecl
+    TypeName `event`
+    Name `road` `.` `sentinel`
+    Body `{` `}`
+      Field `version` `=`
+        LiteralExpr `2`
+      Field `family` `=`
+        NameExpr `machine_crossing`
+      Field `context` `=`
+        NameExpr `travel`
+      Field `text_key` `=`
+        LiteralExpr `"scene.hazard"`
+      Field `repeat_scope` `=`
+        NameExpr `expedition`
+      Field `options` `=`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `safe`
+            Field `label_key` `=`
+              LiteralExpr `"action.safe"`
+            Field `duration` `=`
+              LiteralExpr `30min`
+            Field `resolution` `=`
+              NameExpr `deterministic`
+            Field `exit` `=`
+              NameExpr `arrive`
+            Field `completes` `=`
+              LiteralExpr `true`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `risk`
+            Field `label_key` `=`
+              LiteralExpr `"action.risk"`
+            Field `duration` `=`
+              LiteralExpr `0min`
+            Field `resolution` `=`
+              NameExpr `d20`
+            Field `exit` `=`
+              NameExpr `arrive`
+            Field `completes` `=`
+              LiteralExpr `true`
+            Field `check` `=`
+              Body `{` `}`
+                Field `attribute` `=`
+                  NameExpr `agility`
+                Field `skill` `=`
+                  NameExpr `survival`
+                Field `difficulty` `=`
+                  LiteralExpr `12`
+                Field `attribute_dice` `=`
+                  ListExpr `[` `]`
+                    Body `{` `}`
+                      Field `attribute` `=`
+                        NameExpr `agility`
+                      Field `min` `=`
+                        LiteralExpr `1`
+            Field `failure_effects` `=`
+              ListExpr `[` `]`
+                Body `{` `}`
+                  Field `op` `=`
+                    NameExpr `die`
+            Field `critical_failure_effects` `=`
+              ListExpr `[` `]`
+                Body `{` `}`
+                  Field `op` `=`
+                    NameExpr `die`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `retreat`
+            Field `label_key` `=`
+              LiteralExpr `"action.retreat"`
+            Field `duration` `=`
+              LiteralExpr `0min`
+            Field `resolution` `=`
+              NameExpr `deterministic`
+            Field `exit` `=`
+              NameExpr `retreat`
+            Field `completes` `=`
+              LiteralExpr `true`
+  ObjectDecl
+    TypeName `event`
+    Name `road` `.` `sentinel` `.` `depot`
+    ExtendsClause `extends`
+      Name `road` `.` `sentinel`
+    Body `{` `}`
+      KeyedEntry `options` `[` `]`
+        Name `risk`
+        Body `{` `}`
+          Field `check` `=`
+            Body `{` `}`
+              Field `difficulty` `=`
+                LiteralExpr `14`
+      Field `options` `+=`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `distract`
+            Field `label_key` `=`
+              LiteralExpr `"action.distract"`
+            Field `duration` `=`
+              LiteralExpr `15min`
+            Field `resolution` `=`
+              NameExpr `d20`
+            Field `exit` `=`
+              NameExpr `arrive`
+            Field `completes` `=`
+              LiteralExpr `true`
+            Field `requirements` `=`
+              ListExpr `[` `]`
+                Body `{` `}`
+                  Field `op` `=`
+                    NameExpr `item_at`
+                  Field `target` `=`
+                    NameExpr `noise_maker`
+            Field `check` `=`
+              Body `{` `}`
+                Field `attribute` `=`
+                  NameExpr `intelligence`
+                Field `difficulty` `=`
+                  LiteralExpr `12`
+  ObjectDecl
+    TypeName `effect`
+    Name `alarm_raised`
+    Body `{` `}`
+      Field `params` `=`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `name` `=`
+              NameExpr `place`
+            Field `type` `=`
+              NameExpr `place`
+  ObjectDecl
+    TypeName `asset`
+    Name `sentinel_sheet`
+    Body `{` `}`
+      Field `kind` `=`
+        NameExpr `texture`
+      Field `path` `=`
+        LiteralExpr `"art/sentinel-sheet-v1.png"`

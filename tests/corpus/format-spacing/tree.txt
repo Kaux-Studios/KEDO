@@ -1,0 +1,88 @@
+File
+  Header `kedo` `1` `module` `m`
+  Annotation `@` `editor`
+    ArgList `(` `,` `)`
+      Field `label` `=`
+        LiteralExpr `"A"`
+      Field `group` `=`
+        LiteralExpr `"g"`
+  ObjectDecl `abstract`
+    TypeName `actor`
+    Name `a`
+    ExtendsClause `extends`
+      Name `base`
+    WithClause `with` `,`
+      Name `m1`
+      Name `m2`
+    Body `{` `}`
+      Field `name_key` `=`
+        LiteralExpr `"x"`
+      Field `tags` `=`
+        ListExpr `[` `,` `]`
+          NameExpr `machine`
+          NameExpr `hostile`
+      Field `tags` `+=`
+        ListExpr `[` `]`
+          NameExpr `depot`
+      Component `component` `health`
+        Body `{` `}`
+          Field `max` `=`
+            LiteralExpr `40`
+          Field `regen` `=`
+            LiteralExpr `0`
+      Removal `remove` `component` `patrol`
+      KeyedEntry `options` `[` `]`
+        Name `risk`
+        Body `{` `}`
+          Field `check` `=`
+            Body `{` `}`
+              Field `difficulty` `=`
+                LiteralExpr `14`
+      Field `list` `=`
+        ListExpr `[` `,` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `a`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `b`
+      Field `neg` `=`
+        ParenExpr `(` `)`
+          BinaryExpr `+`
+            UnaryExpr `-`
+              NameExpr `x`
+            BinaryExpr `*`
+              NameExpr `y`
+              LiteralExpr `2`
+      FunctionDecl `function`
+        Name `f`
+        ParamList `(` `,` `)`
+          Param `a` `:` `int`
+          Param `b` `:` `int`
+        ReturnType `->` `int`
+        Block `{` `}`
+          ReturnStmt `return`
+            BinaryExpr `+`
+              NameExpr `a`
+              NameExpr `b`
+      Hook `on` `arrive` `(` `ctx` `)`
+        Block `{` `}`
+          IfStmt `if`
+            ParenExpr `(` `)`
+              BinaryExpr `and`
+                MemberExpr `.` `a`
+                  NameExpr `ctx`
+                UnaryExpr `not`
+                  MemberExpr `.` `b`
+                    NameExpr `ctx`
+            Block `{` `;` `}`
+              WaitStmt `wait`
+                LiteralExpr `30min`
+              ApplyStmt `apply` `effect:z`
+                ArgList `(` `,` `)`
+                  MemberExpr `.` `place`
+                    NameExpr `ctx`
+                  LiteralExpr `2`
+            ElseClause `else`
+              Block `{` `}`
+                StopStmt `stop`

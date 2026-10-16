@@ -1,0 +1,87 @@
+kedo 1
+module patriark
+
+// Ejemplo 2 — Puente: inspección y refuerzo por etapas.
+// Mapea 1:1 a bridge.inspect_damage v1 y bridge.reinforce v2 del pack prototype-9,
+// y muestra un mixin y una función reutilizables.
+
+/// Elegibilidad común: estar en la orilla oeste con el puente dañado.
+mixin at_damaged_bridge {
+    eligibility = [
+        { op = node_is  target = bridge_west }
+        { op = structure_damaged  target = bridge }
+    ]
+}
+
+/// Opción "irse" compartida por las acciones de nodo.
+mixin leave_option {
+    options += [
+        { id = leave  label_key = "action.leave"  duration = 0min  resolution = deterministic  exit = node_actions  completes = false }
+    ]
+}
+
+event bridge.inspect_damage with at_damaged_bridge, leave_option {
+    version = 1
+    family = infrastructure_inspection
+    context = node_action
+    text_key = "scene.inspect"
+    repeat_scope = character
+
+    options = [
+        { id = inspect  label_key = "action.inspect"  duration = 30min  resolution = deterministic  exit = node_actions  completes = true
+            effects = [{ op = record_observation  target = bridge  value = plan }] }
+    ]
+}
+
+event bridge.reinforce with at_damaged_bridge, leave_option {
+    version = 2
+    family = infrastructure_work
+    context = node_action
+    text_key = "scene.repair"
+    repeat_scope = world
+
+    options = [
+        { id = repair  label_key = "action.repair"  duration = 120min  resolution = d20  exit = node_actions  completes = true
+            requirements = [
+                { op = knows_plan  target = bridge }
+                { op = resource  target = materials  amount = 4 }
+            ]
+            check = { attribute = intelligence  skill = repair  difficulty = 12  practice = footbridge_bracing }
+            effects = [
+                { op = consume_resource  target = materials  amount = 4 }
+                { op = repair_structure  target = bridge }
+            ]
+            failure_effects = [{ op = injury  amount = 10 }] }
+    ]
+
+    /// Propuesta (no implementada en Patriark): al completar la reparación, programar
+    /// la llegada de una caravana que reactiva una oferta en el mercado.
+    on check_resolved(ctx) {
+        if (ctx.outcome == outcome.success and ctx.option_id == "repair") {
+            emit signal:structure_repaired(ctx.structure, ctx.character)
+            wait 2d
+            apply effect:caravan_arrives(place:city_a)
+        }
+    }
+}
+
+/// Función pura reutilizable: coste de materiales según la etapa de la obra.
+function reinforce_cost(stage: int) -> int {
+    if (stage <= 1) { return 4 }
+    return 4 + stage * 2
+}
+
+/// Obra por etapas: la estructura declara sus etapas y el material de cada una.
+structure bridge {
+    name_key = "structure.bridge"
+    stages = [
+        { id = bracing  materials = 4  minutes = 120  practice = footbridge_bracing }
+        { id = decking  materials = 6  minutes = 180 }
+        { id = railing  materials = 3  minutes = 60 }
+    ]
+    damaged_scene = asset:bridge_damaged
+    repaired_scene = asset:bridge_repaired
+}
+
+asset bridge_damaged { kind = texture  path = "art/riverbed-v1.png" }
+asset bridge_repaired { kind = texture  path = "art/riverbed-v1.png" }

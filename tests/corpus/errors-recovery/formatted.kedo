@@ -1,0 +1,15 @@
+kedo 1
+module m
+
+actor a { x = }
+? ? ? garbage here
+actor b { y = 1  z }
+mixin signal { }
+actor c {
+    on arrive(ctx) {
+        wait
+        stop stop
+        apply effect:x(
+    }
+}
+actor d extends { q = [1 2] }

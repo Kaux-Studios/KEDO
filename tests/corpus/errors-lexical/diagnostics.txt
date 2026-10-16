@@ -1,0 +1,8 @@
+error K1003 3:7 identifier `Bad` must be lowercase (`[a-z_][a-z0-9_]*`)
+error K1004 3:17 unterminated string
+error K1002 4:8 invalid number suffix `kg`; durations use `s`, `min`, `h` or `d`
+error K1002 4:16 unexpected character `!`
+error K1002 4:25 unexpected character `ñ`
+error K1004 5:1 unterminated block comment
+error K1001 1:6 language major `2` is not supported by this toolchain (language 1); run `kedo migrate`
+error K1002 3:1 expected a declaration (`<type> <name> { ... }`, `abstract`, `mixin`, `function` or `manifest`), found identifier `actor`

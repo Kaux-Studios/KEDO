@@ -1,0 +1,26 @@
+kedo 1
+module m
+// leading comment
+
+/// doc for a
+@editor(label = "A", group = "g")
+abstract actor a extends base with m1, m2 {
+    name_key = "x"  // trailing
+    tags = [machine, hostile]
+    tags += [depot]
+    component health { max = 40  regen = 0 }
+    remove component patrol
+    options[risk] { check = { difficulty = 14 } }
+    list = [
+        { id = a }
+        { id = b },
+    ]
+    neg = (-x + y * 2)
+    function f(a: int, b: int) -> int {
+        return a + b
+    }
+    on arrive(ctx) {
+        if (ctx.a and not ctx.b) { wait 30min; apply effect:z(ctx.place, 2) }
+        else { stop }
+    }
+}

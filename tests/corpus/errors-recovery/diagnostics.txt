@@ -1,0 +1,12 @@
+error K1002 5:1 unexpected character `?`
+error K1002 5:2 unexpected character `?`
+error K1002 5:3 unexpected character `?`
+error K1002 4:15 expected a value, found `}`
+error K1002 5:1 expected a declaration (`<type> <name> { ... }`, `abstract`, `mixin`, `function` or `manifest`), found `?`
+error K1002 6:20 expected `=`, `=!`, `+=` or `-=` after the field name, found `}`
+error K1002 7:7 `signal` is a reserved word and cannot be used as a name
+error K1002 11:9 expected an expression, found `stop`
+error K1002 11:14 expected a newline or `;` after the statement, found `stop`
+error K1002 13:5 expected `)` to close the arguments, found `}`
+error K1002 15:17 expected a name, found `{`
+error K1002 15:26 expected `,` or a newline between list items, found number

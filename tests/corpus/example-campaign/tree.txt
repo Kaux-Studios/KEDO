@@ -1,0 +1,727 @@
+File
+  Header `kedo` `1` `module` `patriark`
+  ObjectDecl
+    TypeName `ruleset`
+    Name `prototype`
+    Body `{` `}`
+      Field `supplies` `=`
+        Body `{` `}`
+          Field `water_minutes_per_unit` `=`
+            LiteralExpr `60`
+          Field `food_minutes_per_unit` `=`
+            LiteralExpr `120`
+          Field `deprivation_damage_per_unit` `=`
+            LiteralExpr `10`
+      Field `carry` `=`
+        Body `{` `}`
+          Field `base_kg` `=`
+            LiteralExpr `10`
+          Field `kg_per_strength` `=`
+            LiteralExpr `2`
+          Field `overload_limit_percent` `=`
+            LiteralExpr `130`
+          Field `overload_travel_percent` `=`
+            LiteralExpr `125`
+          Field `overload_agility_penalty` `=`
+            LiteralExpr `2`
+      Field `progression` `=`
+        Body `{` `}`
+          Field `max_level` `=`
+            LiteralExpr `12`
+          Field `milestones_per_level` `=`
+            LiteralExpr `2`
+          Field `attribute_gain` `=`
+            LiteralExpr `2`
+          Field `attribute_max` `=`
+            LiteralExpr `20`
+      Field `health` `=`
+        Body `{` `}`
+          Field `max` `=`
+            LiteralExpr `100`
+  ObjectDecl
+    TypeName `campaign`
+    Name `prototype_9`
+    Body `{` `}`
+      Field `version` `=`
+        LiteralExpr `9`
+      Field `rules` `=`
+        RefExpr `ruleset:prototype`
+      Field `guild_node` `=`
+        RefExpr `place:city_a`
+      Field `guilds` `=`
+        ListExpr `[` `,` `]`
+          RefExpr `guild:menders`
+          RefExpr `guild:scouts`
+      Field `world` `=`
+        Body `{` `}`
+          Field `nodes` `=`
+            ListExpr `[` `]`
+              Body `{` `}`
+                Field `id` `=`
+                  NameExpr `city_a`
+                Field `name_key` `=`
+                  LiteralExpr `"place.city_a"`
+                Field `role` `=`
+                  NameExpr `main`
+                Field `campaign_role` `=`
+                  NameExpr `city_a`
+                Field `tags` `=`
+                  ListExpr `[` `]`
+                    NameExpr `shelter`
+              Body `{` `}`
+                Field `id` `=`
+                  NameExpr `city_b`
+                Field `name_key` `=`
+                  LiteralExpr `"place.city_b"`
+                Field `role` `=`
+                  NameExpr `main`
+                Field `campaign_role` `=`
+                  NameExpr `city_b`
+              Body `{` `}`
+                Field `id` `=`
+                  NameExpr `bridge_west`
+                Field `name_key` `=`
+                  LiteralExpr `"place.west"`
+                Field `role` `=`
+                  NameExpr `special`
+                Field `campaign_role` `=`
+                  NameExpr `bridge_west`
+                Field `tags` `=`
+                  ListExpr `[` `]`
+                    NameExpr `bridge`
+              Body `{` `}`
+                Field `id` `=`
+                  NameExpr `bridge_east`
+                Field `name_key` `=`
+                  LiteralExpr `"place.east"`
+                Field `role` `=`
+                  NameExpr `special`
+                Field `campaign_role` `=`
+                  NameExpr `bridge_east`
+          Field `edges` `=`
+            ListExpr `[` `]`
+              Body `{` `}`
+                Field `id` `=`
+                  NameExpr `bridge_link`
+                Field `from` `=`
+                  NameExpr `bridge_west`
+                Field `to` `=`
+                  NameExpr `bridge_east`
+                Field `minutes` `=`
+                  LiteralExpr `20`
+                Field `structure` `=`
+                  RefExpr `structure:bridge`
+          Field `local_places` `=`
+            ListExpr `[` `]`
+              Body `{` `}`
+                Field `id` `=`
+                  NameExpr `plaza`
+                Field `parent` `=`
+                  NameExpr `city_a`
+                Field `name_key` `=`
+                  LiteralExpr `"refuge.place.plaza"`
+                Field `description_key` `=`
+                  LiteralExpr `"refuge.scene.plaza"`
+                Field `scene` `=`
+                  RefExpr `asset:refuge_plaza`
+                Field `x` `=`
+                  LiteralExpr `200`
+                Field `y` `=`
+                  LiteralExpr `110`
+              Body `{` `}`
+                Field `id` `=`
+                  NameExpr `market`
+                Field `parent` `=`
+                  NameExpr `city_a`
+                Field `name_key` `=`
+                  LiteralExpr `"refuge.place.market"`
+                Field `description_key` `=`
+                  LiteralExpr `"refuge.scene.market"`
+                Field `scene` `=`
+                  RefExpr `asset:refuge_market`
+                Field `x` `=`
+                  LiteralExpr `60`
+                Field `y` `=`
+                  LiteralExpr `65`
+              Body `{` `}`
+                Field `id` `=`
+                  NameExpr `guild`
+                Field `parent` `=`
+                  NameExpr `city_a`
+                Field `name_key` `=`
+                  LiteralExpr `"refuge.place.guild"`
+                Field `description_key` `=`
+                  LiteralExpr `"refuge.scene.guild"`
+                Field `scene` `=`
+                  RefExpr `asset:refuge_guild`
+                Field `x` `=`
+                  LiteralExpr `340`
+                Field `y` `=`
+                  LiteralExpr `65`
+              Body `{` `}`
+                Field `id` `=`
+                  NameExpr `bar`
+                Field `parent` `=`
+                  NameExpr `city_a`
+                Field `name_key` `=`
+                  LiteralExpr `"refuge.place.bar"`
+                Field `description_key` `=`
+                  LiteralExpr `"refuge.scene.bar"`
+                Field `scene` `=`
+                  RefExpr `asset:refuge_bar`
+                Field `x` `=`
+                  LiteralExpr `65`
+                Field `y` `=`
+                  LiteralExpr `180`
+              Body `{` `}`
+                Field `id` `=`
+                  NameExpr `hospital`
+                Field `parent` `=`
+                  NameExpr `city_a`
+                Field `name_key` `=`
+                  LiteralExpr `"refuge.place.hospital"`
+                Field `description_key` `=`
+                  LiteralExpr `"refuge.scene.hospital"`
+                Field `scene` `=`
+                  RefExpr `asset:refuge_hospital`
+                Field `x` `=`
+                  LiteralExpr `335`
+                Field `y` `=`
+                  LiteralExpr `180`
+      Field `scenes` `=`
+        Body `{` `}`
+          Field `by_role` `=`
+            ListExpr `[` `,` `,` `]`
+              Body `{` `}`
+                Field `key` `=`
+                  NameExpr `bridge_west`
+                Field `scene` `=`
+                  RefExpr `asset:riverbed`
+              Body `{` `}`
+                Field `key` `=`
+                  NameExpr `bridge_east`
+                Field `scene` `=`
+                  RefExpr `asset:riverbed`
+              Body `{` `}`
+                Field `key` `=`
+                  NameExpr `city_b`
+                Field `scene` `=`
+                  RefExpr `asset:drylands`
+          Field `by_biome` `=`
+            ListExpr `[` `,` `]`
+              Body `{` `}`
+                Field `key` `=`
+                  NameExpr `mountain`
+                Field `scene` `=`
+                  RefExpr `asset:canyon`
+              Body `{` `}`
+                Field `key` `=`
+                  NameExpr `steppe`
+                Field `scene` `=`
+                  RefExpr `asset:canyon`
+          Field `default` `=`
+            RefExpr `asset:drylands`
+      Field `starting_inventory` `=`
+        Body `{` `}`
+          Field `water` `=`
+            LiteralExpr `60`
+          Field `rations` `=`
+            LiteralExpr `40`
+          Field `materials` `=`
+            LiteralExpr `8`
+          Field `items` `=`
+            ListExpr `[` `]`
+              RefExpr `item:cargo_crate`
+  ObjectDecl
+    TypeName `campaign`
+    Name `test_1`
+    ExtendsClause `extends`
+      Name `prototype_9`
+    Body `{` `}`
+      Field `version` `=`
+        LiteralExpr `1`
+      Field `test_points` `=`
+        LiteralExpr `999`
+      Field `guilds` `=!`
+        ListExpr `[` `]`
+          RefExpr `guild:testers`
+      Field `starting_inventory` `=`
+        Body `{` `}`
+          Field `water` `=`
+            LiteralExpr `999`
+          Field `rations` `=`
+            LiteralExpr `999`
+          Field `materials` `=`
+            LiteralExpr `999`
+  ObjectDecl
+    TypeName `guild`
+    Name `menders`
+    Body `{` `}`
+      Field `name_key` `=`
+        LiteralExpr `"guild.menders"`
+      Field `description_key` `=`
+        LiteralExpr `"guild.menders.detail"`
+      Field `resources` `=`
+        Body `{` `}`
+          Field `water` `=`
+            LiteralExpr `20`
+          Field `rations` `=`
+            LiteralExpr `10`
+          Field `materials` `=`
+            LiteralExpr `8`
+      Field `roster` `=`
+        ListExpr `[` `,` `]`
+          RefExpr `character:mara`
+          RefExpr `character:ilan`
+      Field `recruit` `=`
+        Body `{` `}`
+          Field `costs` `=`
+            Body `{` `}`
+              Field `rations` `=`
+                LiteralExpr `4`
+              Field `materials` `=`
+                LiteralExpr `2`
+          Field `minutes` `=`
+            LiteralExpr `60`
+          Field `attributes` `=`
+            Body `{` `}`
+              Field `strength` `=`
+                LiteralExpr `10`
+              Field `endurance` `=`
+                LiteralExpr `10`
+              Field `agility` `=`
+                LiteralExpr `10`
+              Field `perception` `=`
+                LiteralExpr `10`
+              Field `intelligence` `=`
+                LiteralExpr `10`
+              Field `resolve` `=`
+                LiteralExpr `10`
+          Field `names` `=`
+            ListExpr `[` `,` `,` `,` `,` `,` `]`
+              LiteralExpr `"Tomás"`
+              LiteralExpr `"Lía"`
+              LiteralExpr `"Bruno"`
+              LiteralExpr `"Irene"`
+              LiteralExpr `"Ciro"`
+              LiteralExpr `"Vera"`
+          Field `title_key` `=`
+            LiteralExpr `"title.recruit"`
+      Field `upgrades` `=`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `workshop_1`
+            Field `costs` `=`
+              Body `{` `}`
+                Field `materials` `=`
+                  LiteralExpr `8`
+            Field `minutes` `=`
+              LiteralExpr `120`
+            Field `recruit_bonus` `=`
+              Body `{` `}`
+                Field `strength` `=`
+                  LiteralExpr `1`
+                Field `endurance` `=`
+                  LiteralExpr `1`
+                Field `intelligence` `=`
+                  LiteralExpr `1`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `workshop_2`
+            Field `costs` `=`
+              Body `{` `}`
+                Field `materials` `=`
+                  LiteralExpr `12`
+            Field `minutes` `=`
+              LiteralExpr `120`
+            Field `recruit_bonus` `=`
+              Body `{` `}`
+                Field `strength` `=`
+                  LiteralExpr `1`
+                Field `endurance` `=`
+                  LiteralExpr `1`
+                Field `intelligence` `=`
+                  LiteralExpr `1`
+  ObjectDecl
+    TypeName `guild`
+    Name `scouts`
+    ExtendsClause `extends`
+      Name `menders`
+    Body `{` `}`
+      Field `name_key` `=`
+        LiteralExpr `"guild.scouts"`
+      Field `description_key` `=`
+        LiteralExpr `"guild.scouts.detail"`
+      Field `roster` `=!`
+        ListExpr `[` `,` `]`
+          RefExpr `character:teo`
+          RefExpr `character:ilan`
+      KeyedEntry `upgrades` `[` `]`
+        Name `workshop_1`
+        Body `{` `}`
+          Field `recruit_bonus` `=!`
+            Body `{` `}`
+              Field `agility` `=`
+                LiteralExpr `1`
+              Field `perception` `=`
+                LiteralExpr `1`
+              Field `endurance` `=`
+                LiteralExpr `1`
+  ObjectDecl
+    TypeName `guild`
+    Name `testers`
+    ExtendsClause `extends`
+      Name `menders`
+    Body `{` `}`
+      Field `name_key` `=`
+        LiteralExpr `"guild.testers"`
+      Field `roster` `=!`
+        ListExpr `[` `]`
+          RefExpr `character:tester`
+  ObjectDecl `abstract`
+    TypeName `character`
+    Name `expeditionary`
+    Body `{` `}`
+      Field `lifecycle` `=`
+        NameExpr `available`
+      Field `level` `=`
+        LiteralExpr `1`
+      Field `attributes` `=`
+        Body `{` `}`
+          Field `strength` `=`
+            LiteralExpr `10`
+          Field `endurance` `=`
+            LiteralExpr `10`
+          Field `agility` `=`
+            LiteralExpr `10`
+          Field `perception` `=`
+            LiteralExpr `10`
+          Field `intelligence` `=`
+            LiteralExpr `10`
+          Field `resolve` `=`
+            LiteralExpr `10`
+      Field `portrait` `=`
+        RefExpr `asset:portrait_default`
+  ObjectDecl
+    TypeName `character`
+    Name `mara`
+    ExtendsClause `extends`
+      Name `expeditionary`
+    Body `{` `}`
+      Field `name` `=`
+        LiteralExpr `"Mara"`
+      Field `title_key` `=`
+        LiteralExpr `"title.mender"`
+      Field `occupation_family` `=`
+        NameExpr `repair_construction`
+      Field `known_practices` `=`
+        ListExpr `[` `]`
+          NameExpr `footbridge_bracing`
+      Field `attributes` `=`
+        Body `{` `}`
+          Field `strength` `=`
+            LiteralExpr `14`
+          Field `intelligence` `=`
+            LiteralExpr `14`
+      Field `training` `=`
+        Body `{` `}`
+          Field `repair` `=`
+            LiteralExpr `2`
+          Field `survival` `=`
+            LiteralExpr `2`
+      Field `starting_gear` `=`
+        RefExpr `gear_kit:mender_basic`
+  ObjectDecl
+    TypeName `character`
+    Name `ilan`
+    ExtendsClause `extends`
+      Name `expeditionary`
+    Body `{` `}`
+      Field `name` `=`
+        LiteralExpr `"Ilan"`
+      Field `title_key` `=`
+        LiteralExpr `"title.scout"`
+      Field `occupation_family` `=`
+        NameExpr `gathering`
+      Field `training` `=`
+        Body `{` `}`
+          Field `survival` `=`
+            LiteralExpr `3`
+  ObjectDecl
+    TypeName `character`
+    Name `teo`
+    ExtendsClause `extends`
+      Name `expeditionary`
+    Body `{` `}`
+      Field `name` `=`
+        LiteralExpr `"Teo"`
+      Field `title_key` `=`
+        LiteralExpr `"title.scout"`
+      Field `occupation_family` `=`
+        NameExpr `gathering`
+  ObjectDecl
+    TypeName `character`
+    Name `tester`
+    ExtendsClause `extends`
+      Name `mara`
+    Body `{` `}`
+      Field `name` `=`
+        LiteralExpr `"Tester"`
+      Field `level` `=`
+        LiteralExpr `999`
+      Field `attributes` `=`
+        Body `{` `}`
+          Field `strength` `=`
+            LiteralExpr `20`
+          Field `endurance` `=`
+            LiteralExpr `20`
+          Field `agility` `=`
+            LiteralExpr `20`
+          Field `perception` `=`
+            LiteralExpr `20`
+          Field `intelligence` `=`
+            LiteralExpr `20`
+          Field `resolve` `=`
+            LiteralExpr `20`
+  ObjectDecl
+    TypeName `service`
+    Name `plaza_lore`
+    Body `{` `}`
+      Field `place` `=`
+        NameExpr `plaza`
+      Field `kind` `=`
+        NameExpr `info`
+      Field `minutes` `=`
+        LiteralExpr `5`
+  ObjectDecl
+    TypeName `service`
+    Name `water`
+    Body `{` `}`
+      Field `place` `=`
+        NameExpr `market`
+      Field `kind` `=`
+        NameExpr `trade`
+      Field `minutes` `=`
+        LiteralExpr `5`
+      Field `costs` `=`
+        Body `{` `}`
+          Field `materials` `=`
+            LiteralExpr `1`
+      Field `rewards` `=`
+        Body `{` `}`
+          Field `water` `=`
+            LiteralExpr `4`
+      Field `menu` `=`
+        LiteralExpr `"ui.menu.barter"`
+  ObjectDecl
+    TypeName `service`
+    Name `rations`
+    Body `{` `}`
+      Field `place` `=`
+        NameExpr `market`
+      Field `kind` `=`
+        NameExpr `trade`
+      Field `minutes` `=`
+        LiteralExpr `5`
+      Field `costs` `=`
+        Body `{` `}`
+          Field `materials` `=`
+            LiteralExpr `1`
+      Field `rewards` `=`
+        Body `{` `}`
+          Field `rations` `=`
+            LiteralExpr `2`
+      Field `menu` `=`
+        LiteralExpr `"ui.menu.barter"`
+  ObjectDecl `abstract`
+    TypeName `item`
+    Name `container_base`
+    Body `{` `}`
+      Field `tags` `=`
+        ListExpr `[` `]`
+          NameExpr `container`
+  ObjectDecl
+    TypeName `item`
+    Name `backpack_basic`
+    ExtendsClause `extends`
+      Name `container_base`
+    Body `{` `}`
+      Field `weight_g` `=`
+        LiteralExpr `1500`
+      Field `size` `=`
+        Body `{` `}`
+          Field `w` `=`
+            LiteralExpr `4`
+          Field `h` `=`
+            LiteralExpr `5`
+      Field `equip_slot` `=`
+        NameExpr `back`
+      Field `grid` `=`
+        Body `{` `}`
+          Field `w` `=`
+            LiteralExpr `12`
+          Field `h` `=`
+            LiteralExpr `8`
+  ObjectDecl
+    TypeName `item`
+    Name `belt_basic`
+    ExtendsClause `extends`
+      Name `container_base`
+    Body `{` `}`
+      Field `weight_g` `=`
+        LiteralExpr `400`
+      Field `size` `=`
+        Body `{` `}`
+          Field `w` `=`
+            LiteralExpr `4`
+          Field `h` `=`
+            LiteralExpr `1`
+      Field `equip_slot` `=`
+        NameExpr `belt`
+      Field `grid` `=`
+        Body `{` `}`
+          Field `w` `=`
+            LiteralExpr `6`
+          Field `h` `=`
+            LiteralExpr `1`
+  ObjectDecl
+    TypeName `item`
+    Name `pants_basic`
+    Body `{` `}`
+      Field `weight_g` `=`
+        LiteralExpr `600`
+      Field `size` `=`
+        Body `{` `}`
+          Field `w` `=`
+            LiteralExpr `2`
+          Field `h` `=`
+            LiteralExpr `3`
+      Field `equip_slot` `=`
+        NameExpr `legs`
+      Field `pockets` `=`
+        ListExpr `[` `,` `]`
+          Body `{` `}`
+            Field `w` `=`
+              LiteralExpr `1`
+            Field `h` `=`
+              LiteralExpr `2`
+          Body `{` `}`
+            Field `w` `=`
+              LiteralExpr `1`
+            Field `h` `=`
+              LiteralExpr `2`
+  ObjectDecl
+    TypeName `item`
+    Name `cargo_crate`
+    Body `{` `}`
+      Field `weight_g` `=`
+        LiteralExpr `9000`
+      Field `size` `=`
+        Body `{` `}`
+          Field `w` `=`
+            LiteralExpr `3`
+          Field `h` `=`
+            LiteralExpr `3`
+      Field `tags` `=`
+        ListExpr `[` `,` `]`
+          NameExpr `mission`
+          NameExpr `unique`
+  ObjectDecl
+    TypeName `gear_kit`
+    Name `mender_basic`
+    Body `{` `}`
+      Field `equipped` `=`
+        ListExpr `[` `,` `,` `]`
+          RefExpr `item:backpack_basic`
+          RefExpr `item:belt_basic`
+          RefExpr `item:pants_basic`
+      Field `carried` `=`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `item` `=`
+              RefExpr `item:rope`
+            Field `count` `=`
+              LiteralExpr `1`
+  ObjectDecl
+    TypeName `asset`
+    Name `refuge_plaza`
+    Body `{` `}`
+      Field `kind` `=`
+        NameExpr `texture`
+      Field `path` `=`
+        LiteralExpr `"art/refuge-plaza-v1.png"`
+  ObjectDecl
+    TypeName `asset`
+    Name `refuge_market`
+    Body `{` `}`
+      Field `kind` `=`
+        NameExpr `texture`
+      Field `path` `=`
+        LiteralExpr `"art/refuge-market-v1.png"`
+  ObjectDecl
+    TypeName `asset`
+    Name `refuge_guild`
+    Body `{` `}`
+      Field `kind` `=`
+        NameExpr `texture`
+      Field `path` `=`
+        LiteralExpr `"art/refuge-guild-v1.png"`
+  ObjectDecl
+    TypeName `asset`
+    Name `refuge_bar`
+    Body `{` `}`
+      Field `kind` `=`
+        NameExpr `texture`
+      Field `path` `=`
+        LiteralExpr `"art/refuge-bar-v1.png"`
+  ObjectDecl
+    TypeName `asset`
+    Name `refuge_hospital`
+    Body `{` `}`
+      Field `kind` `=`
+        NameExpr `texture`
+      Field `path` `=`
+        LiteralExpr `"art/refuge-hospital-v1.png"`
+  ObjectDecl
+    TypeName `asset`
+    Name `riverbed`
+    Body `{` `}`
+      Field `kind` `=`
+        NameExpr `texture`
+      Field `path` `=`
+        LiteralExpr `"art/riverbed-v1.png"`
+  ObjectDecl
+    TypeName `asset`
+    Name `drylands`
+    Body `{` `}`
+      Field `kind` `=`
+        NameExpr `texture`
+      Field `path` `=`
+        LiteralExpr `"art/drylands-v1.png"`
+  ObjectDecl
+    TypeName `asset`
+    Name `canyon`
+    Body `{` `}`
+      Field `kind` `=`
+        NameExpr `texture`
+      Field `path` `=`
+        LiteralExpr `"art/canyon-v1.png"`
+  ObjectDecl
+    TypeName `asset`
+    Name `portrait_default`
+    Body `{` `}`
+      Field `kind` `=`
+        NameExpr `texture`
+      Field `path` `=`
+        LiteralExpr `"art/mender-stand-v2.png"`
+      Field `region` `=`
+        Body `{` `}`
+          Field `x` `=`
+            LiteralExpr `320`
+          Field `y` `=`
+            LiteralExpr `60`
+          Field `w` `=`
+            LiteralExpr `420`
+          Field `h` `=`
+            LiteralExpr `420`

@@ -1,0 +1,250 @@
+File
+  Header `kedo` `1` `module` `patriark`
+  MixinDecl `mixin`
+    Name `at_damaged_bridge`
+    Body `{` `}`
+      Field `eligibility` `=`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `op` `=`
+              NameExpr `node_is`
+            Field `target` `=`
+              NameExpr `bridge_west`
+          Body `{` `}`
+            Field `op` `=`
+              NameExpr `structure_damaged`
+            Field `target` `=`
+              NameExpr `bridge`
+  MixinDecl `mixin`
+    Name `leave_option`
+    Body `{` `}`
+      Field `options` `+=`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `leave`
+            Field `label_key` `=`
+              LiteralExpr `"action.leave"`
+            Field `duration` `=`
+              LiteralExpr `0min`
+            Field `resolution` `=`
+              NameExpr `deterministic`
+            Field `exit` `=`
+              NameExpr `node_actions`
+            Field `completes` `=`
+              LiteralExpr `false`
+  ObjectDecl
+    TypeName `event`
+    Name `bridge` `.` `inspect_damage`
+    WithClause `with` `,`
+      Name `at_damaged_bridge`
+      Name `leave_option`
+    Body `{` `}`
+      Field `version` `=`
+        LiteralExpr `1`
+      Field `family` `=`
+        NameExpr `infrastructure_inspection`
+      Field `context` `=`
+        NameExpr `node_action`
+      Field `text_key` `=`
+        LiteralExpr `"scene.inspect"`
+      Field `repeat_scope` `=`
+        NameExpr `character`
+      Field `options` `=`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `inspect`
+            Field `label_key` `=`
+              LiteralExpr `"action.inspect"`
+            Field `duration` `=`
+              LiteralExpr `30min`
+            Field `resolution` `=`
+              NameExpr `deterministic`
+            Field `exit` `=`
+              NameExpr `node_actions`
+            Field `completes` `=`
+              LiteralExpr `true`
+            Field `effects` `=`
+              ListExpr `[` `]`
+                Body `{` `}`
+                  Field `op` `=`
+                    NameExpr `record_observation`
+                  Field `target` `=`
+                    NameExpr `bridge`
+                  Field `value` `=`
+                    NameExpr `plan`
+  ObjectDecl
+    TypeName `event`
+    Name `bridge` `.` `reinforce`
+    WithClause `with` `,`
+      Name `at_damaged_bridge`
+      Name `leave_option`
+    Body `{` `}`
+      Field `version` `=`
+        LiteralExpr `2`
+      Field `family` `=`
+        NameExpr `infrastructure_work`
+      Field `context` `=`
+        NameExpr `node_action`
+      Field `text_key` `=`
+        LiteralExpr `"scene.repair"`
+      Field `repeat_scope` `=`
+        NameExpr `world`
+      Field `options` `=`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `repair`
+            Field `label_key` `=`
+              LiteralExpr `"action.repair"`
+            Field `duration` `=`
+              LiteralExpr `120min`
+            Field `resolution` `=`
+              NameExpr `d20`
+            Field `exit` `=`
+              NameExpr `node_actions`
+            Field `completes` `=`
+              LiteralExpr `true`
+            Field `requirements` `=`
+              ListExpr `[` `]`
+                Body `{` `}`
+                  Field `op` `=`
+                    NameExpr `knows_plan`
+                  Field `target` `=`
+                    NameExpr `bridge`
+                Body `{` `}`
+                  Field `op` `=`
+                    NameExpr `resource`
+                  Field `target` `=`
+                    NameExpr `materials`
+                  Field `amount` `=`
+                    LiteralExpr `4`
+            Field `check` `=`
+              Body `{` `}`
+                Field `attribute` `=`
+                  NameExpr `intelligence`
+                Field `skill` `=`
+                  NameExpr `repair`
+                Field `difficulty` `=`
+                  LiteralExpr `12`
+                Field `practice` `=`
+                  NameExpr `footbridge_bracing`
+            Field `effects` `=`
+              ListExpr `[` `]`
+                Body `{` `}`
+                  Field `op` `=`
+                    NameExpr `consume_resource`
+                  Field `target` `=`
+                    NameExpr `materials`
+                  Field `amount` `=`
+                    LiteralExpr `4`
+                Body `{` `}`
+                  Field `op` `=`
+                    NameExpr `repair_structure`
+                  Field `target` `=`
+                    NameExpr `bridge`
+            Field `failure_effects` `=`
+              ListExpr `[` `]`
+                Body `{` `}`
+                  Field `op` `=`
+                    NameExpr `injury`
+                  Field `amount` `=`
+                    LiteralExpr `10`
+      Hook `on` `check_resolved` `(` `ctx` `)`
+        Block `{` `}`
+          IfStmt `if`
+            ParenExpr `(` `)`
+              BinaryExpr `and`
+                BinaryExpr `==`
+                  MemberExpr `.` `outcome`
+                    NameExpr `ctx`
+                  MemberExpr `.` `success`
+                    NameExpr `outcome`
+                BinaryExpr `==`
+                  MemberExpr `.` `option_id`
+                    NameExpr `ctx`
+                  LiteralExpr `"repair"`
+            Block `{` `}`
+              EmitStmt `emit` `signal:structure_repaired`
+                ArgList `(` `,` `)`
+                  MemberExpr `.` `structure`
+                    NameExpr `ctx`
+                  MemberExpr `.` `character`
+                    NameExpr `ctx`
+              WaitStmt `wait`
+                LiteralExpr `2d`
+              ApplyStmt `apply` `effect:caravan_arrives`
+                ArgList `(` `)`
+                  RefExpr `place:city_a`
+  FunctionDecl `function`
+    Name `reinforce_cost`
+    ParamList `(` `)`
+      Param `stage` `:` `int`
+    ReturnType `->` `int`
+    Block `{` `}`
+      IfStmt `if`
+        ParenExpr `(` `)`
+          BinaryExpr `<=`
+            NameExpr `stage`
+            LiteralExpr `1`
+        Block `{` `}`
+          ReturnStmt `return`
+            LiteralExpr `4`
+      ReturnStmt `return`
+        BinaryExpr `+`
+          LiteralExpr `4`
+          BinaryExpr `*`
+            NameExpr `stage`
+            LiteralExpr `2`
+  ObjectDecl
+    TypeName `structure`
+    Name `bridge`
+    Body `{` `}`
+      Field `name_key` `=`
+        LiteralExpr `"structure.bridge"`
+      Field `stages` `=`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `bracing`
+            Field `materials` `=`
+              LiteralExpr `4`
+            Field `minutes` `=`
+              LiteralExpr `120`
+            Field `practice` `=`
+              NameExpr `footbridge_bracing`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `decking`
+            Field `materials` `=`
+              LiteralExpr `6`
+            Field `minutes` `=`
+              LiteralExpr `180`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `railing`
+            Field `materials` `=`
+              LiteralExpr `3`
+            Field `minutes` `=`
+              LiteralExpr `60`
+      Field `damaged_scene` `=`
+        RefExpr `asset:bridge_damaged`
+      Field `repaired_scene` `=`
+        RefExpr `asset:bridge_repaired`
+  ObjectDecl
+    TypeName `asset`
+    Name `bridge_damaged`
+    Body `{` `}`
+      Field `kind` `=`
+        NameExpr `texture`
+      Field `path` `=`
+        LiteralExpr `"art/riverbed-v1.png"`
+  ObjectDecl
+    TypeName `asset`
+    Name `bridge_repaired`
+    Body `{` `}`
+      Field `kind` `=`
+        NameExpr `texture`
+      Field `path` `=`
+        LiteralExpr `"art/riverbed-v1.png"`
