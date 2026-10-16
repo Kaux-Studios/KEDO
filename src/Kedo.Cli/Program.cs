@@ -7,9 +7,11 @@ using Kedo.Diagnostics;
 // KEDO command line. Every command accepts --json for machine-readable output (KEDO-00, anexo G).
 // Exit codes: 0 ok, 1 diagnostics with errors (or `fmt --check` found changes), 2 usage error, 3 I/O error.
 
-var options = new HashSet<string>(args.Where(a => a.StartsWith("--", StringComparison.Ordinal)));
+var options = new HashSet<string>(args.Where(a => a.StartsWith("--", StringComparison.Ordinal) && !a.Contains('=')));
+var valued = args.Where(a => a.StartsWith("--", StringComparison.Ordinal) && a.Contains('=')).ToDictionary(a => a[..a.IndexOf('=')], a => a[(a.IndexOf('=') + 1)..]);
 var positional = args.Where(a => !a.StartsWith("--", StringComparison.Ordinal)).ToArray();
 var json = options.Contains("--json");
+Kedo.Cli.CliOptions.SchemaPaths = valued.TryGetValue("--schema", out var schemaPath) ? schemaPath.Split(';', StringSplitOptions.RemoveEmptyEntries) : Array.Empty<string>();
 
 if (positional.Length == 0 || options.Contains("--help"))
 {
@@ -34,6 +36,8 @@ try
             return Check(positional.Skip(1).ToArray(), json, dump: true, options.Contains("--provenance"));
         case "explain":
             return Explain(positional.Skip(1).ToArray());
+        case "schema":
+            return Schema(positional.Skip(1).ToArray(), json);
         case "fmt":
             return Fmt(positional.Skip(1).ToArray(), options.Contains("--check"), json);
         default:
@@ -50,7 +54,8 @@ catch (IOException ex)
 
 static void PrintUsage()
 {
-    Console.WriteLine("kedo <command> [files or directories...] [--json]");
+    Console.WriteLine("kedo <command> [files or directories...] [--json] [--schema=<paths>]");
+    Console.WriteLine("  schema <paths>     Load a KEDO-written schema (kedo_type, kedo_component, ...) and print it as a JSON Schema bundle.");
     Console.WriteLine("  version            Print the toolchain version.");
     Console.WriteLine("  parse <paths>      Parse and print the syntax tree and diagnostics.");
     Console.WriteLine("  check <paths>      Parse, resolve and validate; print diagnostics.");
@@ -70,7 +75,7 @@ static Kedo.Compiler.Resolution.ResolvedCatalog Load(string[] paths, DiagnosticB
         decls.Add(Kedo.Compiler.Model.DeclarationBuilder.Build(tree, bag));
     }
 
-    var schema = new Kedo.Schema.SchemaRegistry { Permissive = true };
+    var schema = LoadSchema(Kedo.Cli.CliOptions.SchemaPaths, bag, trees);
     return Kedo.Compiler.Resolution.Resolver.Resolve(decls, schema, bag);
 }
 
@@ -135,22 +140,75 @@ static int Explain(string[] args)
     return 0;
 }
 
-static IEnumerable<string> ExpandFiles(string[] paths)
+static IEnumerable<string> ExpandFiles(string[] paths, bool excludeSchema = true)
 {
+    var schemaDirs = excludeSchema ? Kedo.Cli.CliOptions.SchemaPaths.Select(Path.GetFullPath).ToArray() : Array.Empty<string>();
+    bool IsSchema(string f) => schemaDirs.Any(d => Path.GetFullPath(f).StartsWith(d, StringComparison.OrdinalIgnoreCase));
     foreach (var p in paths)
     {
         if (Directory.Exists(p))
         {
             foreach (var f in Directory.EnumerateFiles(p, "*.kedo", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.Ordinal))
             {
-                yield return f;
+                if (!IsSchema(f))
+                {
+                    yield return f;
+                }
             }
         }
-        else
+        else if (!IsSchema(p))
         {
             yield return p;
         }
     }
+}
+
+static Kedo.Schema.SchemaRegistry LoadSchema(string[] paths, DiagnosticBag bag, List<SyntaxTree> trees)
+{
+    if (paths.Length == 0)
+    {
+        return new Kedo.Schema.SchemaRegistry { Permissive = true };
+    }
+
+    var decls = new List<Kedo.Compiler.Model.FileDeclarations>();
+    foreach (var file in ExpandFiles(paths, excludeSchema: false))
+    {
+        var tree = Parser.Parse(SourceText.FromFile(file), bag);
+        trees.Add(tree);
+        decls.Add(Kedo.Compiler.Model.DeclarationBuilder.Build(tree, bag));
+    }
+
+    return Kedo.Compiler.Schema.SchemaLoader.Load(decls, bag);
+}
+
+static int Schema(string[] paths, bool json)
+{
+    if (paths.Length == 0)
+    {
+        Console.Error.WriteLine("expected the schema files or directory");
+        return 2;
+    }
+
+    var bag = new DiagnosticBag();
+    var trees = new List<SyntaxTree>();
+    var registry = LoadSchema(paths, bag, trees);
+    if (bag.HasErrors)
+    {
+        WriteDiagnosticsText(bag, trees);
+        return 1;
+    }
+
+    using var stream = Console.OpenStandardOutput();
+    using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+    Kedo.Compiler.Schema.JsonSchemaWriter.Write(registry, writer);
+    writer.Flush();
+    Console.WriteLine();
+    if (!json)
+    {
+        WriteDiagnosticsText(bag, trees);
+    }
+
+    return 0;
 }
 
 static int Parse(string[] paths, bool json, bool dumpTree)

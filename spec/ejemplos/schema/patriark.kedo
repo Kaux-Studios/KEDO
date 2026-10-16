@@ -1,0 +1,282 @@
+kedo 1
+module patriark
+
+// Esquema de ejemplo escrito en KEDO: lo que Patriark registraría para que los tres
+// ejemplos (sentinel, bridge, campaign) validen con esquema cerrado. Se carga con
+// `kedo check --schema=spec/ejemplos/schema spec/ejemplos`. Un juego puede registrar
+// lo mismo desde C# con IKedoModule; ambas vías producen el mismo registro.
+
+kedo_enum context { values = [travel, node_action] }
+kedo_enum repeat_scope { values = [world, character, expedition, node] }
+kedo_enum resolution { values = [deterministic, d20] }
+kedo_enum exit { values = [node_actions, arrive, retreat] }
+kedo_enum attribute { values = [strength, endurance, agility, perception, intelligence, resolve] }
+kedo_enum predicate_op { values = [node_is, node_has_tag, node_role, node_pick, structure_damaged, knows_plan, practice, resource, item_at] }
+kedo_enum effect_op { values = [consume_resource, gain_resource, gain_item, transfer_item, record_observation, repair_structure, injury, die] }
+kedo_enum node_role { values = [main, special, secondary] }
+kedo_enum service_kind { values = [info, trade, sell_item, accept, complete, reveal, rest, treat, upgrade] }
+kedo_enum equip_slot { values = [back, belt, legs, torso, head, hands, feet] }
+kedo_enum lifecycle { values = [available, expedition, dead, retired] }
+kedo_enum asset_kind { values = [texture, audio, scene, material, animation, font] }
+
+kedo_record predicate {
+    fields = [
+        { name = op  kind = enum  enum = predicate_op  required = true }
+        { name = target  kind = enum }
+        { name = value  kind = enum }
+        { name = amount  kind = int  min = 0 }
+    ]
+}
+
+kedo_record effect_entry {
+    fields = [
+        { name = op  kind = enum  enum = effect_op  required = true }
+        { name = target  kind = enum }
+        { name = value  kind = enum }
+        { name = amount  kind = int  min = 0 }
+    ]
+}
+
+kedo_record attribute_die {
+    fields = [
+        { name = attribute  kind = enum  enum = attribute  required = true }
+        { name = min  kind = int  min = 1  max = 20  required = true }
+    ]
+}
+
+kedo_record check {
+    fields = [
+        { name = attribute  kind = enum  enum = attribute  required = true }
+        { name = skill  kind = enum }
+        { name = difficulty  kind = int  min = 2  max = 30  required = true }
+        { name = practice  kind = enum }
+        { name = attribute_dice  kind = list  strategy = keyed  key = attribute  element = { kind = record  record = attribute_die } }
+    ]
+}
+
+kedo_record event_option {
+    doc = "Una opción de un evento. Se mezcla por id entre capas."
+    fields = [
+        { name = id  kind = enum  required = true }
+        { name = label_key  kind = text  required = true }
+        { name = duration  kind = duration  min = 0  default = 0 }
+        { name = resolution  kind = enum  enum = resolution  default = deterministic }
+        { name = exit  kind = enum  enum = exit  required = true }
+        { name = completes  kind = bool  default = true }
+        { name = requirements  kind = list  strategy = append  element = { kind = record  record = predicate } }
+        { name = check  kind = record  record = check }
+        { name = effects  kind = list  strategy = append  element = { kind = record  record = effect_entry } }
+        { name = failure_effects  kind = list  strategy = append  element = { kind = record  record = effect_entry } }
+        { name = critical_effects  kind = list  strategy = append  element = { kind = record  record = effect_entry } }
+        { name = critical_failure_effects  kind = list  strategy = append  element = { kind = record  record = effect_entry } }
+    ]
+}
+
+kedo_type event {
+    doc = "Plantilla de evento: acción de nodo o encuentro de viaje."
+    fields = [
+        { name = version  kind = int  min = 1  required = true }
+        { name = family  kind = enum  required = true }
+        { name = context  kind = enum  enum = context  required = true }
+        { name = text_key  kind = text  required = true }
+        { name = repeat_scope  kind = enum  enum = repeat_scope  default = expedition }
+        { name = eligibility  kind = list  strategy = append  element = { kind = record  record = predicate } }
+        { name = options  kind = list  strategy = keyed  element = { kind = record  record = event_option }  required = true }
+    ]
+    components = []
+    hooks = [check_resolved]
+}
+
+kedo_component health { fields = [{ name = max  kind = int  min = 1  required = true }, { name = regen  kind = int  default = 0 }] }
+kedo_component sense { fields = [{ name = range  kind = int  min = 0 }, { name = thermal  kind = bool  default = false }] }
+kedo_component patrol { fields = [{ name = radius  kind = int  min = 0 }, { name = interval  kind = duration  min = 1 }] }
+kedo_component sprite { fields = [{ name = sheet  kind = asset  asset_kind = texture  required = true }] }
+
+kedo_type actor {
+    fields = [
+        { name = name_key  kind = text  required = true }
+        { name = tags  kind = list  strategy = set  element = { kind = enum } }
+        { name = friend  kind = reference  target = actor }
+    ]
+    components = [health, sense, patrol, sprite]
+    hooks = [arrive]
+}
+
+kedo_record effect_param { fields = [{ name = name  kind = enum  required = true }, { name = type  kind = enum  required = true }] }
+kedo_type effect { fields = [{ name = params  kind = list  strategy = keyed  key = name  element = { kind = record  record = effect_param } }] }
+
+kedo_record region { fields = [{ name = x  kind = int }, { name = y  kind = int }, { name = w  kind = int }, { name = h  kind = int }] }
+kedo_type asset {
+    fields = [
+        { name = kind  kind = enum  enum = asset_kind  required = true }
+        { name = path  kind = text  required = true }
+        { name = region  kind = record  record = region }
+    ]
+}
+
+kedo_record stage { fields = [{ name = id  kind = enum  required = true }, { name = materials  kind = int  min = 0 }, { name = minutes  kind = int  min = 0 }, { name = practice  kind = enum }] }
+kedo_type structure {
+    fields = [
+        { name = name_key  kind = text  required = true }
+        { name = stages  kind = list  strategy = keyed  element = { kind = record  record = stage } }
+        { name = damaged_scene  kind = asset }
+        { name = repaired_scene  kind = asset }
+    ]
+}
+
+kedo_type place {
+    fields = [
+        { name = name_key  kind = text  required = true }
+        { name = role  kind = enum  enum = node_role  default = secondary }
+        { name = campaign_role  kind = enum }
+        { name = tags  kind = list  strategy = set  element = { kind = enum } }
+    ]
+}
+
+kedo_record supplies { fields = [{ name = water_minutes_per_unit  kind = int }, { name = food_minutes_per_unit  kind = int }, { name = deprivation_damage_per_unit  kind = int }] }
+kedo_record carry { fields = [{ name = base_kg  kind = int }, { name = kg_per_strength  kind = int }, { name = overload_limit_percent  kind = int }, { name = overload_travel_percent  kind = int }, { name = overload_agility_penalty  kind = int }] }
+kedo_record progression { fields = [{ name = max_level  kind = int }, { name = milestones_per_level  kind = int }, { name = attribute_gain  kind = int }, { name = attribute_max  kind = int }] }
+kedo_record health_rules { fields = [{ name = max  kind = int }] }
+kedo_type ruleset {
+    fields = [
+        { name = supplies  kind = record  record = supplies }
+        { name = carry  kind = record  record = carry }
+        { name = progression  kind = record  record = progression }
+        { name = health  kind = record  record = health_rules }
+    ]
+}
+
+kedo_record edge { fields = [{ name = id  kind = enum  required = true }, { name = from  kind = reference  target = place }, { name = to  kind = reference  target = place }, { name = minutes  kind = int }, { name = structure  kind = reference  target = structure }] }
+kedo_record local_place {
+    fields = [
+        { name = id  kind = enum  required = true }
+        { name = parent  kind = reference  target = place }
+        { name = name_key  kind = text }
+        { name = description_key  kind = text }
+        { name = scene  kind = asset  asset_kind = texture }
+        { name = x  kind = int }
+        { name = y  kind = int }
+    ]
+}
+kedo_record world {
+    fields = [
+        { name = nodes  kind = list  strategy = set  element = { kind = reference  target = place } }
+        { name = edges  kind = list  strategy = keyed  element = { kind = record  record = edge } }
+        { name = local_places  kind = list  strategy = keyed  element = { kind = record  record = local_place } }
+    ]
+}
+kedo_record scene_entry { fields = [{ name = key  kind = enum  required = true }, { name = scene  kind = asset }] }
+kedo_record scenes {
+    fields = [
+        { name = by_role  kind = list  strategy = keyed  key = key  element = { kind = record  record = scene_entry } }
+        { name = by_biome  kind = list  strategy = keyed  key = key  element = { kind = record  record = scene_entry } }
+        { name = default  kind = asset }
+    ]
+}
+kedo_record inventory {
+    fields = [
+        { name = water  kind = int  min = 0 }
+        { name = rations  kind = int  min = 0 }
+        { name = materials  kind = int  min = 0 }
+        { name = items  kind = list  strategy = set  element = { kind = reference  target = item } }
+    ]
+}
+kedo_type campaign {
+    fields = [
+        { name = version  kind = int  min = 1  required = true }
+        { name = rules  kind = reference  target = ruleset  required = true }
+        { name = guild_node  kind = reference  target = place  required = true }
+        { name = guilds  kind = list  strategy = set  element = { kind = reference  target = guild }  required = true }
+        { name = world  kind = record  record = world  required = true }
+        { name = scenes  kind = record  record = scenes }
+        { name = starting_inventory  kind = record  record = inventory }
+        { name = test_points  kind = int  min = 1  max = 999 }
+    ]
+}
+
+kedo_record resources { fields = [{ name = water  kind = int }, { name = rations  kind = int }, { name = materials  kind = int }] }
+kedo_record attributes { fields = [{ name = strength  kind = int  min = 1  max = 20 }, { name = endurance  kind = int  min = 1  max = 20 }, { name = agility  kind = int  min = 1  max = 20 }, { name = perception  kind = int  min = 1  max = 20 }, { name = intelligence  kind = int  min = 1  max = 20 }, { name = resolve  kind = int  min = 1  max = 20 }] }
+kedo_record recruit {
+    fields = [
+        { name = costs  kind = record  record = resources }
+        { name = minutes  kind = int }
+        { name = attributes  kind = record  record = attributes }
+        { name = names  kind = list  strategy = append  element = { kind = text } }
+        { name = title_key  kind = text }
+    ]
+}
+kedo_record upgrade { fields = [{ name = id  kind = enum  required = true }, { name = costs  kind = record  record = resources }, { name = minutes  kind = int }, { name = recruit_bonus  kind = record  record = attributes }] }
+kedo_type guild {
+    fields = [
+        { name = name_key  kind = text  required = true }
+        { name = description_key  kind = text }
+        { name = resources  kind = record  record = resources }
+        { name = roster  kind = list  strategy = set  element = { kind = reference  target = character } }
+        { name = recruit  kind = record  record = recruit }
+        { name = upgrades  kind = list  strategy = keyed  element = { kind = record  record = upgrade } }
+    ]
+}
+
+kedo_record training { fields = [{ name = repair  kind = int }, { name = survival  kind = int }] }
+kedo_type character {
+    fields = [
+        { name = name  kind = text  required = true }
+        { name = title_key  kind = text  required = true }
+        { name = occupation_family  kind = enum }
+        { name = known_practices  kind = list  strategy = set  element = { kind = enum } }
+        { name = lifecycle  kind = enum  enum = lifecycle  default = available }
+        { name = level  kind = int  min = 1  max = 999  default = 1 }
+        { name = attributes  kind = record  record = attributes }
+        { name = training  kind = record  record = training }
+        { name = portrait  kind = asset  asset_kind = texture }
+        { name = starting_gear  kind = reference  target = gear_kit }
+    ]
+}
+
+kedo_type service {
+    fields = [
+        { name = place  kind = enum  required = true }
+        { name = kind  kind = enum  enum = service_kind  required = true }
+        { name = minutes  kind = int  min = 0 }
+        { name = costs  kind = record  record = resources }
+        { name = rewards  kind = record  record = resources }
+        { name = menu  kind = text }
+    ]
+}
+
+kedo_record size { fields = [{ name = w  kind = int  min = 1 }, { name = h  kind = int  min = 1 }] }
+kedo_type item {
+    fields = [
+        { name = weight_g  kind = int  min = 0 }
+        { name = size  kind = record  record = size }
+        { name = equip_slot  kind = enum  enum = equip_slot }
+        { name = grid  kind = record  record = size }
+        { name = pockets  kind = list  strategy = append  element = { kind = record  record = size } }
+        { name = tags  kind = list  strategy = set  element = { kind = enum } }
+    ]
+}
+
+kedo_record kit_item { fields = [{ name = item  kind = reference  target = item  required = true }, { name = count  kind = int  min = 1  default = 1 }] }
+kedo_type gear_kit {
+    fields = [
+        { name = equipped  kind = list  strategy = set  element = { kind = reference  target = item } }
+        { name = carried  kind = list  strategy = keyed  key = item  element = { kind = record  record = kit_item } }
+    ]
+}
+
+kedo_hook arrive {
+    doc = "Un personaje llega al lugar del objeto."
+    context = [
+        { name = character  kind = reference  target = character }
+        { name = place  kind = reference  target = place }
+    ]
+}
+kedo_hook check_resolved {
+    doc = "Se resolvió una tirada de una opción de este evento."
+    context = [
+        { name = outcome  kind = enum }
+        { name = option_id  kind = text }
+        { name = structure  kind = reference  target = structure }
+        { name = character  kind = reference  target = character }
+    ]
+}

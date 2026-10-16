@@ -122,7 +122,7 @@ record  = body ;
 
 - Los elementos de una lista se separan con coma **o** con salto de línea (un elemento por línea no necesita comas); la coma final es opcional. El formateador conserva la elección del autor.
 
-- Un identificador suelto en posición de valor es un **valor de enumeración** del esquema (`context = travel`, `resolution = d20`). El esquema decide si es válido (K4003).
+- Un identificador suelto en posición de valor es un **valor de enumeración** del esquema (`context = travel`, `resolution = d20`). El esquema decide si es válido (K4003). Una palabra reservada también vale como valor de enumeración (`strategy = set`), porque ningún valor empieza con palabra reservada; en cambio no puede ser nombre de objeto ni de campo.
 - Un record es un bloque `{ k = v ... }`; sus claves las fija el esquema del campo (cerrado: clave desconocida es K2005 con sugerencia).
 - Una expresión compuesta solo aparece entre paréntesis (§7). Así `k = v` termina sin necesidad de salto de línea significativo.
 

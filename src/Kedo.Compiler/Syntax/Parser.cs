@@ -489,6 +489,16 @@ public sealed class Parser
                 Close();
                 return;
             default:
+                if (Current.IsKeyword)
+                {
+                    // A reserved word in value position is an enumeration value (`strategy = set`, `kind = option`):
+                    // no value can start with a keyword, so this is unambiguous (KEDO-01 §6).
+                    Open(NodeKind.NameExpr);
+                    Advance();
+                    Close();
+                    return;
+                }
+
                 ErrorAtCurrent("expected a value");
                 return;
         }
