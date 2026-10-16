@@ -38,6 +38,8 @@ try
             return Explain(positional.Skip(1).ToArray());
         case "schema":
             return Schema(positional.Skip(1).ToArray(), json);
+        case "compile":
+            return Compile(positional.Skip(1).ToArray(), json);
         case "fmt":
             return Fmt(positional.Skip(1).ToArray(), options.Contains("--check"), json);
         default:
@@ -61,6 +63,7 @@ static void PrintUsage()
     Console.WriteLine("  check <paths>      Parse, resolve and validate; print diagnostics.");
     Console.WriteLine("  resolve <paths>    Like check, then print the resolved catalog (--provenance adds origins).");
     Console.WriteLine("  explain <paths> <type:id> <path>   Show where a resolved value came from.");
+    Console.WriteLine("  compile <paths>    Resolve and compile hooks and functions to IR; print the disassembly.");
     Console.WriteLine("  fmt <paths>        Rewrite files in canonical form; with --check only report files that would change.");
     Console.WriteLine("Without a registered schema the resolver runs in permissive mode (any type and field; list strategies inferred).");
 }
@@ -119,6 +122,71 @@ static int Check(string[] paths, bool json, bool dump, bool provenance)
         {
             Console.WriteLine($"{catalog.Concrete.Count()} object(s), catalog {catalog.Hash}, {bag.Items.Count(d => d.IsError)} error(s), {bag.Items.Count(d => d.Severity == Severity.Warning)} warning(s)");
         }
+    }
+
+    return bag.HasErrors ? 1 : 0;
+}
+
+static int Compile(string[] paths, bool json)
+{
+    if (paths.Length == 0)
+    {
+        Console.Error.WriteLine("expected at least one file or directory");
+        return 2;
+    }
+
+    var bag = new DiagnosticBag();
+    var trees = new List<SyntaxTree>();
+    var decls = new List<Kedo.Compiler.Model.FileDeclarations>();
+    foreach (var file in ExpandFiles(paths))
+    {
+        var tree = Parser.Parse(SourceText.FromFile(file), bag);
+        trees.Add(tree);
+        decls.Add(Kedo.Compiler.Model.DeclarationBuilder.Build(tree, bag));
+    }
+
+    var schema = LoadSchema(Kedo.Cli.CliOptions.SchemaPaths, bag, trees);
+    var catalog = Kedo.Compiler.Resolution.Resolver.Resolve(decls, schema, bag);
+    var moduleFunctions = decls.SelectMany(d => d.Functions).ToList();
+    var programs = new List<Kedo.Runtime.BehaviorProgram>();
+    foreach (var obj in catalog.Objects)
+    {
+        var program = Kedo.Compiler.Behaviors.BehaviorCompiler.Compile(obj, moduleFunctions, schema, bag);
+        if (program is not null)
+        {
+            programs.Add(program);
+        }
+    }
+
+    if (json)
+    {
+        using var stream = Console.OpenStandardOutput();
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+        writer.WriteStartObject();
+        writer.WriteStartArray("programs");
+        foreach (var p in programs)
+        {
+            writer.WriteStartObject();
+            writer.WriteString("behavior", p.BehaviorId);
+            writer.WriteNumber("instructions", p.Code.Length);
+            writer.WriteString("listing", Kedo.Runtime.Disassembler.Dump(p));
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+        WriteDiagnosticsJson(writer, bag, trees);
+        writer.WriteEndObject();
+        writer.Flush();
+        Console.WriteLine();
+    }
+    else
+    {
+        foreach (var p in programs)
+        {
+            Console.Write(Kedo.Runtime.Disassembler.Dump(p));
+        }
+
+        WriteDiagnosticsText(bag, trees);
     }
 
     return bag.HasErrors ? 1 : 0;
