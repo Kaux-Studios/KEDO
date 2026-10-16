@@ -23,8 +23,8 @@ SemVer. **1.x nunca rompe**: gramática, AST serializado, IR, frames y API públ
 
 ```
 spec/            especificación del lenguaje, principios, ADR
-src/Kedo.Core    lexer, parser, AST, resolver, diagnósticos, formateador   (net8.0, AOT, sin dependencias)
-src/Kedo.Runtime IR, VM determinista, frames serializables, interfaces del host
+src/Kedo.Core    valores, diagnósticos, lector del pack, VM determinista, host  (net8.0, AOT, superficie mínima)
+src/Kedo.Compiler lexer, parser, AST, resolver, formateador, esquema, escritor del pack  (net8.0, AOT)
 src/Kedo.Cli     herramienta `kedo`: parse | check | fmt | build | schema | mcp
 addons/kedo      addon genérico de Godot (GDScript): biblioteca de contenido, formularios, diagnósticos, undo
 tests/           golden corpus + xUnit + tests GDScript headless
@@ -44,7 +44,7 @@ dotnet run --project src/Kedo.Cli -- version
 ## Documentación
 
 - [Principios y alcance](spec/KEDO-00-Principios-y-Alcance.md)
-- [ADR](spec/adr/)
+- [ADR](spec/adr/) · [API pública y paquetes](spec/KEDO-03-API-Publica-y-Paquetes.md) · [Gramática](spec/KEDO-01-Gramatica.md) · [Resolución](spec/KEDO-02-Resolucion.md)
 - [Investigación](docs/research/00-LEEME.md) y [planes](docs/plans/)
 - [Cómo contribuir](CONTRIBUTING.md) · [AGENTS.md](AGENTS.md)
 

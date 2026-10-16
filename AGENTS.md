@@ -5,7 +5,7 @@ KEDO es un lenguaje y toolchain propios. Antes de cambiar algo, leer [spec/KEDO-
 ## Reglas
 
 - Prioridad: rendimiento > facilidad de uso > escalabilidad > flexibilidad. Un cambio que empeora un benchmark necesita justificación en un ADR.
-- `Kedo.Core` y `Kedo.Runtime` no dependen de ningún motor ni de paquetes externos. Cero reflexión; serialización por source generators; `IsAotCompatible` y `JsonSerializerIsReflectionEnabledByDefault=false` se mantienen y el build no admite advertencias.
+- `Kedo.Core` y `Kedo.Compiler` no dependen de ningún motor ni de paquetes externos. Cero reflexión; serialización por source generators; `IsAotCompatible` y `JsonSerializerIsReflectionEnabledByDefault=false` se mantienen y el build no admite advertencias.
 - Nada específico de un juego entra al núcleo. Si Patriark necesita algo, se resuelve con un punto de extensión y se prueba también en `samples/`.
 - 1.x es aditivo (ADR-0001): no quitar ni cambiar significado de sintaxis, AST, IR, frames, códigos de diagnóstico ni API pública. Marcar obsoleto, no borrar.
 - Toda capacidad del lenguaje entra con: caso en la spec, golden test (entrada `.kedo`, AST esperado, diagnósticos esperados, salida formateada) y, si ejecuta, traza esperada de la VM.

@@ -2,14 +2,20 @@
   "version": 1,
   "dependencies": {
     "net8.0": {
-      "kedo.core": {
-        "type": "Project"
+      "Microsoft.CodeAnalysis.PublicApiAnalyzers": {
+        "type": "Direct",
+        "requested": "[3.3.4, )",
+        "resolved": "3.3.4",
+        "contentHash": "kNLTfXtXUWDHVt5iaPkkiPuyHYlMgLI6SOFT4w88bfeI2vqSeGgHunFkdvlaCM8RDfcY0t2+jnesQtidRJJ/DA=="
       },
-      "kedo.runtime": {
+      "kedo.compiler": {
         "type": "Project",
         "dependencies": {
           "Kedo.Core": "[1.0.0-alpha.0, )"
         }
+      },
+      "kedo.core": {
+        "type": "Project"
       }
     }
   }

@@ -1,0 +1,4 @@
+#nullable enable
+Kedo.KedoVersion
+const Kedo.KedoVersion.Current = "1.0.0-alpha.0" -> string!
+const Kedo.KedoVersion.LanguageMajor = 1 -> int

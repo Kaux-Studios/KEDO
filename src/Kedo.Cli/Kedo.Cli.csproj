@@ -7,10 +7,10 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>kedo</ToolCommandName>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <Description>KEDO command line: parse, check, fmt, build, schema, mcp.</Description>
+    <Description>KEDO command line: parse, check, fmt, build, schema, explain, mcp.</Description>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Kedo.Core/Kedo.Core.csproj" />
-    <ProjectReference Include="../Kedo.Runtime/Kedo.Runtime.csproj" />
+    <ProjectReference Include="../Kedo.Compiler/Kedo.Compiler.csproj" />
   </ItemGroup>
 </Project>

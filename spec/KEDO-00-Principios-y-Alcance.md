@@ -57,12 +57,18 @@ Cuando dos prioridades chocan, gana la de número menor, y la decisión se regis
 
 La investigación hecha para Patriark (ver [docs/research](../docs/research/00-LEEME.md)) descartó: `.tres` como fuente canónica, JSON puro como formato de autoría, intérpretes de terceros (MoonSharp, Lua-CSharp, Jint, NLua, Roslyn scripting, GDScript en runtime) como ejecutor de comportamientos, y plugins de editor en C# por la recarga de ensamblados de Godot 4.x. Fijó: resolver con mezcla por id y cuatro ops en orden fijo; dos espacios de id; hash del objeto resuelto; registro explícito AOT-safe; diagnóstico con código y puntero; IR propio con frames como datos; addon de Godot en GDScript que habla con la CLI.
 
-## Preguntas abiertas al inicializar
+## Preguntas de la inicialización y dónde se respondieron
 
-Las responde la investigación F (rendimiento y toolchain) y G (herramientas para IA), y después la spec v0.1 de la gramática:
+1. Representación del AST y modelo incremental → [ADR-0007](adr/0007-arquitectura-del-toolchain.md) D3, D4.
+2. Máquina de registros vs pila y representación de valores → ADR-0007 D6.
+3. Formato del catálogo compilado y hash → ADR-0007 D7, D8.
+4. Superficie del servidor MCP y relación con un LSP → anexo G; issue #8.
+5. Sintaxis concreta → [KEDO-01](KEDO-01-Gramatica.md), [KEDO-02](KEDO-02-Resolucion.md), ADR-0004 a 0006.
 
-1. Representación del AST (árbol inmutable estilo Roslyn vs arrays compactos) y modelo incremental.
-2. Máquina de registros vs pila y representación de valores en la VM.
-3. Formato binario del catálogo compilado y del IR (STJ source-gen vs MemoryPack vs propio) y hash.
-4. Superficie del servidor MCP y relación con un LSP.
-5. Sintaxis concreta: delimitadores, declaración de objetos, `extends`/`import`/`mixin`, expresiones, funciones, triggers, refs de assets.
+## Presupuestos de rendimiento
+
+Fijados en ADR-0007 D10 como valores iniciales a refinar con las primeras mediciones: carga del pack de 10k objetos ≤ 20 ms en escritorio y ≤ 100 ms en Android medio; ≥ 50 M instrucciones de VM por segundo en escritorio; 0 bytes asignados por instrucción; parse + resolve de 10k objetos ≤ 500 ms en frío y ≤ 50 ms incremental.
+
+## Paquetes y API pública
+
+Ver [KEDO-03](KEDO-03-API-Publica-y-Paquetes.md): `Kedo.Core` (runtime mínimo y estricto), `Kedo.Compiler`, tool `kedo`; tres números de versión (paquete, lenguaje, formato del pack); analizadores de API pública y validación de paquete desde el inicio.

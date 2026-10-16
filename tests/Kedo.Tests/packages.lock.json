@@ -109,14 +109,14 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
-      "kedo.core": {
-        "type": "Project"
-      },
-      "kedo.runtime": {
+      "kedo.compiler": {
         "type": "Project",
         "dependencies": {
           "Kedo.Core": "[1.0.0-alpha.0, )"
         }
+      },
+      "kedo.core": {
+        "type": "Project"
       }
     }
   }

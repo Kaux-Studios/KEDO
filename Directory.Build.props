@@ -11,5 +11,17 @@
     <Authors>Kaux Studios</Authors>
     <Company>Kaux Studios</Company>
     <Copyright>Copyright (c) 2026 Kaux Studios. All rights reserved.</Copyright>
+    <RepositoryUrl>https://github.com/Kaux-Studios/KEDO</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/Kaux-Studios/KEDO</PackageProjectUrl>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>kedo;game-content;dsl;kaux</PackageTags>
+    <!-- Package validation (ADR-0001). PackageValidationBaselineVersion is set after the first published 1.0.0. -->
+    <EnablePackageValidation>true</EnablePackageValidation>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="" Visible="false" />
+  </ItemGroup>
 </Project>

@@ -11,7 +11,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Kedo.Core/Kedo.Core.csproj" />
-    <ProjectReference Include="../../src/Kedo.Runtime/Kedo.Runtime.csproj" />
+    <ProjectReference Include="../../src/Kedo.Compiler/Kedo.Compiler.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

@@ -1,0 +1,13 @@
+<Project>
+  <!-- Public API tracking (KEDO-03): every public member of a packable project is declared in
+       PublicAPI.Shipped.txt or PublicAPI.Unshipped.txt; RS0016/RS0017 are errors. Evaluated here,
+       after the project file, so IsTestProject and IsPackable are already known. -->
+  <PropertyGroup>
+    <KedoTracksPublicApi Condition="'$(IsTestProject)' != 'true' and '$(IsPackable)' != 'false'">true</KedoTracksPublicApi>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(KedoTracksPublicApi)' == 'true'">
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" PrivateAssets="all" />
+    <AdditionalFiles Include="PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
+  </ItemGroup>
+</Project>

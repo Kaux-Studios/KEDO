@@ -5,6 +5,6 @@
     <IsAotCompatible>true</IsAotCompatible>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Description>KEDO language core: lexer, parser, AST, resolver, diagnostics, formatter.</Description>
+    <Description>KEDO core runtime: value model, diagnostics, pack reader, deterministic VM, host interfaces. Minimal, strictly versioned surface.</Description>
   </PropertyGroup>
 </Project>

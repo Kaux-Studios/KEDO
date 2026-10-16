@@ -7,7 +7,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E97AB835-D5E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kedo.Core", "src\Kedo.Core\Kedo.Core.csproj", "{18FAC753-DEF1-43B3-ADC5-B5EA2858881D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kedo.Runtime", "src\Kedo.Runtime\Kedo.Runtime.csproj", "{FA033000-4501-4993-B4A8-69763A97CFDF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kedo.Compiler", "src\Kedo.Compiler\Kedo.Compiler.csproj", "{FA033000-4501-4993-B4A8-69763A97CFDF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kedo.Cli", "src\Kedo.Cli\Kedo.Cli.csproj", "{C7653727-B422-49DC-BD68-8A235B5AF17F}"
 EndProject
