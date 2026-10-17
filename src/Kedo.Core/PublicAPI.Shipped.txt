@@ -327,6 +327,8 @@ Kedo.Schema.FieldSchema.AssetKind.get -> string?
 Kedo.Schema.FieldSchema.AssetKind.init -> void
 Kedo.Schema.FieldSchema.DefaultBool.get -> bool?
 Kedo.Schema.FieldSchema.DefaultBool.init -> void
+Kedo.Schema.FieldSchema.DefaultEmpty.get -> bool
+Kedo.Schema.FieldSchema.DefaultEmpty.init -> void
 Kedo.Schema.FieldSchema.DefaultInt.get -> long?
 Kedo.Schema.FieldSchema.DefaultInt.init -> void
 Kedo.Schema.FieldSchema.DefaultText.get -> string?

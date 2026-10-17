@@ -1,5 +1,82 @@
 #nullable enable
 Kedo.Compiler.Behaviors.BehaviorCompiler
+Kedo.Compiler.Editing.EditResult
+Kedo.Compiler.Editing.EditResult.EditResult(string? Text, string? Error) -> void
+Kedo.Compiler.Editing.EditResult.Error.get -> string?
+Kedo.Compiler.Editing.EditResult.Error.init -> void
+Kedo.Compiler.Editing.EditResult.Ok.get -> bool
+Kedo.Compiler.Editing.EditResult.Text.get -> string?
+Kedo.Compiler.Editing.EditResult.Text.init -> void
+Kedo.Compiler.Editing.ObjectDescriber
+Kedo.Compiler.Editing.SourceEditor
+Kedo.Compiler.Evaluation.EvalCheck
+Kedo.Compiler.Evaluation.EvalCheck.Context.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Kedo.Compiler.Evaluation.EvalCheck.Context.init -> void
+Kedo.Compiler.Evaluation.EvalCheck.EvalCheck(string! Kind, string? Key, string? Path, string? Expected, string? Variant, string? Hook, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Context, System.Collections.Generic.IReadOnlyDictionary<string!, long>! Queries) -> void
+Kedo.Compiler.Evaluation.EvalCheck.Expected.get -> string?
+Kedo.Compiler.Evaluation.EvalCheck.Expected.init -> void
+Kedo.Compiler.Evaluation.EvalCheck.Hook.get -> string?
+Kedo.Compiler.Evaluation.EvalCheck.Hook.init -> void
+Kedo.Compiler.Evaluation.EvalCheck.Key.get -> string?
+Kedo.Compiler.Evaluation.EvalCheck.Key.init -> void
+Kedo.Compiler.Evaluation.EvalCheck.Kind.get -> string!
+Kedo.Compiler.Evaluation.EvalCheck.Kind.init -> void
+Kedo.Compiler.Evaluation.EvalCheck.Path.get -> string?
+Kedo.Compiler.Evaluation.EvalCheck.Path.init -> void
+Kedo.Compiler.Evaluation.EvalCheck.Queries.get -> System.Collections.Generic.IReadOnlyDictionary<string!, long>!
+Kedo.Compiler.Evaluation.EvalCheck.Queries.init -> void
+Kedo.Compiler.Evaluation.EvalCheck.Variant.get -> string?
+Kedo.Compiler.Evaluation.EvalCheck.Variant.init -> void
+Kedo.Compiler.Evaluation.EvalOutcome
+Kedo.Compiler.Evaluation.EvalOutcome.EvalOutcome(string! Id, bool Passed, System.Collections.Generic.IReadOnlyList<string!>! Failures) -> void
+Kedo.Compiler.Evaluation.EvalOutcome.Failures.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Kedo.Compiler.Evaluation.EvalOutcome.Failures.init -> void
+Kedo.Compiler.Evaluation.EvalOutcome.Id.get -> string!
+Kedo.Compiler.Evaluation.EvalOutcome.Id.init -> void
+Kedo.Compiler.Evaluation.EvalOutcome.Passed.get -> bool
+Kedo.Compiler.Evaluation.EvalOutcome.Passed.init -> void
+Kedo.Compiler.Evaluation.EvalStep
+Kedo.Compiler.Evaluation.EvalStep.Append.get -> string?
+Kedo.Compiler.Evaluation.EvalStep.Append.init -> void
+Kedo.Compiler.Evaluation.EvalStep.Content.get -> string?
+Kedo.Compiler.Evaluation.EvalStep.Content.init -> void
+Kedo.Compiler.Evaluation.EvalStep.EvalStep(string! File, string? Content, string? Append, string? Find, string? Replace) -> void
+Kedo.Compiler.Evaluation.EvalStep.File.get -> string!
+Kedo.Compiler.Evaluation.EvalStep.File.init -> void
+Kedo.Compiler.Evaluation.EvalStep.Find.get -> string?
+Kedo.Compiler.Evaluation.EvalStep.Find.init -> void
+Kedo.Compiler.Evaluation.EvalStep.Replace.get -> string?
+Kedo.Compiler.Evaluation.EvalStep.Replace.init -> void
+Kedo.Compiler.Evaluation.EvalSuite
+Kedo.Compiler.Evaluation.EvalTask
+Kedo.Compiler.Evaluation.EvalTask.Checks.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Evaluation.EvalCheck!>!
+Kedo.Compiler.Evaluation.EvalTask.Checks.init -> void
+Kedo.Compiler.Evaluation.EvalTask.EvalTask(string! Id, string! Prompt, System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Evaluation.EvalStep!>! Setup, System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Evaluation.EvalStep!>! Solution, System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Evaluation.EvalCheck!>! Checks) -> void
+Kedo.Compiler.Evaluation.EvalTask.Id.get -> string!
+Kedo.Compiler.Evaluation.EvalTask.Id.init -> void
+Kedo.Compiler.Evaluation.EvalTask.Prompt.get -> string!
+Kedo.Compiler.Evaluation.EvalTask.Prompt.init -> void
+Kedo.Compiler.Evaluation.EvalTask.Setup.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Evaluation.EvalStep!>!
+Kedo.Compiler.Evaluation.EvalTask.Setup.init -> void
+Kedo.Compiler.Evaluation.EvalTask.Solution.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Evaluation.EvalStep!>!
+Kedo.Compiler.Evaluation.EvalTask.Solution.init -> void
+Kedo.Compiler.Evaluation.TraceHost
+Kedo.Compiler.Evaluation.TraceHost.Applied.get -> System.Collections.Generic.List<string!>!
+Kedo.Compiler.Evaluation.TraceHost.Apply(Kedo.Runtime.EffectKey key, string! effectId, System.ReadOnlySpan<Kedo.Runtime.HostValue> args) -> bool
+Kedo.Compiler.Evaluation.TraceHost.Context.get -> System.Collections.Generic.Dictionary<string!, Kedo.Runtime.HostValue>!
+Kedo.Compiler.Evaluation.TraceHost.Lines.get -> System.Collections.Generic.List<string!>!
+Kedo.Compiler.Evaluation.TraceHost.NowMinutes.get -> long
+Kedo.Compiler.Evaluation.TraceHost.NowMinutes.set -> void
+Kedo.Compiler.Evaluation.TraceHost.Queries.get -> System.Collections.Generic.Dictionary<string!, Kedo.Runtime.HostValue>!
+Kedo.Compiler.Evaluation.TraceHost.Query(string! queryId, System.ReadOnlySpan<Kedo.Runtime.HostValue> args) -> Kedo.Runtime.HostValue
+Kedo.Compiler.Evaluation.TraceHost.Raise(string! signalId, System.ReadOnlySpan<Kedo.Runtime.HostValue> args) -> void
+Kedo.Compiler.Evaluation.TraceHost.Raised.get -> System.Collections.Generic.List<string!>!
+Kedo.Compiler.Evaluation.TraceHost.Roll(Kedo.Runtime.EffectKey key, string! streamId, System.ReadOnlySpan<Kedo.Runtime.HostValue> args) -> long
+Kedo.Compiler.Evaluation.TraceHost.Run(Kedo.Runtime.BehaviorProgram! program, string! hook, int maxResumes = 16) -> string!
+Kedo.Compiler.Evaluation.TraceHost.Symbol(string! name) -> Kedo.Runtime.HostValue
+Kedo.Compiler.Evaluation.TraceHost.Symbols.get -> Kedo.Runtime.SymbolTable!
+Kedo.Compiler.Evaluation.TraceHost.Trace(string! message) -> void
+Kedo.Compiler.Evaluation.TraceHost.TraceHost() -> void
 Kedo.Compiler.Formatting.Formatter
 Kedo.Compiler.Import.JsonEnumSuggestion
 Kedo.Compiler.Import.JsonEnumSuggestion.Field.get -> string!
@@ -223,6 +300,12 @@ Kedo.Compiler.Model.Value.Origin.init -> void
 Kedo.Compiler.Model.Value.Value(Kedo.Compiler.Model.Origin Origin) -> void
 Kedo.Compiler.Pack.PackWriter
 Kedo.Compiler.Resolution.CatalogHasher
+Kedo.Compiler.Resolution.IncrementalCatalog
+Kedo.Compiler.Resolution.IncrementalCatalog.IncrementalCatalog(Kedo.Schema.SchemaRegistry! schema) -> void
+Kedo.Compiler.Resolution.IncrementalCatalog.LastParsedFiles.get -> int
+Kedo.Compiler.Resolution.IncrementalCatalog.LastResolvedObjects.get -> int
+Kedo.Compiler.Resolution.IncrementalCatalog.LastReusedObjects.get -> int
+Kedo.Compiler.Resolution.IncrementalCatalog.Update(System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Syntax.SourceText!>! sources, Kedo.Diagnostics.DiagnosticBag! diagnostics) -> Kedo.Compiler.Resolution.ResolvedCatalog!
 Kedo.Compiler.Resolution.LayerKind
 Kedo.Compiler.Resolution.LayerKind.Default = 0 -> Kedo.Compiler.Resolution.LayerKind
 Kedo.Compiler.Resolution.LayerKind.Mixin = 2 -> Kedo.Compiler.Resolution.LayerKind
@@ -404,6 +487,7 @@ Kedo.Compiler.Syntax.SyntaxTree
 Kedo.Compiler.Syntax.SyntaxTree.Children(int node) -> System.ReadOnlySpan<int>
 Kedo.Compiler.Syntax.SyntaxTree.FirstChildOfKind(int node, Kedo.Compiler.Syntax.NodeKind kind) -> int
 Kedo.Compiler.Syntax.SyntaxTree.NodeCount.get -> int
+Kedo.Compiler.Syntax.SyntaxTree.OwnToken(int node, int index) -> int
 Kedo.Compiler.Syntax.SyntaxTree.OwnTokens(int node) -> System.Collections.Generic.List<int>!
 Kedo.Compiler.Syntax.SyntaxTree.Root.get -> int
 Kedo.Compiler.Syntax.SyntaxTree.Source.get -> Kedo.Compiler.Syntax.SourceText!
@@ -517,6 +601,16 @@ override Kedo.Compiler.Resolution.RRecord.CanonicalText.get -> string!
 override Kedo.Compiler.Resolution.RRef.CanonicalText.get -> string!
 override Kedo.Compiler.Resolution.RText.CanonicalText.get -> string!
 static Kedo.Compiler.Behaviors.BehaviorCompiler.Compile(Kedo.Compiler.Resolution.ResolvedObject! obj, System.Collections.Generic.IEnumerable<Kedo.Compiler.Model.FunctionEntry!>! moduleFunctions, Kedo.Schema.SchemaRegistry! schema, Kedo.Diagnostics.DiagnosticBag! diagnostics) -> Kedo.Runtime.BehaviorProgram?
+static Kedo.Compiler.Editing.ObjectDescriber.Write(System.Text.Json.Utf8JsonWriter! w, Kedo.Compiler.Resolution.ResolvedObject! obj, Kedo.Schema.SchemaRegistry! schema) -> void
+static Kedo.Compiler.Editing.SourceEditor.AddObject(string! source, string! type, string! id, string? parent = null) -> Kedo.Compiler.Editing.EditResult!
+static Kedo.Compiler.Editing.SourceEditor.DuplicateObject(string! source, string! type, string! id, string! newId) -> Kedo.Compiler.Editing.EditResult!
+static Kedo.Compiler.Editing.SourceEditor.RemoveField(string! source, string! type, string! id, string! path) -> Kedo.Compiler.Editing.EditResult!
+static Kedo.Compiler.Editing.SourceEditor.SetField(string! source, string! type, string! id, string! path, string! value, string! op = "=") -> Kedo.Compiler.Editing.EditResult!
+static Kedo.Compiler.Evaluation.EvalSuite.ApplySolution(Kedo.Compiler.Evaluation.EvalTask! task, string! workspace) -> void
+static Kedo.Compiler.Evaluation.EvalSuite.Load(string! json) -> (string! Base, System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Evaluation.EvalTask!>! Tasks)
+static Kedo.Compiler.Evaluation.EvalSuite.Navigate(Kedo.Compiler.Resolution.ResolvedObject! obj, string! path) -> Kedo.Compiler.Resolution.ResolvedValue?
+static Kedo.Compiler.Evaluation.EvalSuite.Prepare(Kedo.Compiler.Evaluation.EvalTask! task, string! baseDirectory, string! workspace) -> void
+static Kedo.Compiler.Evaluation.EvalSuite.Verify(Kedo.Compiler.Evaluation.EvalTask! task, string! workspace) -> Kedo.Compiler.Evaluation.EvalOutcome!
 static Kedo.Compiler.Formatting.Formatter.Format(Kedo.Compiler.Syntax.SyntaxTree! tree) -> string!
 static Kedo.Compiler.Import.JsonImporter.Import(string! json, Kedo.Compiler.Import.JsonImportOptions! options) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 static Kedo.Compiler.Import.JsonImporter.Sanitize(string! s) -> string!
