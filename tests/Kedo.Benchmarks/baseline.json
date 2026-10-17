@@ -1,0 +1,66 @@
+{
+    "Lex|1000":  {
+                     "mean_ns":  545000,
+                     "allocated_bytes":  3369000.96
+                 },
+    "Parse|1000":  {
+                       "mean_ns":  1209200,
+                       "allocated_bytes":  6226841.6
+                   },
+    "ParseAndBuildDeclarations|1000":  {
+                                           "mean_ns":  15415300,
+                                           "allocated_bytes":  10310369.28
+                                       },
+    "Resolve|1000":  {
+                         "mean_ns":  6833100,
+                         "allocated_bytes":  12719390.72
+                     },
+    "Format|1000":  {
+                        "mean_ns":  5137000,
+                        "allocated_bytes":  4175083.52
+                    },
+    "WritePack|1000":  {
+                           "mean_ns":  7796800,
+                           "allocated_bytes":  7113625.6
+                       },
+    "LoadPack|1000":  {
+                          "mean_ns":  264400,
+                          "allocated_bytes":  732651.52
+                      },
+    "LoadPackAndDecode|1000":  {
+                                   "mean_ns":  775200,
+                                   "allocated_bytes":  3013939.2
+                               },
+    "Lex|10000":  {
+                      "mean_ns":  11498200,
+                      "allocated_bytes":  33970882.56
+                  },
+    "Parse|10000":  {
+                        "mean_ns":  18364100,
+                        "allocated_bytes":  62528348.16
+                    },
+    "ParseAndBuildDeclarations|10000":  {
+                                            "mean_ns":  75869400,
+                                            "allocated_bytes":  103819786.24
+                                        },
+    "Resolve|10000":  {
+                          "mean_ns":  235410000,
+                          "allocated_bytes":  126878842.88
+                      },
+    "Format|10000":  {
+                         "mean_ns":  25520700,
+                         "allocated_bytes":  41969059.84
+                     },
+    "WritePack|10000":  {
+                            "mean_ns":  73778700,
+                            "allocated_bytes":  69076602.88
+                        },
+    "LoadPack|10000":  {
+                           "mean_ns":  7386800,
+                           "allocated_bytes":  7468922.88
+                       },
+    "LoadPackAndDecode|10000":  {
+                                    "mean_ns":  35342600,
+                                    "allocated_bytes":  30403594.24
+                                }
+}

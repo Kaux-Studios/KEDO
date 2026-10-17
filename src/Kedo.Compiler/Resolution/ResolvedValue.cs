@@ -204,6 +204,57 @@ public sealed class OrderedFields : IEnumerable<KeyValuePair<string, ResolvedVal
     /// <summary>Returns a copy without the field.</summary>
     public OrderedFields Without(string name) => new(_items.Where(kv => kv.Key != name).ToList());
 
+    /// <summary>
+    /// Mutable view used while one record is merged: it copies the fields on the first write, so merging n entries
+    /// costs one copy instead of n (#16). <see cref="ToFields"/> returns the source itself when nothing was written.
+    /// </summary>
+    internal sealed class Builder
+    {
+        private readonly OrderedFields _source;
+        private List<KeyValuePair<string, ResolvedValue>>? _items;
+
+        public Builder(OrderedFields source) => _source = source;
+
+        private List<KeyValuePair<string, ResolvedValue>> Items => _items ?? _source._items;
+
+        public bool TryGetValue(string name, out ResolvedValue value)
+        {
+            foreach (var kv in Items)
+            {
+                if (kv.Key == name)
+                {
+                    value = kv.Value;
+                    return true;
+                }
+            }
+
+            value = null!;
+            return false;
+        }
+
+        public void Set(string name, ResolvedValue value)
+        {
+            if (_items is null)
+            {
+                _items = new List<KeyValuePair<string, ResolvedValue>>(_source._items.Count + 4);
+                _items.AddRange(_source._items);
+            }
+
+            for (var i = 0; i < _items.Count; i++)
+            {
+                if (_items[i].Key == name)
+                {
+                    _items[i] = new KeyValuePair<string, ResolvedValue>(name, value);
+                    return;
+                }
+            }
+
+            _items.Add(new KeyValuePair<string, ResolvedValue>(name, value));
+        }
+
+        public OrderedFields ToFields() => _items is null ? _source : new OrderedFields(_items);
+    }
+
     /// <inheritdoc />
     public IEnumerator<KeyValuePair<string, ResolvedValue>> GetEnumerator() => _items.GetEnumerator();
 

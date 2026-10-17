@@ -15,7 +15,6 @@ namespace Kedo.Benchmarks;
 
 /// <summary>Toolchain benchmarks over a synthetic module (ADR-0007 D10). Budgets: see spec/adr/0007 D10.</summary>
 [MemoryDiagnoser]
-[SimpleJob(RuntimeMoniker.Net80)]
 public class ToolchainBenchmarks
 {
     [Params(1_000, 10_000)]
@@ -78,11 +77,23 @@ public class ToolchainBenchmarks
 
     [Benchmark]
     public int LoadPack() => KedoPack.Load(_pack).Objects.Count;
+
+    /// <summary>Load and decode every body: what a game pays when it reads the whole catalog (bodies decode on demand, #16).</summary>
+    [Benchmark]
+    public int LoadPackAndDecode()
+    {
+        var fields = 0;
+        foreach (var obj in KedoPack.Load(_pack).Objects)
+        {
+            fields += obj.Body.Fields.Count;
+        }
+
+        return fields;
+    }
 }
 
 /// <summary>VM throughput on a synthetic straight-line program (no allocations per instruction expected).</summary>
 [MemoryDiagnoser]
-[SimpleJob(RuntimeMoniker.Net80)]
 public class VmBenchmarks
 {
     private const int Instructions = 100_000;

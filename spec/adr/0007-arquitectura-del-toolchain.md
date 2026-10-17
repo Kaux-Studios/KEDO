@@ -60,6 +60,8 @@ Presupuestos iniciales (a refinar con las primeras mediciones reales):
 | Guardar/restaurar 100 frames | ≤ 50 µs, sin asignaciones fuera del buffer | ≤ 250 µs |
 | Heap gestionado con 100k objetos cargados | ≤ 64 MB | ≤ 96 MB |
 
+Medición del 17/10/2026 (#16; escritorio x64, .NET 8, un hilo, corpus sintético de 10k objetos, job corto): parse 18 ms y 60 MB asignados (antes 57 ms y 96 MB: los nodos abiertos del parser son structs sobre una pila de hijos compartida, sin una lista por nodo), parse + declaraciones 76 ms (antes 101 ms), resolve 235 ms y 121 MB (antes 243 ms y 151 MB: un record mezclado se copia una vez, la etapa B arma la ruta del campo sólo para un diagnóstico y el hash codifica en la pila), carga del pack 7,4 ms y 7 MB (antes 50 ms y 38 MB: los cuerpos se decodifican al primer acceso; cargar y decodificar todo, 35 ms). Parse + resolve en frío queda en 311 ms, dentro de los 500 ms; la carga del pack, dentro de los 20 ms. `tests/Kedo.Benchmarks/baseline.json` guarda esta medición y `tools/bench-gate.ps1` falla el benchmark nocturno si una asignación crece más de 10 % o un tiempo más de 4 veces.
+
 **Medido el 16/10/2026** (escritorio x64, .NET 8, `tests/Kedo.Benchmarks`, corpus sintético de 10k objetos ≈ 5 MB, un hilo):
 
 | Métrica | Medido | Presupuesto | Estado |

@@ -281,18 +281,20 @@ public static class DeclarationBuilder
         private Entry? BuildEntry(int node)
         {
             var n = _t[node];
-            var own = _t.OwnTokens(node);
             var children = _t.Children(node);
             switch (n.Kind)
             {
                 case NodeKind.Field:
                 {
-                    if (own.Count < 2 || children.Length == 0)
+                    // The commonest entry: read its own tokens by position, without a list (#16).
+                    var t0 = _t.OwnToken(node, 0);
+                    var t1 = _t.OwnToken(node, 1);
+                    if (t1 < 0 || children.Length == 0)
                     {
                         return null;
                     }
 
-                    var op = _t.Tokens[own[1]].Kind switch
+                    var op = _t.Tokens[t1].Kind switch
                     {
                         TokenKind.EqualsBang => FieldOp.Replace,
                         TokenKind.PlusEquals => FieldOp.Add,
@@ -300,15 +302,17 @@ public static class DeclarationBuilder
                         _ => FieldOp.Assign,
                     };
                     // A quoted key (`"role:city_b" = x`) names a map entry that is not an identifier (ADR-0009).
-                    var name = _t.Tokens[own[0]].Kind == TokenKind.String ? Unescape(Text(own[0])) : Text(own[0]);
-                    var anchor = own.Count > 2 && op == FieldOp.Add && _t.Tokens[own[2]].Kind == TokenKind.Identifier
-                        ? Text(own[2]) == "first" ? ListAnchor.First : ListAnchor.Last
+                    var name = _t.Tokens[t0].Kind == TokenKind.String ? Unescape(Text(t0)) : Text(t0);
+                    var t2 = op == FieldOp.Add ? _t.OwnToken(node, 2) : -1;
+                    var anchor = t2 >= 0 && _t.Tokens[t2].Kind == TokenKind.Identifier
+                        ? Text(t2) == "first" ? ListAnchor.First : ListAnchor.Last
                         : ListAnchor.None;
                     return new FieldEntry(OriginOf(node), name, op, BuildValue(children[0])) { Anchor = anchor };
                 }
 
                 case NodeKind.KeyedEntry:
                 {
+                    var own = _t.OwnTokens(node);
                     if (own.Count == 0 || children.Length < 2)
                     {
                         return null;
@@ -327,6 +331,7 @@ public static class DeclarationBuilder
 
                 case NodeKind.Component:
                 {
+                    var own = _t.OwnTokens(node);
                     var body = _t.FirstChildOfKind(node, NodeKind.Body);
                     if (own.Count < 2 || body < 0)
                     {
@@ -338,6 +343,7 @@ public static class DeclarationBuilder
 
                 case NodeKind.Removal:
                 {
+                    var own = _t.OwnTokens(node);
                     if (own.Count >= 3 && _t.Tokens[own[1]].Kind == TokenKind.KwComponent)
                     {
                         return new RemovalEntry(OriginOf(node), Text(own[2]), null);
@@ -355,6 +361,7 @@ public static class DeclarationBuilder
 
                 case NodeKind.Hook:
                 {
+                    var own = _t.OwnTokens(node);
                     var block = _t.FirstChildOfKind(node, NodeKind.Block);
                     var idents = own.Where(tk => _t.Tokens[tk].Kind == TokenKind.Identifier).Select(Text).ToArray();
                     if (block < 0 || idents.Length < 2)
@@ -416,9 +423,10 @@ public static class DeclarationBuilder
             {
                 case NodeKind.LiteralExpr:
                 {
-                    var own = _t.OwnTokens(node);
-                    var negative = own.Count == 2 && _t.Tokens[own[0]].Kind == TokenKind.Minus;
-                    var tk = negative ? own[1] : own[0];
+                    var first = _t.OwnToken(node, 0);
+                    var second = _t.OwnToken(node, 1);
+                    var negative = second >= 0 && _t.OwnToken(node, 2) < 0 && _t.Tokens[first].Kind == TokenKind.Minus;
+                    var tk = negative ? second : first;
                     var token = _t.Tokens[tk];
                     var text = Text(tk);
                     if (token.Kind == TokenKind.Decimal)
@@ -445,9 +453,9 @@ public static class DeclarationBuilder
                 }
 
                 case NodeKind.NameExpr:
-                    return new EnumValue(origin, Text(_t.OwnTokens(node)[0]));
+                    return new EnumValue(origin, Text(_t.OwnToken(node, 0)));
                 case NodeKind.RefExpr:
-                    return ParseRef(origin, Text(_t.OwnTokens(node)[0]));
+                    return ParseRef(origin, Text(_t.OwnToken(node, 0)));
                 case NodeKind.ListExpr:
                 {
                     var items = new List<Value>();

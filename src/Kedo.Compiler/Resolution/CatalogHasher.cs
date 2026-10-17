@@ -40,6 +40,16 @@ public static class CatalogHasher
 
     private static void WriteString(XxHash128 h, string s)
     {
+        // Short strings (nearly all keys and ids) are encoded on the stack; the hashed bytes are the same either way.
+        if (s.Length <= 85)
+        {
+            Span<byte> buffer = stackalloc byte[256];
+            var count = Encoding.UTF8.GetBytes(s, buffer);
+            WriteInt(h, count);
+            h.Append(buffer[..count]);
+            return;
+        }
+
         var bytes = Encoding.UTF8.GetBytes(s);
         WriteInt(h, bytes.Length);
         h.Append(bytes);
@@ -66,7 +76,7 @@ public static class CatalogHasher
             case RList l:
             {
                 h.Append("l"u8);
-                var items = l.Strategy == ListStrategy.Set ? l.Items.OrderBy(i => i.CanonicalText, StringComparer.Ordinal).ToList() : l.Items.ToList();
+                var items = l.Strategy == ListStrategy.Set ? l.Items.OrderBy(i => i.CanonicalText, StringComparer.Ordinal).ToList() : l.Items;
                 WriteInt(h, items.Count);
                 foreach (var item in items)
                 {

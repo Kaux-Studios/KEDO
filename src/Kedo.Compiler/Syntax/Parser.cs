@@ -14,7 +14,7 @@ public sealed class Parser
     private readonly Token[] _tokens;
     private readonly int[] _sig;          // indices of significant tokens; last is EndOfFile
     private readonly DiagnosticBag _diagnostics;
-    private readonly TreeBuilder _builder = new();
+    private readonly TreeBuilder _builder;
     private int _pos;
 
     private Parser(SourceText source, Token[] tokens, DiagnosticBag diagnostics)
@@ -32,6 +32,7 @@ public sealed class Parser
         }
 
         _sig = sig.ToArray();
+        _builder = new TreeBuilder(_sig.Length);
     }
 
     /// <summary>Lexes and parses a source.</summary>

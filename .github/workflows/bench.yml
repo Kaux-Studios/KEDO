@@ -19,3 +19,6 @@ jobs:
         with:
           name: benchmarks
           path: BenchmarkDotNet.Artifacts/results/
+      - name: Regression gate against tests/Kedo.Benchmarks/baseline.json (allocations +10%, time 4x)
+        shell: pwsh
+        run: ./tools/bench-gate.ps1 -TimeFactor 4

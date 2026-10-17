@@ -160,32 +160,99 @@ public sealed class KedoPack
             programs.Add(new BehaviorProgram(behaviorId, version, hash, code, constants, pstrings, functions, hooks, awaits, map));
         }
 
-        // Objects.
+        // Objects: only headers are decoded here; bodies and components decode on first access (#16).
         r.Pos = sections[SectionObjects].offset;
         var objectCount = (int)r.U32();
         var objects = new List<PackObject>(objectCount);
+        var source = new PackSource(bytes, strings);
         for (var i = 0; i < objectCount; i++)
         {
             var type = strings[r.U32()];
             var id = strings[r.U32()];
             var hash = strings[r.U32()];
-            var body = (PackRecord)ReadValue(ref r, strings);
+            var bodyOffset = r.Pos;
+            SkipValue(ref r);
+            var componentsOffset = r.Pos;
             var compCount = (int)r.U32();
-            var components = new Dictionary<string, PackRecord>(StringComparer.Ordinal);
             for (var c = 0; c < compCount; c++)
             {
-                var ctype = strings[r.U32()];
-                components[ctype] = (PackRecord)ReadValue(ref r, strings);
+                r.Pos += 4;
+                SkipValue(ref r);
             }
 
             var hookCount = (int)r.U32();
             var hookIds = new string[hookCount];
             for (var c = 0; c < hookCount; c++) hookIds[c] = strings[r.U32()];
             var programIndex = (int)r.U32() - 1;
-            objects.Add(new PackObject(type, id, hash, body, components, hookIds, programIndex));
+            objects.Add(new PackObject(type, id, hash, source, bodyOffset, componentsOffset, hookIds, programIndex));
         }
 
         return new KedoPack(catalogHash, toolchain, objects, programs);
+    }
+
+    /// <summary>Advances over one encoded value without materialising it.</summary>
+    private static void SkipValue(ref Reader r)
+    {
+        var tag = (PackTag)r.U8();
+        switch (tag)
+        {
+            case PackTag.Int or PackTag.Duration:
+                r.Pos += 8;
+                break;
+            case PackTag.Bool:
+                r.Pos += 1;
+                break;
+            case PackTag.Decimal:
+                r.Pos += 9;
+                break;
+            case PackTag.Text or PackTag.Enum or PackTag.Ref:
+                r.Pos += 4;
+                break;
+            case PackTag.List:
+            {
+                r.Pos += 1 + 4;
+                var count = (int)r.U32();
+                for (var i = 0; i < count; i++) SkipValue(ref r);
+                break;
+            }
+
+            case PackTag.Record:
+            {
+                var count = (int)r.U32();
+                for (var i = 0; i < count; i++)
+                {
+                    r.Pos += 4;
+                    SkipValue(ref r);
+                }
+
+                break;
+            }
+
+            default:
+                throw new InvalidDataException($"invalid value tag {tag}");
+        }
+    }
+
+    /// <summary>Decodes the body record at <paramref name="offset"/>.</summary>
+    internal static PackRecord ReadRecordAt(byte[] bytes, string[] strings, int offset)
+    {
+        var r = new Reader(bytes) { Pos = offset };
+        return (PackRecord)ReadValue(ref r, strings);
+    }
+
+    /// <summary>Decodes the component table at <paramref name="offset"/>.</summary>
+    internal static IReadOnlyDictionary<string, PackRecord> ReadComponentsAt(byte[] bytes, string[] strings, int offset)
+    {
+        var r = new Reader(bytes) { Pos = offset };
+        var count = (int)r.U32();
+        var components = new Dictionary<string, PackRecord>(count, StringComparer.Ordinal);
+        for (var c = 0; c < count; c++)
+        {
+            var ctype = strings[r.U32()];
+            components[ctype] = (PackRecord)ReadValue(ref r, strings);
+        }
+
+        return components;
     }
 
     private static PackValue ReadValue(ref Reader r, string[] strings)

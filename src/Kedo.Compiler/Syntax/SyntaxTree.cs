@@ -197,6 +197,38 @@ public sealed class SyntaxTree
         return result;
     }
 
+    /// <summary>
+    /// The <paramref name="index"/>-th significant token of a node that is not inside a child, or -1: the same tokens as
+    /// <see cref="OwnTokens"/> without allocating a list (#16).
+    /// </summary>
+    public int OwnToken(int node, int index)
+    {
+        var n = _nodes[node];
+        var children = Children(node);
+        var c = 0;
+        var seen = 0;
+        for (var t = n.FirstToken; t <= n.LastToken; t++)
+        {
+            while (c < children.Length && _nodes[children[c]].LastToken < t)
+            {
+                c++;
+            }
+
+            if (c < children.Length && _nodes[children[c]].FirstToken <= t && t <= _nodes[children[c]].LastToken)
+            {
+                t = _nodes[children[c]].LastToken;
+                continue;
+            }
+
+            if (!Tokens[t].IsTrivia && seen++ == index)
+            {
+                return t;
+            }
+        }
+
+        return -1;
+    }
+
     /// <summary>Byte span of a node (first to last token, trivia included).</summary>
     public TextSpan SpanOf(int node)
     {

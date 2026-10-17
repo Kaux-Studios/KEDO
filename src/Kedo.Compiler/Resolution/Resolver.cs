@@ -73,6 +73,9 @@ public sealed class Resolver
     private readonly HashSet<string> _invalid = new(StringComparer.Ordinal);
     private readonly HashSet<string> _warned = new(StringComparer.Ordinal);
     private string _current = "";
+
+    // Stage B: path of the value being validated, built in place and turned into text only for a diagnostic (#16).
+    private readonly System.Text.StringBuilder _path = new(128);
     private bool _objectFailed;
 
     private Resolver(SchemaRegistry schema, DiagnosticBag diagnostics, string? variant)
@@ -584,7 +587,7 @@ public sealed class Resolver
             return existing;
         }
 
-        var fields = existing.Fields;
+        var fields = new OrderedFields.Builder(existing.Fields);
         foreach (var entry in authored.Entries)
         {
             switch (entry)
@@ -611,7 +614,7 @@ public sealed class Resolver
                     var updated = ApplyField(current, fe, fs, prov, path, nesting, written, mixinId);
                     if (updated is not null)
                     {
-                        fields = fields.With(fe.Name, updated);
+                        fields.Set(fe.Name, updated);
                     }
                     else if (current is null)
                     {
@@ -647,7 +650,7 @@ public sealed class Resolver
                     var merged = MergeRecord((RRecord)list.Items[idx], ke.Body, elementSchema, prov with { Origin = ke.Origin }, $"{pathPrefix}{(pathPrefix.Length == 0 ? "" : ".")}{ke.Name}[{ke.Key}]", nesting + 1, written, mixinId);
                     var items = list.Items.ToList();
                     items[idx] = merged;
-                    fields = fields.With(ke.Name, list with { Items = items, Provenance = prov with { Origin = ke.Origin } });
+                    fields.Set(ke.Name, list with { Items = items, Provenance = prov with { Origin = ke.Origin } });
                     break;
                 }
 
@@ -657,7 +660,7 @@ public sealed class Resolver
             }
         }
 
-        return existing with { Fields = fields, Provenance = prov with { Origin = authored.Origin } };
+        return existing with { Fields = fields.ToFields(), Provenance = prov with { Origin = authored.Origin } };
     }
 
     private ResolvedValue? ApplyField(ResolvedValue? current, FieldEntry fe, FieldSchema? fs, Provenance prov, string path, int nesting, Dictionary<string, string>? written, string? mixinId)
@@ -1247,10 +1250,12 @@ public sealed class Resolver
             var before = _d.Items.Count;
             _objectFailed = false;
             var typeSchema = _schema.FindType(obj.Type);
-            ValidateRecord(obj.Body, typeSchema?.Body, obj, obj.Key, catalog);
+            _path.Clear().Append(obj.Key);
+            ValidateRecord(obj.Body, typeSchema?.Body, obj, catalog);
             foreach (var kv in obj.Components)
             {
-                ValidateRecord((RRecord)kv.Value, _schema.FindComponent(kv.Key), obj, $"{obj.Key}.{kv.Key}", catalog);
+                _path.Clear().Append(obj.Key).Append('.').Append(kv.Key);
+                ValidateRecord((RRecord)kv.Value, _schema.FindComponent(kv.Key), obj, catalog);
             }
 
             // An inherited error reported on the ancestor still makes this object not exportable.
@@ -1261,28 +1266,36 @@ public sealed class Resolver
         }
     }
 
-    private void ValidateRecord(RRecord record, RecordSchema? schema, ResolvedObject obj, string path, ResolvedCatalog catalog)
+    private void ValidateRecord(RRecord record, RecordSchema? schema, ResolvedObject obj, ResolvedCatalog catalog)
     {
         if (schema is not null)
         {
             foreach (var f in schema.Fields)
             {
-                if (f.Required && !record.Fields.TryGetValue(f.Name, out _) && !WasRejected(obj, $"{path}.{f.Name}"))
+                if (f.Required && !record.Fields.TryGetValue(f.Name, out _))
                 {
-                    _d.Error("K4002", $"`{path}` is missing required field `{f.Name}`", obj.Declaration.Origin.File, obj.Declaration.Origin.Span);
+                    var path = _path.ToString();
+                    if (!WasRejected(obj, $"{path}.{f.Name}"))
+                    {
+                        _d.Error("K4002", $"`{path}` is missing required field `{f.Name}`", obj.Declaration.Origin.File, obj.Declaration.Origin.Span);
+                    }
                 }
             }
         }
 
+        var length = _path.Length;
         foreach (var kv in record.Fields)
         {
             var fs = schema?.Find(kv.Key);
-            ValidateValue(kv.Value, fs, obj, $"{path}.{kv.Key}", catalog);
+            _path.Append('.').Append(kv.Key);
+            ValidateValue(kv.Value, fs, obj, catalog);
+            _path.Length = length;
         }
     }
 
-    private void ValidateValue(ResolvedValue value, FieldSchema? fs, ResolvedObject obj, string path, ResolvedCatalog catalog)
+    private void ValidateValue(ResolvedValue value, FieldSchema? fs, ResolvedObject obj, ResolvedCatalog catalog)
     {
+        var path = _path;
         var origin = value.Provenance.Origin;
         switch (value)
         {
@@ -1336,8 +1349,7 @@ public sealed class Resolver
                 break;
             case RRef r:
             {
-                var key = $"{r.Type}:{r.Id}";
-                if (!catalog.ByKey.TryGetValue(key, out var target))
+                if (!catalog.ByKey.TryGetValue(r.Module is null ? r.CanonicalText : $"{r.Type}:{r.Id}", out var target))
                 {
                     AddOnce(WithProvenance("K4005", $"`{path}` references `{r.CanonicalText}`, which does not exist", obj, value));
                 }
@@ -1359,23 +1371,35 @@ public sealed class Resolver
             }
 
             case RList l:
-                CheckCount(l.Items.Count, fs, obj, value, path);
+            {
+                CheckCount(l.Items.Count, fs, obj, value);
+                var length = _path.Length;
+                _path.Append("[]");
                 foreach (var item in l.Items)
                 {
-                    ValidateValue(item, fs?.Element, obj, path + "[]", catalog);
+                    ValidateValue(item, fs?.Element, obj, catalog);
                 }
 
+                _path.Length = length;
                 break;
+            }
+
             case RRecord map when fs is { Kind: ValueKind.Map }:
-                CheckCount(map.Fields.Count(), fs, obj, value, path);
+            {
+                CheckCount(map.Fields.Count, fs, obj, value);
+                var length = _path.Length;
                 foreach (var kv in map.Fields)
                 {
-                    ValidateValue(kv.Value, fs.Element, obj, $"{path}.{RRecord.KeyText(kv.Key)}", catalog);
+                    _path.Append('.').Append(RRecord.KeyText(kv.Key));
+                    ValidateValue(kv.Value, fs.Element, obj, catalog);
+                    _path.Length = length;
                 }
 
                 break;
+            }
+
             case RRecord rec:
-                ValidateRecord(rec, fs?.RecordId is { } rid ? _schema.FindRecord(rid) : null, obj, path, catalog);
+                ValidateRecord(rec, fs?.RecordId is { } rid ? _schema.FindRecord(rid) : null, obj, catalog);
                 break;
         }
     }
@@ -1387,8 +1411,9 @@ public sealed class Resolver
         return obj.Chain.Any(ancestor => _invalid.Contains(ancestor + relative));
     }
 
-    private void CheckCount(int count, FieldSchema? fs, ResolvedObject obj, ResolvedValue value, string path)
+    private void CheckCount(int count, FieldSchema? fs, ResolvedObject obj, ResolvedValue value)
     {
+        var path = _path;
         if (fs is not null && ((fs.MinItems is { } min && count < min) || (fs.MaxItems is { } max && count > max)))
         {
             AddOnce(WithProvenance("K4010", $"`{path}` has {count} item(s); the field allows [{fs.MinItems?.ToString() ?? "0"}, {fs.MaxItems?.ToString() ?? "∞"}]", obj, value));

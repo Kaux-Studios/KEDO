@@ -103,16 +103,37 @@ public sealed record PackRecord(IReadOnlyDictionary<string, PackValue> Fields, I
     public PackList? List(string name) => Fields.TryGetValue(name, out var v) ? v as PackList : null;
 }
 
-/// <summary>An object in a pack.</summary>
+/// <summary>Bytes and string table of a loaded pack, shared by its objects to decode on demand.</summary>
+internal sealed class PackSource
+{
+    public PackSource(byte[] bytes, string[] strings)
+    {
+        Bytes = bytes;
+        Strings = strings;
+    }
+
+    public byte[] Bytes { get; }
+
+    public string[] Strings { get; }
+}
+
+/// <summary>An object in a pack. Its body and components are decoded on first access and then kept.</summary>
 public sealed class PackObject
 {
-    internal PackObject(string type, string id, string hash, PackRecord body, IReadOnlyDictionary<string, PackRecord> components, IReadOnlyList<string> hooks, int programIndex)
+    private readonly PackSource _source;
+    private readonly int _bodyOffset;
+    private readonly int _componentsOffset;
+    private PackRecord? _body;
+    private IReadOnlyDictionary<string, PackRecord>? _components;
+
+    internal PackObject(string type, string id, string hash, PackSource source, int bodyOffset, int componentsOffset, IReadOnlyList<string> hooks, int programIndex)
     {
         Type = type;
         Id = id;
         Hash = hash;
-        Body = body;
-        Components = components;
+        _source = source;
+        _bodyOffset = bodyOffset;
+        _componentsOffset = componentsOffset;
         Hooks = hooks;
         ProgramIndex = programIndex;
     }
@@ -129,11 +150,11 @@ public sealed class PackObject
     /// <summary>Content hash (hex).</summary>
     public string Hash { get; }
 
-    /// <summary>Resolved body.</summary>
-    public PackRecord Body { get; }
+    /// <summary>Resolved body (decoded on first access; values are immutable, so a concurrent first access is harmless).</summary>
+    public PackRecord Body => _body ??= KedoPack.ReadRecordAt(_source.Bytes, _source.Strings, _bodyOffset);
 
-    /// <summary>Components by type.</summary>
-    public IReadOnlyDictionary<string, PackRecord> Components { get; }
+    /// <summary>Components by type (decoded on first access).</summary>
+    public IReadOnlyDictionary<string, PackRecord> Components => _components ??= KedoPack.ReadComponentsAt(_source.Bytes, _source.Strings, _componentsOffset);
 
     /// <summary>Hook ids this object subscribes to.</summary>
     public IReadOnlyList<string> Hooks { get; }

@@ -20,7 +20,7 @@ dotnet build Kedo.sln -c Release
 dotnet test tests/Kedo.Tests/Kedo.Tests.csproj
 ```
 
-Al tocar parser, resolver o VM: correr los benchmarks (cuando existan en `tests/Kedo.Benchmarks`) y comparar con el último resultado registrado.
+Al tocar parser, resolver, pack o VM: correr los benchmarks (`dotnet run -c Release --project tests/Kedo.Benchmarks -- --filter '*' --job short`) y `powershell -File tools/bench-gate.ps1`, que compara con `tests/Kedo.Benchmarks/baseline.json`; si una mejora es real, actualizar la línea base con `-Update` en el mismo cambio.
 
 ## Registrar
 
