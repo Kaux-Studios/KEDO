@@ -27,7 +27,7 @@ La ficha recibe la descripción del objeto y el formulario; puede construir su p
 
 ## Configuración
 
-Editor Settings: `kedo/command` (por defecto `kedo`; también `dotnet kedo` o `dotnet run --project ... -c Release --no-build --`), `kedo/content_paths` (por defecto `res://content`), `kedo/schema_paths`.
+`kedo/command` (por defecto `kedo`; también `dotnet kedo`, `dotnet <ruta>/kedo.dll` o `dotnet run --project ... -c Release --no-build --`), `kedo/content_paths` (por defecto `res://content`) y `kedo/schema_paths`. El proyecto los fija en Project Settings (`project.godot`, sección `[kedo]`); un Editor Setting no vacío con el mismo nombre los reemplaza en una máquina. El directorio de trabajo de los comandos es el del proyecto, así que una ruta relativa como `../KEDO/...` funciona.
 
 ## Archivos
 

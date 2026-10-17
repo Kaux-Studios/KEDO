@@ -4,7 +4,7 @@ extends RefCounted
 ## Runs the `kedo` command line and parses its JSON output. The addon never loads the game
 ## assembly: the CLI (same core as the MCP server) is the single authority for diagnostics.
 ##
-## Configuration (EditorSettings when running in the editor, otherwise defaults):
+## Configuration: Project Settings (project.godot) with these names, overridden per machine by non-empty Editor Settings:
 ##   kedo/command        executable or command prefix, e.g. "kedo", "dotnet kedo" or
 ##                        "dotnet run --project C:/dev/KEDO/src/Kedo.Cli -c Release --no-build --"
 ##   kedo/content_paths  paths passed to every command (default: ["res://content"])
@@ -21,24 +21,26 @@ var last_error: String = ""
 
 
 static func from_editor_settings() -> KedoCli:
+	# Project Settings (committed in project.godot) give the project's defaults; a non-empty Editor Setting of the same
+	# name overrides them on one machine (for example a different path to the CLI).
 	var cli := KedoCli.new()
-	if not Engine.is_editor_hint():
-		return cli
-	var settings := EditorInterface.get_editor_settings()
-	for key in [SETTING_COMMAND, SETTING_CONTENT, SETTING_SCHEMA]:
-		if not settings.has_setting(key):
-			var default_value: Variant
-			match key:
-				SETTING_COMMAND:
-					default_value = "kedo"
-				SETTING_CONTENT:
-					default_value = PackedStringArray(["res://content"])
-				_:
-					default_value = PackedStringArray()
-			settings.set_setting(key, default_value)
-	cli.command = KedoCli.split_command(str(settings.get_setting(SETTING_COMMAND)))
-	cli.content_paths = settings.get_setting(SETTING_CONTENT)
-	cli.schema_paths = settings.get_setting(SETTING_SCHEMA)
+	var command := str(ProjectSettings.get_setting(SETTING_COMMAND, "kedo"))
+	var content: Variant = ProjectSettings.get_setting(SETTING_CONTENT, PackedStringArray(["res://content"]))
+	var schema: Variant = ProjectSettings.get_setting(SETTING_SCHEMA, PackedStringArray())
+	if Engine.is_editor_hint():
+		var settings := EditorInterface.get_editor_settings()
+		for key in [SETTING_COMMAND, SETTING_CONTENT, SETTING_SCHEMA]:
+			if not settings.has_setting(key):
+				settings.set_setting(key, "" if key == SETTING_COMMAND else PackedStringArray())
+		if str(settings.get_setting(SETTING_COMMAND)) != "":
+			command = str(settings.get_setting(SETTING_COMMAND))
+		if (settings.get_setting(SETTING_CONTENT) as PackedStringArray).size() > 0:
+			content = settings.get_setting(SETTING_CONTENT)
+		if (settings.get_setting(SETTING_SCHEMA) as PackedStringArray).size() > 0:
+			schema = settings.get_setting(SETTING_SCHEMA)
+	cli.command = KedoCli.split_command(command)
+	cli.content_paths = PackedStringArray(content)
+	cli.schema_paths = PackedStringArray(schema)
 	return cli
 
 
