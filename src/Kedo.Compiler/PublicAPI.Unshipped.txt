@@ -1,6 +1,14 @@
 #nullable enable
 Kedo.Compiler.Behaviors.BehaviorCompiler
 Kedo.Compiler.Formatting.Formatter
+Kedo.Compiler.Import.JsonEnumSuggestion
+Kedo.Compiler.Import.JsonEnumSuggestion.Field.get -> string!
+Kedo.Compiler.Import.JsonEnumSuggestion.Field.init -> void
+Kedo.Compiler.Import.JsonEnumSuggestion.JsonEnumSuggestion(string! Field, System.Collections.Generic.IReadOnlyList<string!>! Values, int Uses) -> void
+Kedo.Compiler.Import.JsonEnumSuggestion.Uses.get -> int
+Kedo.Compiler.Import.JsonEnumSuggestion.Uses.init -> void
+Kedo.Compiler.Import.JsonEnumSuggestion.Values.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Kedo.Compiler.Import.JsonEnumSuggestion.Values.init -> void
 Kedo.Compiler.Import.JsonImportOptions
 Kedo.Compiler.Import.JsonImportOptions.Collections.get -> System.Collections.Generic.Dictionary<string!, string!>!
 Kedo.Compiler.Import.JsonImportOptions.Collections.init -> void
@@ -63,6 +71,8 @@ Kedo.Compiler.Model.ExprValue.Node.init -> void
 Kedo.Compiler.Model.ExprValue.Tree.get -> Kedo.Compiler.Syntax.SyntaxTree!
 Kedo.Compiler.Model.ExprValue.Tree.init -> void
 Kedo.Compiler.Model.FieldEntry
+Kedo.Compiler.Model.FieldEntry.Anchor.get -> Kedo.Compiler.Model.ListAnchor
+Kedo.Compiler.Model.FieldEntry.Anchor.init -> void
 Kedo.Compiler.Model.FieldEntry.FieldEntry(Kedo.Compiler.Model.Origin Origin, string! Name, Kedo.Compiler.Model.FieldOp Op, Kedo.Compiler.Model.Value! Value) -> void
 Kedo.Compiler.Model.FieldEntry.Name.get -> string!
 Kedo.Compiler.Model.FieldEntry.Name.init -> void
@@ -123,6 +133,10 @@ Kedo.Compiler.Model.KeyedEntry.Key.init -> void
 Kedo.Compiler.Model.KeyedEntry.KeyedEntry(Kedo.Compiler.Model.Origin Origin, string! Name, string! Key, Kedo.Compiler.Model.RecordValue! Body) -> void
 Kedo.Compiler.Model.KeyedEntry.Name.get -> string!
 Kedo.Compiler.Model.KeyedEntry.Name.init -> void
+Kedo.Compiler.Model.ListAnchor
+Kedo.Compiler.Model.ListAnchor.First = 1 -> Kedo.Compiler.Model.ListAnchor
+Kedo.Compiler.Model.ListAnchor.Last = 2 -> Kedo.Compiler.Model.ListAnchor
+Kedo.Compiler.Model.ListAnchor.None = 0 -> Kedo.Compiler.Model.ListAnchor
 Kedo.Compiler.Model.ListValue
 Kedo.Compiler.Model.ListValue.Items.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.Value!>!
 Kedo.Compiler.Model.ListValue.Items.init -> void
@@ -296,6 +310,8 @@ Kedo.Compiler.Resolution.ResolvedObject.Mixins.get -> System.Collections.Generic
 Kedo.Compiler.Resolution.ResolvedObject.Order.get -> int
 Kedo.Compiler.Resolution.ResolvedObject.Type.get -> string!
 Kedo.Compiler.Resolution.ResolvedValue
+Kedo.Compiler.Resolution.ResolvedValue.Anchor.get -> Kedo.Compiler.Model.ListAnchor
+Kedo.Compiler.Resolution.ResolvedValue.Anchor.init -> void
 Kedo.Compiler.Resolution.ResolvedValue.Provenance.get -> Kedo.Compiler.Resolution.Provenance!
 Kedo.Compiler.Resolution.ResolvedValue.Provenance.init -> void
 Kedo.Compiler.Resolution.ResolvedValue.ResolvedValue(Kedo.Compiler.Resolution.Provenance! Provenance) -> void
@@ -497,6 +513,7 @@ static Kedo.Compiler.Behaviors.BehaviorCompiler.Compile(Kedo.Compiler.Resolution
 static Kedo.Compiler.Formatting.Formatter.Format(Kedo.Compiler.Syntax.SyntaxTree! tree) -> string!
 static Kedo.Compiler.Import.JsonImporter.Import(string! json, Kedo.Compiler.Import.JsonImportOptions! options) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 static Kedo.Compiler.Import.JsonImporter.Sanitize(string! s) -> string!
+static Kedo.Compiler.Import.JsonImporter.SuggestEnumFields(string! json, Kedo.Compiler.Import.JsonImportOptions! options) -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Import.JsonEnumSuggestion!>!
 static Kedo.Compiler.Model.DeclarationBuilder.Build(Kedo.Compiler.Syntax.SyntaxTree! tree, Kedo.Diagnostics.DiagnosticBag! diagnostics) -> Kedo.Compiler.Model.FileDeclarations!
 static Kedo.Compiler.Model.Origin.Of(Kedo.Compiler.Syntax.SyntaxTree! tree, int node) -> Kedo.Compiler.Model.Origin
 static Kedo.Compiler.Pack.PackWriter.Write(Kedo.Compiler.Resolution.ResolvedCatalog! catalog, System.Collections.Generic.IReadOnlyList<Kedo.Runtime.BehaviorProgram!>! programs) -> byte[]!

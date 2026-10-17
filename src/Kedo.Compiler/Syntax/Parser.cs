@@ -437,7 +437,9 @@ public sealed class Parser
                 Advance();
                 if (At(TokenKind.Equals) || At(TokenKind.EqualsBang) || At(TokenKind.PlusEquals) || At(TokenKind.MinusEquals))
                 {
+                    var add = At(TokenKind.PlusEquals);
                     Advance();
+                    ParseListAnchor(add);
                     ParseValue();
                 }
                 else
@@ -451,6 +453,32 @@ public sealed class Parser
                 ErrorAtCurrent("expected a field, `component`, `remove`, `on` or `function`");
                 return;
         }
+    }
+
+    /// <summary>
+    /// `k += first [..]` / `k += last [..]` (ADR-0011): a contextual word right before the list pins the added items to
+    /// the start or the end. `first`/`last` followed by `[` cannot be a value (an entry never starts with `[`), so the
+    /// words stay usable as identifiers and enum values. After another operator it is K1007.
+    /// </summary>
+    private void ParseListAnchor(bool afterAdd)
+    {
+        if (!At(TokenKind.Identifier) || Peek(1) != TokenKind.LBracket)
+        {
+            return;
+        }
+
+        var text = _source.GetText(Current.Span);
+        if (text is not ("first" or "last"))
+        {
+            return;
+        }
+
+        if (!afterAdd)
+        {
+            Error("K1007", $"`{text}` pins items added with `+=`; it is not allowed after `=`, `=!` or `-=`", Current.Span);
+        }
+
+        Advance();
     }
 
     // ----- values -----

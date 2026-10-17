@@ -599,12 +599,12 @@ public sealed class Resolver
                             return nl with { Shadowed = new[] { cl } };
                         case ListStrategy.Set:
                             WarnMerge(cl, nl, path, fe.Origin);
-                            return AddToSet(cl, nl, p);
+                            return AddToSet(cl, nl, p, path, fe.Origin);
                         case ListStrategy.Keyed:
                             WarnMerge(cl, nl, path, fe.Origin);
                             return MergeKeyed(cl, nl, p, path, fs, nesting, written, mixinId, fe.Origin);
                         case ListStrategy.Append:
-                            return cl with { Items = cl.Items.Concat(nl.Items).ToList(), Provenance = p };
+                            return cl with { Items = Arrange(cl.Items.Concat(nl.Items)), Provenance = p };
                     }
                 }
 
@@ -662,7 +662,7 @@ public sealed class Resolver
                         return null;
                     }
 
-                    return created;
+                    return created is null || fe.Anchor == ListAnchor.None ? created : created with { Items = Pin(created.Items, fe.Anchor) };
                 }
 
                 if (current is not RList list)
@@ -680,11 +680,16 @@ public sealed class Resolver
 
                 if (fe.Op == FieldOp.Add)
                 {
+                    if (fe.Anchor != ListAnchor.None)
+                    {
+                        rhs = rhs with { Items = Pin(rhs.Items, fe.Anchor) };
+                    }
+
                     return list.Strategy switch
                     {
-                        ListStrategy.Set => AddToSet(list, rhs, p),
+                        ListStrategy.Set => AddToSet(list, rhs, p, path, fe.Origin),
                         ListStrategy.Keyed => AddKeyed(list, rhs, p, path, fe.Origin),
-                        ListStrategy.Append => list with { Items = list.Items.Concat(rhs.Items).ToList(), Provenance = p },
+                        ListStrategy.Append => list with { Items = Arrange(list.Items.Concat(rhs.Items)), Provenance = p },
                         _ => Fail("K3005", $"`+=` is not allowed on `{path}`: the list is atomic", fe.Origin),
                     };
                 }
@@ -727,7 +732,30 @@ public sealed class Resolver
         return -1;
     }
 
-    private static RList AddToSet(RList set, RList incoming, Provenance p)
+    /// <summary>Marks items as pinned to the start or the end of their list (ADR-0011).</summary>
+    private static IReadOnlyList<ResolvedValue> Pin(IReadOnlyList<ResolvedValue> items, ListAnchor anchor)
+        => items.Select(i => i with { Anchor = anchor }).ToList();
+
+    /// <summary>
+    /// Final order of an ordered list (ADR-0011): items pinned `first`, then unpinned items, then items pinned `last`;
+    /// each group keeps its relative order (KEDO-02 R8 within the group).
+    /// </summary>
+    private static List<ResolvedValue> Arrange(IEnumerable<ResolvedValue> items)
+    {
+        var all = items as List<ResolvedValue> ?? items.ToList();
+        if (all.TrueForAll(i => i.Anchor == ListAnchor.None))
+        {
+            return all;
+        }
+
+        var arranged = new List<ResolvedValue>(all.Count);
+        arranged.AddRange(all.Where(i => i.Anchor == ListAnchor.First));
+        arranged.AddRange(all.Where(i => i.Anchor == ListAnchor.None));
+        arranged.AddRange(all.Where(i => i.Anchor == ListAnchor.Last));
+        return arranged;
+    }
+
+    private RList AddToSet(RList set, RList incoming, Provenance p, string path, Origin origin)
     {
         var items = set.Items.ToList();
         foreach (var item in incoming.Items)
@@ -736,9 +764,13 @@ public sealed class Resolver
             {
                 items.Add(item);
             }
+            else if (item.Anchor != ListAnchor.None && _warned.Add($"K3016|{origin.File}|{origin.Span.Start}|{item.CanonicalText}"))
+            {
+                _d.Warning("K3016", $"`{item.CanonicalText}` is already in `{path}`; `+= {item.Anchor.ToString().ToLowerInvariant()}` does not move it (remove it first with `-=`)", origin.File, origin.Span);
+            }
         }
 
-        return set with { Items = items, Provenance = p };
+        return set with { Items = Arrange(items), Provenance = p };
     }
 
     private RList? RemoveFromSet(RList set, RList incoming, Provenance p, string path, Origin origin)
@@ -780,7 +812,7 @@ public sealed class Resolver
             items.Add(item);
         }
 
-        return list with { Items = items, Provenance = p };
+        return list with { Items = Arrange(items), Provenance = p };
     }
 
     private RList? RemoveKeyed(RList list, RList incoming, Provenance p, string path, Origin origin)
@@ -834,7 +866,7 @@ public sealed class Resolver
             }
         }
 
-        return list with { Items = items, Provenance = p };
+        return list with { Items = Arrange(items), Provenance = p };
     }
 
     // ----- lowering authored values -----
@@ -1348,7 +1380,8 @@ public sealed class Resolver
         {
             foreach (var item in items.Items)
             {
-                sb.Append($"\n  item: {item.CanonicalText} from {From(item.Provenance, key)}");
+                var pin = item.Anchor == ListAnchor.None ? "" : $" (pinned {item.Anchor.ToString().ToLowerInvariant()})";
+                sb.Append($"\n  item: {item.CanonicalText} from {From(item.Provenance, key)}{pin}");
             }
         }
         else if (value is RRecord entries && entries.Fields.Any(kv => kv.Value is not RRecord and not RList))

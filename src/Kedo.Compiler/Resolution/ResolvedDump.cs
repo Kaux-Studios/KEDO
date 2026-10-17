@@ -1,3 +1,4 @@
+using Kedo.Compiler.Model;
 using System.Text;
 
 namespace Kedo.Compiler.Resolution;
@@ -88,7 +89,7 @@ public static class ResolvedDump
                 {
                     if (item is RRecord r)
                     {
-                        sb.Append(' ', (depth + 1) * 4).Append("- item\n");
+                        sb.Append(' ', (depth + 1) * 4).Append("- item").Append(item.Anchor == ListAnchor.None ? "" : $" (pinned {item.Anchor.ToString().ToLowerInvariant()})").Append('\n');
                         WriteRecord(sb, r, depth + 2, prov);
                     }
                     else

@@ -28,6 +28,8 @@ Read `AGENTS.md`, `spec/KEDO-00-Principios-y-Alcance.md` and the ADRs in `spec/a
 - **New resolver rule**: implement in `Resolver.cs` (`ApplyField`, `MergeRecord`, list helpers), add a case to `ResolverTests` and, if it changes output, regenerate golden files with `KEDO_UPDATE_GOLDEN=1 dotnet test` and review the diff.
 - **New schema field kind or list strategy**: `ValueKind`/`ListStrategy` in `Schema.cs`, `MetaSchema.cs` (enum values), `SchemaLoader.cs`, `JsonSchemaWriter.cs`, resolver `Lower`/`Check`, and the example schema.
 - **New opcode**: `OpCode` + `Instr` encoding in `Runtime/Program.cs`, verifier and dispatch in `BehaviorVm.cs`, `Disassembler.cs`, emission in `BehaviorCompiler.cs`, a `BehaviorTests` case with suspend/resume if it touches frames. Keep zero allocations per instruction.
+- **Public API**: every public member is declared in `src/<project>/PublicAPI.Unshipped.txt`; a new or removed one fails the build (RS0016/RS0017). Run `powershell -File tools/public-api.ps1` to write the lines the analyzer computes, and review the diff.
+- **Importing existing JSON content**: `kedo import-json <file.json> --out=<dir> --module=<m> --map=coll:type,...` drafts `.kedo` files and prints a `--enums=` suggestion for string fields whose values are repeated identifiers; rerun with the fields that really are enumerations.
 - **New CLI command / MCP tool**: implement over the core (no logic in the adapter), add `--json` output, update `PrintUsage`, add the tool with a stable `kedo_` name and a when-to-use description (never rename tools; add `_v2`).
 
 ## Verify before claiming done

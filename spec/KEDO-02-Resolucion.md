@@ -42,6 +42,7 @@ Defaults(esquema del tipo) → Resuelto(P) → M1 … Mn (aplanados) → Propio(
 - R6. Records: mezcla recursiva por defecto porque el caso dominante es sobrescribir un subcampo de un bloque de stats. `=!` para reemplazo total.
 - R7. Listas: la estrategia la declara el **esquema del campo**. Sin estrategia es `atomic`. Nunca hay concatenación por defecto (lección de RimWorld). No hay edición por índice.
 - R8. Orden resultante en `set`/`keyed`/`append`: elementos heredados primero en su orden, luego los agregados en orden de autoría. Para el hash, el esquema decide si el orden es significativo; si no, se canonicaliza por clave.
+- R8b. Posición fija ([ADR-0011](adr/0011-posicion-fija-en-listas.md)): `k += first [..]` y `k += last [..]` anclan los elementos agregados. El orden final es: anclados `first`, no anclados (R8), anclados `last`; cada grupo conserva su orden. El ancla viaja con el elemento por herencia, mixins y mezclas por clave; `-=` y un nuevo `+=` sin palabra la quitan. Agregar con ancla a un `set` un valor que ya está no lo mueve (K3016). El ancla no entra al hash: sólo el orden resultante.
 - R9. Las referencias son escalares: se resuelven a ids, nunca se inlinean ni mezclan el objeto apuntado.
 - R10. Tags: unión por defecto; es el único caso donde reemplazar por defecto sorprendería. Revisado el 16/10/2026 ([ADR-0010](adr/0010-diagnosticos-de-mezcla-y-orden-de-declaracion.md)): la unión con `=` sigue igual pero advierte (K3014); la forma canónica de agregar es `+=` y la de reemplazar `=!`.
 
@@ -140,6 +141,7 @@ Orden: `creature → wolf → alpha_wolf`.
 | K3013 | Anidamiento de records > 16 |
 | K3014 | `=` agrega a una lista `set` o `keyed` heredada no vacía (advertencia; `+=` o `=!`) |
 | K3015 | `= { }` sobre un record heredado no vacío no cambia nada (advertencia; `=! { }`) |
+| K3016 | `+= first` o `+= last` de un valor que ya está en una lista `set`: no se mueve (advertencia; `-=` antes) |
 | K4001 | Clase de valor incorrecta |
 | K4002 | Campo obligatorio ausente en objeto concreto |
 | K4003 | Valor de enumeración inválido |

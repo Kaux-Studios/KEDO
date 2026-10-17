@@ -1,0 +1,53 @@
+kedo 1
+module demo
+
+// Every event ends with the shared option, whatever the event adds after the mixin (ADR-0011).
+mixin leavable {
+    options +=   last   [
+        { id = leave  label = "Leave" }
+    ]
+}
+
+mixin cautious {
+    options += first [{ id = wait  label = "Wait" }]
+}
+
+event ambush with leavable {
+    options += [
+        { id = fight  label = "Fight" }
+        { id = flee  label = "Flee" }
+    ]
+}
+
+// The pin survives inheritance and merges by key; a later mixin pins another item first.
+event night_ambush extends ambush with cautious {
+    options += [{ id = hide  label = "Hide" }]
+    options[leave] { label = "Slip away" }
+}
+
+// Removing and adding again drops the pin.
+event calm with leavable {
+    options += [{ id = rest }]
+    options -= [leave]
+    options += [{ id = leave  label = "Go" }]
+    options += [{ id = extra }]
+}
+
+event tagged {
+    tags += [b]
+    tags += last [z]
+    tags += [c]
+    tags += first [a]
+}
+
+// `first` and `last` stay usable as values and names.
+event words {
+    first = last
+    tags += [first, last]
+}
+
+event bad {
+    tags = [x]
+    tags += last [x]
+    options = last [{ id = a }]
+}

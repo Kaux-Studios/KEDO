@@ -1,0 +1,54 @@
+event ambush with leavable
+    options [keyed]
+        - item
+            id = fight
+            label = "Fight"
+        - item
+            id = flee
+            label = "Flee"
+        - item (pinned last)
+            id = leave
+            label = "Leave"
+    hash 89efef27759438e589da8ad3af547c3c
+event bad
+    tags [set] [x]
+    options [keyed]
+        - item
+            id = a
+    hash 378bdc5a7f17657d0328c5ed5ee10a0a
+event calm with leavable
+    options [keyed]
+        - item
+            id = rest
+        - item
+            id = leave
+            label = "Go"
+        - item
+            id = extra
+    hash 878203dce6bc5a86e027a3049121c01e
+event night_ambush <- event:ambush with cautious
+    options [keyed]
+        - item (pinned first)
+            id = wait
+            label = "Wait"
+        - item
+            id = fight
+            label = "Fight"
+        - item
+            id = flee
+            label = "Flee"
+        - item
+            id = hide
+            label = "Hide"
+        - item (pinned last)
+            id = leave
+            label = "Slip away"
+    hash d6c745aaa163188e2678847fb70b9fee
+event tagged
+    tags [set] [a, b, c, z]
+    hash c1f603af6f52b5e8d1cc2aafc0fb16ce
+event words
+    first = last
+    tags [set] [first, last]
+    hash ff36804463cc7ec1d8290d6771ef1585
+catalog 942c5683f8d392cc7c576ded94b02aa3

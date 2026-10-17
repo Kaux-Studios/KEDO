@@ -1,0 +1,127 @@
+File
+  Header `kedo` `1` `module` `demo`
+  MixinDecl `mixin`
+    Name `leavable`
+    Body `{` `}`
+      Field `options` `+=` `last`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `leave`
+            Field `label` `=`
+              LiteralExpr `"Leave"`
+  MixinDecl `mixin`
+    Name `cautious`
+    Body `{` `}`
+      Field `options` `+=` `first`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `wait`
+            Field `label` `=`
+              LiteralExpr `"Wait"`
+  ObjectDecl
+    TypeName `event`
+    Name `ambush`
+    WithClause `with`
+      Name `leavable`
+    Body `{` `}`
+      Field `options` `+=`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `fight`
+            Field `label` `=`
+              LiteralExpr `"Fight"`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `flee`
+            Field `label` `=`
+              LiteralExpr `"Flee"`
+  ObjectDecl
+    TypeName `event`
+    Name `night_ambush`
+    ExtendsClause `extends`
+      Name `ambush`
+    WithClause `with`
+      Name `cautious`
+    Body `{` `}`
+      Field `options` `+=`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `hide`
+            Field `label` `=`
+              LiteralExpr `"Hide"`
+      KeyedEntry `options` `[` `]`
+        Name `leave`
+        Body `{` `}`
+          Field `label` `=`
+            LiteralExpr `"Slip away"`
+  ObjectDecl
+    TypeName `event`
+    Name `calm`
+    WithClause `with`
+      Name `leavable`
+    Body `{` `}`
+      Field `options` `+=`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `rest`
+      Field `options` `-=`
+        ListExpr `[` `]`
+          NameExpr `leave`
+      Field `options` `+=`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `leave`
+            Field `label` `=`
+              LiteralExpr `"Go"`
+      Field `options` `+=`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `extra`
+  ObjectDecl
+    TypeName `event`
+    Name `tagged`
+    Body `{` `}`
+      Field `tags` `+=`
+        ListExpr `[` `]`
+          NameExpr `b`
+      Field `tags` `+=` `last`
+        ListExpr `[` `]`
+          NameExpr `z`
+      Field `tags` `+=`
+        ListExpr `[` `]`
+          NameExpr `c`
+      Field `tags` `+=` `first`
+        ListExpr `[` `]`
+          NameExpr `a`
+  ObjectDecl
+    TypeName `event`
+    Name `words`
+    Body `{` `}`
+      Field `first` `=`
+        NameExpr `last`
+      Field `tags` `+=`
+        ListExpr `[` `,` `]`
+          NameExpr `first`
+          NameExpr `last`
+  ObjectDecl
+    TypeName `event`
+    Name `bad`
+    Body `{` `}`
+      Field `tags` `=`
+        ListExpr `[` `]`
+          NameExpr `x`
+      Field `tags` `+=` `last`
+        ListExpr `[` `]`
+          NameExpr `x`
+      Field `options` `=` `last`
+        ListExpr `[` `]`
+          Body `{` `}`
+            Field `id` `=`
+              NameExpr `a`

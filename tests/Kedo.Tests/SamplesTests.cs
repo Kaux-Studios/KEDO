@@ -33,7 +33,7 @@ public class SamplesTests
         Assert.Equal("40", ((RRecord)reactor.Components.First(c => c.Key == "life_support").Value).Fields.First(f => f.Key == "power").Value.CanonicalText);
         var minor = catalog.ByKey["crisis:coolant_leak_minor"];
         var choices = (RList)minor.Body.Fields.First(f => f.Key == "choices").Value;
-        Assert.Equal(new[] { "wait", "patch" }, choices.Items.Select(i => RList.KeyOf(i, "id")));
+        Assert.Equal(new[] { "patch", "wait" }, choices.Items.Select(i => RList.KeyOf(i, "id")));
 
         var functions = decls.SelectMany(d => d.Functions).ToList();
         var programs = catalog.Objects.Select(o => BehaviorCompiler.Compile(o, functions, schema, bag)).Where(p => p is not null).Select(p => p!).ToList();

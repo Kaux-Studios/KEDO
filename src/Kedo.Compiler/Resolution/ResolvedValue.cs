@@ -37,6 +37,12 @@ public abstract record ResolvedValue(Provenance Provenance)
 
     /// <summary>Scalar text used for keys and canonical output.</summary>
     public abstract string CanonicalText { get; }
+
+    /// <summary>
+    /// Pin of a list item added with <c>+= first|last [..]</c> (ADR-0011). Kept through inheritance and merges so the item
+    /// stays at its end of the list; resolution metadata, not content (the hash sees only the resulting order).
+    /// </summary>
+    public ListAnchor Anchor { get; init; }
 }
 
 /// <summary>Integer.</summary>

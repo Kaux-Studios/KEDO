@@ -47,11 +47,12 @@ Entries inside `{ }` are separated by whitespace or `;` (several per line allowe
 | `k = v` | replace | merge field by field (maps: key by key) | depends on the list strategy: `atomic` replaces, `set` unions, `keyed` merges by key, `append` concatenates |
 | `k =! v` | error | replace whole | replace whole |
 | `k += [..]` | error | error | add items (set/keyed/append) |
+| `k += last [..]` / `k += first [..]` | error | error | add items pinned to the end / start of the resolved list, also after descendants add more (ADR-0011) |
 | `k -= [..]` | error | error | remove by value (set) or by key (keyed); error if absent |
 | `k[key] { .. }` | — | — | merge into the keyed item `key` |
 | `remove k.sub` | removes an inherited optional field | | |
 
-To add to an inherited `set` or `keyed` list write `+=` (with `=` it still merges but warns K3014); to replace write `=!`; to change one keyed item write `k[key] { }`. `k = { }` over an inherited record changes nothing (K3015): write `k =! { }` to clear it.
+A mixin that contributes a common trailing item (a shared `leave` option) writes `options += last [..]`; objects using it keep writing `options += [..]` and the pinned item stays last. `first`/`last` are contextual: only special between `+=` and `[`. To unpin, `-=` the item and `+=` it again. To add to an inherited `set` or `keyed` list write `+=` (with `=` it still merges but warns K3014); to replace write `=!`; to change one keyed item write `k[key] { }`. `k = { }` over an inherited record changes nothing (K3015): write `k =! { }` to clear it.
 
 Layers apply in this order: schema defaults → resolved parent → mixins (in `with` order, flattened, first occurrence wins) → own entries. Later wins. There is no `null`, no `self`/`super`, no late binding.
 

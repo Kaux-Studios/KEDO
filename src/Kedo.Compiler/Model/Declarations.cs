@@ -31,6 +31,17 @@ public enum FieldOp
     Remove,
 }
 
+/// <summary>Position that items added with <c>+= first [..]</c> or <c>+= last [..]</c> keep in the resolved list (ADR-0011).</summary>
+public enum ListAnchor
+{
+    /// <summary>No pin: inherited items first, then added ones in authoring order (KEDO-02 R8).</summary>
+    None,
+    /// <summary>Kept before every unpinned item, also after descendants add more.</summary>
+    First,
+    /// <summary>Kept after every unpinned item, also after descendants add more.</summary>
+    Last,
+}
+
 /// <summary>Authored value (before resolution). Immutable.</summary>
 public abstract record Value(Origin Origin);
 
@@ -76,7 +87,11 @@ public sealed record ExprValue(Origin Origin, SyntaxTree Tree, int Node) : Value
 public abstract record Entry(Origin Origin);
 
 /// <summary><c>name op value</c>.</summary>
-public sealed record FieldEntry(Origin Origin, string Name, FieldOp Op, Value Value) : Entry(Origin);
+public sealed record FieldEntry(Origin Origin, string Name, FieldOp Op, Value Value) : Entry(Origin)
+{
+    /// <summary>Pin of the items of <c>+= first|last [..]</c>; <see cref="ListAnchor.None"/> otherwise (ADR-0011).</summary>
+    public ListAnchor Anchor { get; init; }
+}
 
 /// <summary><c>name[key] { ... }</c>.</summary>
 public sealed record KeyedEntry(Origin Origin, string Name, string Key, RecordValue Body) : Entry(Origin);

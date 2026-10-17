@@ -1,0 +1,2 @@
+error K1007 52:15 `last` pins items added with `+=`; it is not allowed after `=`, `=!` or `-=`
+warning K3016 51:5 `x` is already in `tags`; `+= last` does not move it (remove it first with `-=`)

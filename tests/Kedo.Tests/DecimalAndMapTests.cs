@@ -221,4 +221,24 @@ public class DecimalAndMapTests
         Assert.False(bag.HasErrors, Errors(bag) + "\n" + text);
         Assert.Contains("\"role:city_b\" = 1.25", ResolvedDump.Dump(catalog));
     }
+
+    [Fact]
+    public void TheImporterSuggestsRepeatedIdentifierStringsAsEnums()
+    {
+        var json = """
+            { "events": [
+                { "id": "a", "exit": "arrive", "title": "Hello there", "kind": "x" },
+                { "id": "b", "exit": "retreat", "title": "Bye", "kind": "y" },
+                { "id": "c", "exit": "arrive", "title": "Again", "kind": "z" },
+                { "id": "d", "exit": "arrive", "title": "More", "kind": "w", "tags": ["night", "road", "night"] } ] }
+            """;
+        var options = new JsonImportOptions { Module = "m", Collections = { ["events"] = "event" } };
+        var suggestions = JsonImporter.SuggestEnumFields(json, options);
+        Assert.Equal(new[] { "exit" }, suggestions.Select(s => s.Field));
+        Assert.Equal(new[] { "arrive", "retreat" }, suggestions[0].Values);
+        Assert.Equal(4, suggestions[0].Uses);
+
+        options.EnumFields.Add("exit");
+        Assert.Empty(JsonImporter.SuggestEnumFields(json, options));
+    }
 }

@@ -311,4 +311,49 @@ public class ResolverTests
         Assert.Contains("guild:base", lines.First(l => l.Contains("item: mara")));
         Assert.Contains("from own", lines.First(l => l.Contains("item: tester")));
     }
+
+    [Fact]
+    public void PinnedItemsKeepTheirEndThroughInheritanceAndMixins()
+    {
+        var bag = new DiagnosticBag();
+        var schemaText = """
+            kedo 1
+            module s
+            kedo_record choice { fields = [{ name = id  kind = text  required = true }, { name = label  kind = text }] }
+            kedo_type event { fields = [{ name = options  kind = list  strategy = keyed  key = id  element = { kind = record  record = choice } }, { name = steps  kind = list  element = { kind = int } }] }
+            """;
+        var schema = Kedo.Compiler.Schema.SchemaLoader.Load(new[] { DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(schemaText, "s.kedo"), bag), bag) }, bag);
+        Assert.False(bag.HasErrors, Errors(bag));
+        var (catalog, diagnostics) = Resolve(schema, ("e.kedo", """
+            kedo 1
+            module m
+            mixin leavable { options += last [{ id = "leave" }] }
+            event base with leavable { options += [{ id = "a" }] }
+            event child extends base { options += [{ id = "b" }]  options[leave] { label = "Go" } }
+            event atomic { steps += last [1] }
+            """));
+        string Ids(string key) => string.Join(",", ((RList)catalog.ByKey[key].Body.Fields.First(f => f.Key == "options").Value).Items.Select(i => RList.KeyOf(i, "id")));
+        Assert.Equal("a,leave", Ids("event:base"));
+        Assert.Equal("a,b,leave", Ids("event:child"));
+        Assert.Contains(diagnostics.Items, d => d.Code == "K3005" && d.Message.Contains("atomic"));
+        Assert.DoesNotContain(diagnostics.Items, d => d.Code == "K3014");
+        var explain = Resolver.Explain(catalog, "event:child", "options");
+        var lines = explain.Split('\n');
+        Assert.Contains("(pinned last)", lines.First(l => l.StartsWith("  item:") && l.Contains("leave")));
+        Assert.DoesNotContain("pinned", lines.First(l => l.StartsWith("  item:") && l.Contains("\"b\"")));
+    }
+
+    [Fact]
+    public void AnchorWordsAreOnlySpecialBeforeAList()
+    {
+        var (catalog, bag) = Resolve(Permissive(), ("w.kedo", """
+            kedo 1
+            module m
+            event e { first = last  tags += [last]  tags += first [first] }
+            """));
+        Assert.False(bag.HasErrors, Errors(bag));
+        var body = catalog.ByKey["event:e"].Body.Fields;
+        Assert.Equal("last", body.First(f => f.Key == "first").Value.CanonicalText);
+        Assert.Equal("[first, last]", body.First(f => f.Key == "tags").Value.CanonicalText);
+    }
 }

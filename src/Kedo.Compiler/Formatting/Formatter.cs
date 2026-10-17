@@ -20,7 +20,8 @@ public static class Formatter
         var depth = ComputeDepth(tree);
         var entryStart = new bool[tokens.Length];
         var unaryMinus = new bool[tokens.Length];
-        MarkStructure(tree, entryStart, unaryMinus);
+        var listAnchor = new bool[tokens.Length];
+        MarkStructure(tree, entryStart, unaryMinus, listAnchor);
 
         var sb = new StringBuilder(tree.Source.Length + 64);
         var prevSig = -1;          // index of previous significant token
@@ -89,7 +90,7 @@ public static class Formatter
             }
             else if (prevSig >= 0)
             {
-                sb.Append(Separator(tokens[prevSig].Kind, t.Kind, entryStart[i], unaryMinus[prevSig]));
+                sb.Append(listAnchor[prevSig] ? " " : Separator(tokens[prevSig].Kind, t.Kind, entryStart[i], unaryMinus[prevSig]));
             }
 
             sb.Append(tree.TextOf(i));
@@ -219,11 +220,16 @@ public static class Formatter
         return -1;
     }
 
-    private static void MarkStructure(SyntaxTree tree, bool[] entryStart, bool[] unaryMinus)
+    private static void MarkStructure(SyntaxTree tree, bool[] entryStart, bool[] unaryMinus, bool[] listAnchor)
     {
         for (var i = 0; i < tree.NodeCount; i++)
         {
             var n = tree[i];
+            if (n.Kind == NodeKind.Field && tree.OwnTokens(i) is { Count: > 2 } own && tree.Tokens[own[2]].Kind == TokenKind.Identifier)
+            {
+                listAnchor[own[2]] = true;   // `+= last [..]` keeps a space before the list (ADR-0011)
+            }
+
             if (n.Kind == NodeKind.Body)
             {
                 var first = true;

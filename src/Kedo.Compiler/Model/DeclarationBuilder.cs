@@ -295,7 +295,10 @@ public static class DeclarationBuilder
                     };
                     // A quoted key (`"role:city_b" = x`) names a map entry that is not an identifier (ADR-0009).
                     var name = _t.Tokens[own[0]].Kind == TokenKind.String ? Unescape(Text(own[0])) : Text(own[0]);
-                    return new FieldEntry(OriginOf(node), name, op, BuildValue(children[0]));
+                    var anchor = own.Count > 2 && op == FieldOp.Add && _t.Tokens[own[2]].Kind == TokenKind.Identifier
+                        ? Text(own[2]) == "first" ? ListAnchor.First : ListAnchor.Last
+                        : ListAnchor.None;
+                    return new FieldEntry(OriginOf(node), name, op, BuildValue(children[0])) { Anchor = anchor };
                 }
 
                 case NodeKind.KeyedEntry:

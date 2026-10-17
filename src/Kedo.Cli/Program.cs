@@ -386,6 +386,17 @@ static int ImportJson(string[] args, Dictionary<string, string> valued)
         Console.WriteLine($"wrote {path}{(bag.HasErrors ? " (with syntax errors; review)" : "")}");
     }
 
+    // Strings that repeat and look like identifiers are probably enumeration values (P5); --enums writes them bare.
+    var suggestions = Kedo.Compiler.Import.JsonImporter.SuggestEnumFields(File.ReadAllText(args[0]), options);
+    if (suggestions.Count > 0)
+    {
+        Console.WriteLine($"suggestion: these string fields look like enumerations; to write them bare, add --enums={string.Join(",", options.EnumFields.Concat(suggestions.Select(s => s.Field)))}");
+        foreach (var s in suggestions)
+        {
+            Console.WriteLine($"  {s.Field}: {s.Values.Count} value(s) in {s.Uses} use(s): {string.Join(", ", s.Values.Take(8))}{(s.Values.Count > 8 ? ", ..." : "")}");
+        }
+    }
+
     return 0;
 }
 

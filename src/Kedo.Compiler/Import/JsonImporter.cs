@@ -27,6 +27,12 @@ public sealed class JsonImportOptions
     public string IdField { get; init; } = "id";
 }
 
+/// <summary>A string field whose values look like enumeration values (P5): identifiers that repeat.</summary>
+/// <param name="Field">Field name as written in the JSON (what <c>--enums</c> takes).</param>
+/// <param name="Values">Distinct values, ordinal order.</param>
+/// <param name="Uses">How many times the field appears with a string value.</param>
+public sealed record JsonEnumSuggestion(string Field, IReadOnlyList<string> Values, int Uses);
+
 /// <summary>
 /// Generic JSON → KEDO importer for migrating existing data-driven content (first used for Patriark's pack). It produces one
 /// file per collection with ids preserved, plus a pack object holding every other top-level key. It is a starting
@@ -256,6 +262,54 @@ public static class JsonImporter
                     sb.Append(' ', depth * 4).Append('}');
                 }
 
+                break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// String fields that are not in <see cref="JsonImportOptions.EnumFields"/> but look like enumerations: every value is an
+    /// identifier, the field appears at least three times and its values repeat (at most half as many distinct values as
+    /// uses, and at most 32). The id field is excluded. Ordered by field name; the caller decides whether to pass them as
+    /// <c>--enums</c>, since only the game knows whether `"water"` names a resource or is text.
+    /// </summary>
+    public static IReadOnlyList<JsonEnumSuggestion> SuggestEnumFields(string json, JsonImportOptions options)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var stats = new Dictionary<string, (SortedSet<string> Values, int Uses, bool AllIdentifiers)>(StringComparer.Ordinal);
+        Collect(doc.RootElement, null, stats);
+        return stats
+            .Where(kv => kv.Key != options.IdField && !options.EnumFields.Contains(kv.Key) && kv.Value.AllIdentifiers
+                && kv.Value.Uses >= 3 && kv.Value.Values.Count <= Math.Min(32, kv.Value.Uses / 2))
+            .OrderBy(kv => kv.Key, StringComparer.Ordinal)
+            .Select(kv => new JsonEnumSuggestion(kv.Key, kv.Value.Values.ToList(), kv.Value.Uses))
+            .ToList();
+    }
+
+    private static void Collect(JsonElement value, string? field, Dictionary<string, (SortedSet<string> Values, int Uses, bool AllIdentifiers)> stats)
+    {
+        switch (value.ValueKind)
+        {
+            case JsonValueKind.Object:
+                foreach (var p in value.EnumerateObject())
+                {
+                    Collect(p.Value, p.Name, stats);
+                }
+
+                break;
+            case JsonValueKind.Array:
+                foreach (var item in value.EnumerateArray())
+                {
+                    Collect(item, field, stats);
+                }
+
+                break;
+            case JsonValueKind.String when field is not null:
+            {
+                var s = value.GetString()!;
+                var entry = stats.TryGetValue(field, out var e) ? e : (Values: new SortedSet<string>(StringComparer.Ordinal), Uses: 0, AllIdentifiers: true);
+                entry.Values.Add(s);
+                stats[field] = (entry.Values, entry.Uses + 1, entry.AllIdentifiers && Identifier.IsMatch(s));
                 break;
             }
         }

@@ -92,6 +92,7 @@ annotation  = "@" ident [ "(" [ argument { "," argument } ] ")" ] ;
 ```ebnf
 entry        = field | component | removal | hook | function ;
 field        = ( ident | string ) ( "=" | "+=" | "-=" | "=!" ) value   (* string: clave de mapa, ADR-0009 *)
+             | ( ident | string ) "+=" ( "first" | "last" ) list      (* posición fija, ADR-0011 *)
              | ident "[" key "]" body ;                       (* elemento de lista con clave *)
 component    = "component" ident body ;
 removal      = "remove" ( "component" ident | ident { "." ident } ) ;
@@ -104,6 +105,7 @@ key          = ident | qualified-id | string | integer ;
 | `"clave" = v` | Entrada de un mapa cuya clave no es un identificador (`"role:city_b" = drylands`) |
 | `k =! v` | Reemplazo total de un record o lista, sin mezcla |
 | `k += [..]` | Agrega elementos (listas `set`, `keyed`, `append`) |
+| `k += last [..]`, `k += first [..]` | Agrega elementos que quedan al final o al principio de la lista resuelta, también cuando los descendientes agregan más ([ADR-0011](adr/0011-posicion-fija-en-listas.md)). `first` y `last` son palabras contextuales: sólo cuentan entre `+=` y `[` |
 | `k -= [..]` | Quita elementos por valor o por clave |
 | `k[clave] { .. }` | Mezcla sobre el elemento de clave `clave` en una lista `keyed` |
 | `component t { .. }` | Mezcla sobre el componente `t`; lo agrega si no existe |
@@ -225,6 +227,7 @@ Todos los `.kedo` bajo ese directorio pertenecen al módulo. Un objeto puede her
 | K1004 | Cadena sin cerrar / escape inválido |
 | K1005 | Expresión compuesta fuera de paréntesis en un valor |
 | K1006 | Decimal con más de 9 decimales |
+| K1007 | `first`/`last` antes de una lista después de `=`, `=!` o `-=` (sólo valen con `+=`) |
 | K2001 | Tipo no registrado |
 | K2002 | Id duplicado (dos ubicaciones) |
 | K2003 | Padre de otro tipo |

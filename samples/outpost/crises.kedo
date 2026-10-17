@@ -1,9 +1,9 @@
 kedo 1
 module outpost
 
-/// Opción de "esperar y ver" presente en toda crisis.
+/// Opción de "esperar y ver" presente en toda crisis; queda última aunque cada crisis agregue las suyas (ADR-0011).
 mixin wait_choice {
-    choices += [{ id = wait  label = "Wait and see"  duration = 1h  mood_shift = -1 }]
+    choices += last [{ id = wait  label = "Wait and see"  duration = 1h  mood_shift = -1 }]
 }
 
 abstract crisis base_crisis with wait_choice {
