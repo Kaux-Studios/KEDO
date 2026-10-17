@@ -1349,6 +1349,11 @@ public sealed class Resolver
                 {
                     AddOnce(WithProvenance("K4006", $"`{path}` must reference a `{tt}`, found `{r.CanonicalText}`", obj, value));
                 }
+                else if (fs is { Kind: ValueKind.Asset, AssetKind: { } ak } && target.Body.Fields.TryGetValue("kind", out var assetKind) && RList.KeyText(assetKind) != ak)
+                {
+                    // An asset object's `kind` field is its class (texture, audio...); the field says which class it takes.
+                    AddOnce(WithProvenance("K4013", $"`{path}` takes assets of kind `{ak}`; `{r.CanonicalText}` is of kind `{RList.KeyText(assetKind)}`", obj, value));
+                }
 
                 break;
             }

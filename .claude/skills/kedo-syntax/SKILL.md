@@ -78,6 +78,10 @@ function reinforce_cost(stage: int) -> int {           // pure function, callabl
 
 Statements end at newline or `;`. Statement forms: `let x = e`, `set x = e` (locals only; ctx is read-only), `wait <duration>`, `wait decision prompt:id { option a { ... } option b { ... } }`, `wait roll <stream>(args) as r`, `wait signal signal:id [(args)] [as s]`, `apply effect:id(args)`, `emit signal:id(args)`, `if (c) { } else if (c) { } else { }`, `stop` (hooks), `return e` (functions), and calls. Expressions: `+ - * / %`, comparisons, `and or not`, unary `-`, `ctx.field`, `receiver.query(args)` (host query), function calls. No floats, no strings concatenation at runtime, no lists/records as runtime values.
 
+## Assets
+
+Presentation resources are objects of the game's `asset` type (`asset dunes { kind = texture  path = "art/dunes.png" }`) referenced as `asset:dunes`. A field with `kind = asset  asset_kind = texture` only takes assets whose `kind` is `texture` (K4013); a missing asset is K4005. The engine resolves the path; content never holds engine handles.
+
 ## Variants
 
 A file with `variant <name>` on the line after `module` belongs to that variant (a campaign variant, a balance patch, a mod). Files without it are the base; each variant resolves as base + its files (ADR-0012).

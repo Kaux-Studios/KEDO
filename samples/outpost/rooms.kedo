@@ -73,6 +73,6 @@ room airlock_main extends base_room {
     adjacent = [room:habitat_a, room:workshop]
 }
 
-asset hum { kind = ambience  path = "audio/hum.ogg" }
-asset klaxon { kind = sfx  path = "audio/klaxon.ogg" }
-asset habitat_bg { path = "art/habitat.png" }
+asset hum { kind = audio  sound = ambience  path = "audio/hum.ogg" }
+asset klaxon { kind = audio  sound = sfx  path = "audio/klaxon.ogg" }
+asset habitat_bg { kind = texture  path = "art/habitat.png" }

@@ -10,6 +10,7 @@ kedo_enum crew_role { values = [engineer, botanist, medic, pilot, child] }
 kedo_enum mood { values = [calm, tense, panicked] }
 kedo_enum severity { values = [minor, major, critical] }
 kedo_enum resource { values = [oxygen, water, power, parts] }
+kedo_enum asset_class { values = [texture, audio] }
 kedo_enum sound_kind { values = [music, ambience, sfx] }
 
 kedo_record cost { fields = [{ name = resource  kind = enum  enum = resource  required = true }, { name = amount  kind = int  min = 0  required = true }] }
@@ -76,7 +77,8 @@ kedo_type crisis {
 
 kedo_type asset {
     fields = [
-        { name = kind  kind = enum  enum = sound_kind }
+        { name = kind  kind = enum  enum = asset_class  required = true  doc = "Class of the asset; fields with `asset_kind` check it (K4013)." }
+        { name = sound  kind = enum  enum = sound_kind }
         { name = path  kind = text  required = true }
     ]
 }

@@ -408,4 +408,30 @@ public class ResolverTests
         Assert.NotEqual(catalog.Hash, test.Hash);
         Assert.Equal(catalog.ByKey["character:mara"].Hash, test.ByKey["character:mara"].Hash);
     }
+
+    [Fact]
+    public void AnAssetFieldChecksTheKindOfTheAsset()
+    {
+        var bag = new DiagnosticBag();
+        var schemaText = """
+            kedo 1
+            module s
+            kedo_enum asset_class { values = [texture, audio] }
+            kedo_type asset { fields = [{ name = kind  kind = enum  enum = asset_class  required = true }, { name = path  kind = text  required = true }] }
+            kedo_type place { fields = [{ name = backdrop  kind = asset  asset_kind = texture }] }
+            """;
+        var schema = Kedo.Compiler.Schema.SchemaLoader.Load(new[] { DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(schemaText, "s.kedo"), bag), bag) }, bag);
+        Assert.False(bag.HasErrors, Errors(bag));
+        var (_, diagnostics) = Resolve(schema, ("p.kedo", """
+            kedo 1
+            module m
+            asset dunes { kind = texture  path = "art/dunes.png" }
+            asset wind { kind = audio  path = "audio/wind.ogg" }
+            place good { backdrop = asset:dunes }
+            place bad { backdrop = asset:wind }
+            """));
+        var error = Assert.Single(diagnostics.Items, d => d.IsError);
+        Assert.Equal("K4013", error.Code);
+        Assert.Contains("`asset:wind` is of kind `audio`", error.Message);
+    }
 }

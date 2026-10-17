@@ -8,7 +8,7 @@ crew bo extends person { name = "Bo"  role = botanist  skill = 3  home = room:gr
 crew cy extends person { name = "Cy"  role = medic  home = room:habitat_a }
 crew dee extends person { name = "Dee"  role = child  skill = 1  mood = tense  home = room:habitat_a }
 
-asset portrait_default { path = "art/portrait.png" }
+asset portrait_default { kind = texture  path = "art/portrait.png" }
 
 /// Costo de reparación según la integridad perdida (puntos básicos de partes).
 function repair_cost(integrity: int, parts: int) -> int {
