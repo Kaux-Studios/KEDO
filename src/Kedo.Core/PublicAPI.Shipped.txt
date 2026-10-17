@@ -1,1 +1,496 @@
 #nullable enable
+Kedo.Diagnostics.Diagnostic
+Kedo.Diagnostics.Diagnostic.Code.get -> string!
+Kedo.Diagnostics.Diagnostic.Code.init -> void
+Kedo.Diagnostics.Diagnostic.Diagnostic(string! Code, Kedo.Diagnostics.Severity Severity, string! Message, string? File, Kedo.Text.TextSpan Span, System.Collections.Generic.IReadOnlyList<Kedo.Diagnostics.DiagnosticLabel!>! Labels, System.Collections.Generic.IReadOnlyList<string!>! Notes) -> void
+Kedo.Diagnostics.Diagnostic.Diagnostic(string! code, Kedo.Diagnostics.Severity severity, string! message, string? file, Kedo.Text.TextSpan span) -> void
+Kedo.Diagnostics.Diagnostic.File.get -> string?
+Kedo.Diagnostics.Diagnostic.File.init -> void
+Kedo.Diagnostics.Diagnostic.IsError.get -> bool
+Kedo.Diagnostics.Diagnostic.Labels.get -> System.Collections.Generic.IReadOnlyList<Kedo.Diagnostics.DiagnosticLabel!>!
+Kedo.Diagnostics.Diagnostic.Labels.init -> void
+Kedo.Diagnostics.Diagnostic.Message.get -> string!
+Kedo.Diagnostics.Diagnostic.Message.init -> void
+Kedo.Diagnostics.Diagnostic.Notes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Kedo.Diagnostics.Diagnostic.Notes.init -> void
+Kedo.Diagnostics.Diagnostic.Severity.get -> Kedo.Diagnostics.Severity
+Kedo.Diagnostics.Diagnostic.Severity.init -> void
+Kedo.Diagnostics.Diagnostic.Span.get -> Kedo.Text.TextSpan
+Kedo.Diagnostics.Diagnostic.Span.init -> void
+Kedo.Diagnostics.DiagnosticBag
+Kedo.Diagnostics.DiagnosticBag.Add(Kedo.Diagnostics.Diagnostic! diagnostic) -> void
+Kedo.Diagnostics.DiagnosticBag.AddRange(Kedo.Diagnostics.DiagnosticBag! other) -> void
+Kedo.Diagnostics.DiagnosticBag.DiagnosticBag() -> void
+Kedo.Diagnostics.DiagnosticBag.Error(string! code, string! message, string? file, Kedo.Text.TextSpan span) -> void
+Kedo.Diagnostics.DiagnosticBag.HasErrors.get -> bool
+Kedo.Diagnostics.DiagnosticBag.Items.get -> System.Collections.Generic.IReadOnlyList<Kedo.Diagnostics.Diagnostic!>!
+Kedo.Diagnostics.DiagnosticBag.Warning(string! code, string! message, string? file, Kedo.Text.TextSpan span) -> void
+Kedo.Diagnostics.DiagnosticLabel
+Kedo.Diagnostics.DiagnosticLabel.DiagnosticLabel(string? File, Kedo.Text.TextSpan Span, string! Message) -> void
+Kedo.Diagnostics.DiagnosticLabel.File.get -> string?
+Kedo.Diagnostics.DiagnosticLabel.File.init -> void
+Kedo.Diagnostics.DiagnosticLabel.Message.get -> string!
+Kedo.Diagnostics.DiagnosticLabel.Message.init -> void
+Kedo.Diagnostics.DiagnosticLabel.Span.get -> Kedo.Text.TextSpan
+Kedo.Diagnostics.DiagnosticLabel.Span.init -> void
+Kedo.Diagnostics.Severity
+Kedo.Diagnostics.Severity.Error = 2 -> Kedo.Diagnostics.Severity
+Kedo.Diagnostics.Severity.Info = 0 -> Kedo.Diagnostics.Severity
+Kedo.Diagnostics.Severity.Warning = 1 -> Kedo.Diagnostics.Severity
+Kedo.KedoVersion
+Kedo.Pack.KedoPack
+Kedo.Pack.KedoPack.CatalogHash.get -> string!
+Kedo.Pack.KedoPack.Find(string! key) -> Kedo.Pack.PackObject?
+Kedo.Pack.KedoPack.Find(string! type, string! id) -> Kedo.Pack.PackObject?
+Kedo.Pack.KedoPack.Objects.get -> System.Collections.Generic.IReadOnlyList<Kedo.Pack.PackObject!>!
+Kedo.Pack.KedoPack.OfType(string! type) -> System.Collections.Generic.IEnumerable<Kedo.Pack.PackObject!>!
+Kedo.Pack.KedoPack.ProgramOf(Kedo.Pack.PackObject! obj) -> Kedo.Runtime.BehaviorProgram?
+Kedo.Pack.KedoPack.Programs.get -> System.Collections.Generic.IReadOnlyList<Kedo.Runtime.BehaviorProgram!>!
+Kedo.Pack.KedoPack.Toolchain.get -> string!
+Kedo.Pack.PackBool
+Kedo.Pack.PackBool.Flag.get -> bool
+Kedo.Pack.PackBool.Flag.init -> void
+Kedo.Pack.PackBool.PackBool(bool Flag) -> void
+Kedo.Pack.PackDecimal
+Kedo.Pack.PackDecimal.PackDecimal(long Units, byte Scale) -> void
+Kedo.Pack.PackDecimal.Scale.get -> byte
+Kedo.Pack.PackDecimal.Scale.init -> void
+Kedo.Pack.PackDecimal.Units.get -> long
+Kedo.Pack.PackDecimal.Units.init -> void
+Kedo.Pack.PackInt
+Kedo.Pack.PackInt.IsDuration.get -> bool
+Kedo.Pack.PackInt.IsDuration.init -> void
+Kedo.Pack.PackInt.Number.get -> long
+Kedo.Pack.PackInt.Number.init -> void
+Kedo.Pack.PackInt.PackInt(long Number, bool IsDuration) -> void
+Kedo.Pack.PackList
+Kedo.Pack.PackList.ByKey(string! key) -> Kedo.Pack.PackRecord?
+Kedo.Pack.PackList.Items.get -> System.Collections.Generic.IReadOnlyList<Kedo.Pack.PackValue!>!
+Kedo.Pack.PackList.Items.init -> void
+Kedo.Pack.PackList.KeyField.get -> string!
+Kedo.Pack.PackList.KeyField.init -> void
+Kedo.Pack.PackList.PackList(System.Collections.Generic.IReadOnlyList<Kedo.Pack.PackValue!>! Items, byte Strategy, string! KeyField) -> void
+Kedo.Pack.PackList.Strategy.get -> byte
+Kedo.Pack.PackList.Strategy.init -> void
+Kedo.Pack.PackObject
+Kedo.Pack.PackObject.Body.get -> Kedo.Pack.PackRecord!
+Kedo.Pack.PackObject.Components.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Pack.PackRecord!>!
+Kedo.Pack.PackObject.Hash.get -> string!
+Kedo.Pack.PackObject.Hooks.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Kedo.Pack.PackObject.Id.get -> string!
+Kedo.Pack.PackObject.Key.get -> string!
+Kedo.Pack.PackObject.ProgramIndex.get -> int
+Kedo.Pack.PackObject.Type.get -> string!
+Kedo.Pack.PackRecord
+Kedo.Pack.PackRecord.Bool(string! name, bool fallback = false) -> bool
+Kedo.Pack.PackRecord.Fields.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Pack.PackValue!>!
+Kedo.Pack.PackRecord.Fields.init -> void
+Kedo.Pack.PackRecord.Int(string! name, long fallback = 0) -> long
+Kedo.Pack.PackRecord.List(string! name) -> Kedo.Pack.PackList?
+Kedo.Pack.PackRecord.Order.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Kedo.Pack.PackRecord.Order.init -> void
+Kedo.Pack.PackRecord.PackRecord(System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Pack.PackValue!>! Fields, System.Collections.Generic.IReadOnlyList<string!>! Order) -> void
+Kedo.Pack.PackRecord.Record(string! name) -> Kedo.Pack.PackRecord?
+Kedo.Pack.PackRecord.Symbol(string! name) -> string?
+Kedo.Pack.PackSymbol
+Kedo.Pack.PackSymbol.Kind.get -> Kedo.Pack.PackTag
+Kedo.Pack.PackSymbol.Kind.init -> void
+Kedo.Pack.PackSymbol.PackSymbol(string! Text, Kedo.Pack.PackTag Kind) -> void
+Kedo.Pack.PackSymbol.Text.get -> string!
+Kedo.Pack.PackSymbol.Text.init -> void
+Kedo.Pack.PackTag
+Kedo.Pack.PackTag.Bool = 2 -> Kedo.Pack.PackTag
+Kedo.Pack.PackTag.Decimal = 9 -> Kedo.Pack.PackTag
+Kedo.Pack.PackTag.Duration = 4 -> Kedo.Pack.PackTag
+Kedo.Pack.PackTag.Enum = 5 -> Kedo.Pack.PackTag
+Kedo.Pack.PackTag.Int = 1 -> Kedo.Pack.PackTag
+Kedo.Pack.PackTag.List = 7 -> Kedo.Pack.PackTag
+Kedo.Pack.PackTag.None = 0 -> Kedo.Pack.PackTag
+Kedo.Pack.PackTag.Record = 8 -> Kedo.Pack.PackTag
+Kedo.Pack.PackTag.Ref = 6 -> Kedo.Pack.PackTag
+Kedo.Pack.PackTag.Text = 3 -> Kedo.Pack.PackTag
+Kedo.Pack.PackValue
+Kedo.Runtime.AwaitKind
+Kedo.Runtime.AwaitKind.Decision = 1 -> Kedo.Runtime.AwaitKind
+Kedo.Runtime.AwaitKind.Minutes = 0 -> Kedo.Runtime.AwaitKind
+Kedo.Runtime.AwaitKind.Roll = 2 -> Kedo.Runtime.AwaitKind
+Kedo.Runtime.AwaitKind.Signal = 3 -> Kedo.Runtime.AwaitKind
+Kedo.Runtime.AwaitRequest
+Kedo.Runtime.AwaitRequest.AwaitRequest(Kedo.Runtime.AwaitKind Kind, string! Label, long DueAtMinutes, string? Id, System.Collections.Generic.IReadOnlyList<string!>! Options, int ResultRegister) -> void
+Kedo.Runtime.AwaitRequest.DueAtMinutes.get -> long
+Kedo.Runtime.AwaitRequest.DueAtMinutes.init -> void
+Kedo.Runtime.AwaitRequest.Id.get -> string?
+Kedo.Runtime.AwaitRequest.Id.init -> void
+Kedo.Runtime.AwaitRequest.Kind.get -> Kedo.Runtime.AwaitKind
+Kedo.Runtime.AwaitRequest.Kind.init -> void
+Kedo.Runtime.AwaitRequest.Label.get -> string!
+Kedo.Runtime.AwaitRequest.Label.init -> void
+Kedo.Runtime.AwaitRequest.Options.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Kedo.Runtime.AwaitRequest.Options.init -> void
+Kedo.Runtime.AwaitRequest.ResultRegister.get -> int
+Kedo.Runtime.AwaitRequest.ResultRegister.init -> void
+Kedo.Runtime.AwaitSite
+Kedo.Runtime.AwaitSite.AwaitSite(string! Label, int Pc) -> void
+Kedo.Runtime.AwaitSite.Label.get -> string!
+Kedo.Runtime.AwaitSite.Label.init -> void
+Kedo.Runtime.AwaitSite.Pc.get -> int
+Kedo.Runtime.AwaitSite.Pc.init -> void
+Kedo.Runtime.BehaviorFrame
+Kedo.Runtime.BehaviorFrame.AppliedEffects.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Kedo.Runtime.BehaviorFrame.AppliedEffects.init -> void
+Kedo.Runtime.BehaviorFrame.BehaviorFrame(int FormatVersion, string! InstanceId, string! BehaviorId, int DefinitionVersion, string! DefinitionHash, string! HookId, System.Collections.Generic.IReadOnlyList<Kedo.Runtime.CallFrame!>! Stack, long[]! Registers, string?[]! SymbolNames, Kedo.Runtime.AwaitRequest? Pending, System.Collections.Generic.IReadOnlyList<string!>! AppliedEffects, long StepsUsed, int EffectSequence) -> void
+Kedo.Runtime.BehaviorFrame.BehaviorId.get -> string!
+Kedo.Runtime.BehaviorFrame.BehaviorId.init -> void
+Kedo.Runtime.BehaviorFrame.DefinitionHash.get -> string!
+Kedo.Runtime.BehaviorFrame.DefinitionHash.init -> void
+Kedo.Runtime.BehaviorFrame.DefinitionVersion.get -> int
+Kedo.Runtime.BehaviorFrame.DefinitionVersion.init -> void
+Kedo.Runtime.BehaviorFrame.EffectSequence.get -> int
+Kedo.Runtime.BehaviorFrame.EffectSequence.init -> void
+Kedo.Runtime.BehaviorFrame.FormatVersion.get -> int
+Kedo.Runtime.BehaviorFrame.FormatVersion.init -> void
+Kedo.Runtime.BehaviorFrame.HookId.get -> string!
+Kedo.Runtime.BehaviorFrame.HookId.init -> void
+Kedo.Runtime.BehaviorFrame.InstanceId.get -> string!
+Kedo.Runtime.BehaviorFrame.InstanceId.init -> void
+Kedo.Runtime.BehaviorFrame.Pending.get -> Kedo.Runtime.AwaitRequest?
+Kedo.Runtime.BehaviorFrame.Pending.init -> void
+Kedo.Runtime.BehaviorFrame.Registers.get -> long[]!
+Kedo.Runtime.BehaviorFrame.Registers.init -> void
+Kedo.Runtime.BehaviorFrame.Stack.get -> System.Collections.Generic.IReadOnlyList<Kedo.Runtime.CallFrame!>!
+Kedo.Runtime.BehaviorFrame.Stack.init -> void
+Kedo.Runtime.BehaviorFrame.StepsUsed.get -> long
+Kedo.Runtime.BehaviorFrame.StepsUsed.init -> void
+Kedo.Runtime.BehaviorFrame.SymbolNames.get -> string?[]!
+Kedo.Runtime.BehaviorFrame.SymbolNames.init -> void
+Kedo.Runtime.BehaviorJsonContext
+Kedo.Runtime.BehaviorJsonContext.AwaitKind.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<Kedo.Runtime.AwaitKind>!
+Kedo.Runtime.BehaviorJsonContext.AwaitRequest.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<Kedo.Runtime.AwaitRequest!>!
+Kedo.Runtime.BehaviorJsonContext.BehaviorFrame.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<Kedo.Runtime.BehaviorFrame!>!
+Kedo.Runtime.BehaviorJsonContext.BehaviorJsonContext() -> void
+Kedo.Runtime.BehaviorJsonContext.BehaviorJsonContext(System.Text.Json.JsonSerializerOptions! options) -> void
+Kedo.Runtime.BehaviorJsonContext.CallFrame.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<Kedo.Runtime.CallFrame!>!
+Kedo.Runtime.BehaviorJsonContext.IReadOnlyListCallFrame.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.Collections.Generic.IReadOnlyList<Kedo.Runtime.CallFrame!>!>!
+Kedo.Runtime.BehaviorJsonContext.IReadOnlyListString.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.Collections.Generic.IReadOnlyList<string!>!>!
+Kedo.Runtime.BehaviorJsonContext.Int32.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<int>!
+Kedo.Runtime.BehaviorJsonContext.Int64.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<long>!
+Kedo.Runtime.BehaviorJsonContext.Int64Array.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<long[]!>!
+Kedo.Runtime.BehaviorJsonContext.String.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<string!>!
+Kedo.Runtime.BehaviorJsonContext.StringArray.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<string![]!>!
+Kedo.Runtime.BehaviorProgram
+Kedo.Runtime.BehaviorProgram.AwaitSites.get -> System.Collections.Generic.IReadOnlyList<Kedo.Runtime.AwaitSite!>!
+Kedo.Runtime.BehaviorProgram.BehaviorId.get -> string!
+Kedo.Runtime.BehaviorProgram.BehaviorProgram(string! behaviorId, int definitionVersion, string! definitionHash, uint[]! code, long[]! constants, string![]! strings, System.Collections.Generic.IReadOnlyList<Kedo.Runtime.FunctionInfo!>! functions, System.Collections.Generic.IReadOnlyDictionary<string!, int>! hooks, System.Collections.Generic.IReadOnlyList<Kedo.Runtime.AwaitSite!>! awaitSites, System.Collections.Generic.IReadOnlyList<string!>! sourceMap) -> void
+Kedo.Runtime.BehaviorProgram.Code.get -> uint[]!
+Kedo.Runtime.BehaviorProgram.Constants.get -> long[]!
+Kedo.Runtime.BehaviorProgram.DefinitionHash.get -> string!
+Kedo.Runtime.BehaviorProgram.DefinitionVersion.get -> int
+Kedo.Runtime.BehaviorProgram.FunctionIndex(string! name) -> int
+Kedo.Runtime.BehaviorProgram.Functions.get -> System.Collections.Generic.IReadOnlyList<Kedo.Runtime.FunctionInfo!>!
+Kedo.Runtime.BehaviorProgram.Hooks.get -> System.Collections.Generic.IReadOnlyDictionary<string!, int>!
+Kedo.Runtime.BehaviorProgram.LabelAt(int pc) -> string?
+Kedo.Runtime.BehaviorProgram.PcOfLabel(string! label) -> int
+Kedo.Runtime.BehaviorProgram.SourceMap.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Kedo.Runtime.BehaviorProgram.Strings.get -> string![]!
+Kedo.Runtime.BehaviorVm
+Kedo.Runtime.BehaviorVm.Activate(string! hookId, string! instanceId) -> Kedo.Runtime.RunResult!
+Kedo.Runtime.BehaviorVm.BehaviorVm(Kedo.Runtime.BehaviorProgram! program, Kedo.Runtime.IBehaviorHost! host, Kedo.Runtime.Budget? budget = null) -> void
+Kedo.Runtime.BehaviorVm.Resume(Kedo.Runtime.BehaviorFrame! frame, Kedo.Runtime.Resumption! input, Kedo.Runtime.StalePolicy stalePolicy = Kedo.Runtime.StalePolicy.AbortSilently) -> Kedo.Runtime.RunResult!
+Kedo.Runtime.Budget
+Kedo.Runtime.Budget.Budget(int MaxSteps = 10000, int MaxCallDepth = 32, int MaxRegisters = 4096) -> void
+Kedo.Runtime.Budget.MaxCallDepth.get -> int
+Kedo.Runtime.Budget.MaxCallDepth.init -> void
+Kedo.Runtime.Budget.MaxRegisters.get -> int
+Kedo.Runtime.Budget.MaxRegisters.init -> void
+Kedo.Runtime.Budget.MaxSteps.get -> int
+Kedo.Runtime.Budget.MaxSteps.init -> void
+Kedo.Runtime.CallFrame
+Kedo.Runtime.CallFrame.CallFrame(int FunctionIndex, string! FunctionName, int RegisterBase, int RegisterCount, int ReturnRegister, string? ResumeLabel, int Pc) -> void
+Kedo.Runtime.CallFrame.FunctionIndex.get -> int
+Kedo.Runtime.CallFrame.FunctionIndex.init -> void
+Kedo.Runtime.CallFrame.FunctionName.get -> string!
+Kedo.Runtime.CallFrame.FunctionName.init -> void
+Kedo.Runtime.CallFrame.Pc.get -> int
+Kedo.Runtime.CallFrame.Pc.init -> void
+Kedo.Runtime.CallFrame.RegisterBase.get -> int
+Kedo.Runtime.CallFrame.RegisterBase.init -> void
+Kedo.Runtime.CallFrame.RegisterCount.get -> int
+Kedo.Runtime.CallFrame.RegisterCount.init -> void
+Kedo.Runtime.CallFrame.ResumeLabel.get -> string?
+Kedo.Runtime.CallFrame.ResumeLabel.init -> void
+Kedo.Runtime.CallFrame.ReturnRegister.get -> int
+Kedo.Runtime.CallFrame.ReturnRegister.init -> void
+Kedo.Runtime.Disassembler
+Kedo.Runtime.EffectKey
+Kedo.Runtime.EffectKey.EffectKey() -> void
+Kedo.Runtime.EffectKey.EffectKey(string! InstanceId, string! SiteLabel, int Sequence) -> void
+Kedo.Runtime.EffectKey.InstanceId.get -> string!
+Kedo.Runtime.EffectKey.InstanceId.init -> void
+Kedo.Runtime.EffectKey.Sequence.get -> int
+Kedo.Runtime.EffectKey.Sequence.init -> void
+Kedo.Runtime.EffectKey.SiteLabel.get -> string!
+Kedo.Runtime.EffectKey.SiteLabel.init -> void
+Kedo.Runtime.FunctionInfo
+Kedo.Runtime.FunctionInfo.Entry.get -> int
+Kedo.Runtime.FunctionInfo.Entry.init -> void
+Kedo.Runtime.FunctionInfo.FunctionInfo(string! Name, int Entry, int RegisterCount, int ParameterCount) -> void
+Kedo.Runtime.FunctionInfo.Name.get -> string!
+Kedo.Runtime.FunctionInfo.Name.init -> void
+Kedo.Runtime.FunctionInfo.ParameterCount.get -> int
+Kedo.Runtime.FunctionInfo.ParameterCount.init -> void
+Kedo.Runtime.FunctionInfo.RegisterCount.get -> int
+Kedo.Runtime.FunctionInfo.RegisterCount.init -> void
+Kedo.Runtime.HostValue
+Kedo.Runtime.HostValue.HostValue() -> void
+Kedo.Runtime.HostValue.HostValue(long Number, bool IsSymbol) -> void
+Kedo.Runtime.HostValue.IsSymbol.get -> bool
+Kedo.Runtime.HostValue.IsSymbol.init -> void
+Kedo.Runtime.HostValue.Number.get -> long
+Kedo.Runtime.HostValue.Number.init -> void
+Kedo.Runtime.IBehaviorHost
+Kedo.Runtime.IBehaviorHost.Apply(Kedo.Runtime.EffectKey key, string! effectId, System.ReadOnlySpan<Kedo.Runtime.HostValue> args) -> bool
+Kedo.Runtime.IBehaviorHost.Context(string! field) -> Kedo.Runtime.HostValue
+Kedo.Runtime.IBehaviorHost.NowMinutes.get -> long
+Kedo.Runtime.IBehaviorHost.Query(string! queryId, System.ReadOnlySpan<Kedo.Runtime.HostValue> args) -> Kedo.Runtime.HostValue
+Kedo.Runtime.IBehaviorHost.Raise(string! signalId, System.ReadOnlySpan<Kedo.Runtime.HostValue> args) -> void
+Kedo.Runtime.IBehaviorHost.Roll(Kedo.Runtime.EffectKey key, string! streamId, System.ReadOnlySpan<Kedo.Runtime.HostValue> args) -> long
+Kedo.Runtime.IBehaviorHost.Symbols.get -> Kedo.Runtime.SymbolTable!
+Kedo.Runtime.IBehaviorHost.Trace(string! message) -> void
+Kedo.Runtime.Instr
+Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Add = 4 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.And = 14 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Apply = 23 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Call = 20 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Div = 7 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Emit = 24 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Eq = 10 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Jump = 17 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.JumpIfFalse = 18 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Le = 13 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.LoadConst = 1 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.LoadContext = 19 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.LoadSymbol = 2 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Lt = 12 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Mod = 8 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Move = 3 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Mul = 6 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Ne = 11 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Neg = 9 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Nop = 0 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Not = 16 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Or = 15 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Query = 22 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Return = 21 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Stop = 29 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Sub = 5 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.Trace = 30 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.WaitDecision = 26 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.WaitMinutes = 25 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.WaitRoll = 27 -> Kedo.Runtime.OpCode
+Kedo.Runtime.OpCode.WaitSignal = 28 -> Kedo.Runtime.OpCode
+Kedo.Runtime.Resumption
+Kedo.Runtime.Resumption.Kind.get -> Kedo.Runtime.AwaitKind
+Kedo.Runtime.Resumption.Kind.init -> void
+Kedo.Runtime.Resumption.Resumption(Kedo.Runtime.AwaitKind Kind, long Value) -> void
+Kedo.Runtime.Resumption.Value.get -> long
+Kedo.Runtime.Resumption.Value.init -> void
+Kedo.Runtime.RunResult
+Kedo.Runtime.RunResult.Error.get -> string?
+Kedo.Runtime.RunResult.Error.init -> void
+Kedo.Runtime.RunResult.Frame.get -> Kedo.Runtime.BehaviorFrame?
+Kedo.Runtime.RunResult.Frame.init -> void
+Kedo.Runtime.RunResult.RunResult(Kedo.Runtime.RunStatus Status, Kedo.Runtime.BehaviorFrame? Frame, string? Error, System.Collections.Generic.IReadOnlyList<string!>! Trace) -> void
+Kedo.Runtime.RunResult.Status.get -> Kedo.Runtime.RunStatus
+Kedo.Runtime.RunResult.Status.init -> void
+Kedo.Runtime.RunResult.Trace.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Kedo.Runtime.RunResult.Trace.init -> void
+Kedo.Runtime.RunStatus
+Kedo.Runtime.RunStatus.Completed = 0 -> Kedo.Runtime.RunStatus
+Kedo.Runtime.RunStatus.Failed = 2 -> Kedo.Runtime.RunStatus
+Kedo.Runtime.RunStatus.Suspended = 1 -> Kedo.Runtime.RunStatus
+Kedo.Runtime.StalePolicy
+Kedo.Runtime.StalePolicy.AbortSilently = 0 -> Kedo.Runtime.StalePolicy
+Kedo.Runtime.StalePolicy.AbortWithCompensation = 1 -> Kedo.Runtime.StalePolicy
+Kedo.Runtime.StalePolicy.RestartAtEntry = 2 -> Kedo.Runtime.StalePolicy
+Kedo.Runtime.SymbolTable
+Kedo.Runtime.SymbolTable.Count.get -> int
+Kedo.Runtime.SymbolTable.Intern(string! name) -> int
+Kedo.Runtime.SymbolTable.Name(long handle) -> string?
+Kedo.Runtime.SymbolTable.SymbolTable() -> void
+Kedo.Schema.EnumSchema
+Kedo.Schema.EnumSchema.EnumSchema(string! id, System.Collections.Generic.IReadOnlyList<string!>! values) -> void
+Kedo.Schema.EnumSchema.Id.get -> string!
+Kedo.Schema.EnumSchema.Values.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Kedo.Schema.FieldSchema
+Kedo.Schema.FieldSchema.AssetKind.get -> string?
+Kedo.Schema.FieldSchema.AssetKind.init -> void
+Kedo.Schema.FieldSchema.DefaultBool.get -> bool?
+Kedo.Schema.FieldSchema.DefaultBool.init -> void
+Kedo.Schema.FieldSchema.DefaultInt.get -> long?
+Kedo.Schema.FieldSchema.DefaultInt.init -> void
+Kedo.Schema.FieldSchema.DefaultText.get -> string?
+Kedo.Schema.FieldSchema.DefaultText.init -> void
+Kedo.Schema.FieldSchema.Doc.get -> string?
+Kedo.Schema.FieldSchema.Doc.init -> void
+Kedo.Schema.FieldSchema.Element.get -> Kedo.Schema.FieldSchema?
+Kedo.Schema.FieldSchema.Element.init -> void
+Kedo.Schema.FieldSchema.EnumId.get -> string?
+Kedo.Schema.FieldSchema.EnumId.init -> void
+Kedo.Schema.FieldSchema.FieldSchema(string! name, Kedo.Schema.ValueKind kind) -> void
+Kedo.Schema.FieldSchema.KeyField.get -> string!
+Kedo.Schema.FieldSchema.KeyField.init -> void
+Kedo.Schema.FieldSchema.KeysEnumId.get -> string?
+Kedo.Schema.FieldSchema.KeysEnumId.init -> void
+Kedo.Schema.FieldSchema.Kind.get -> Kedo.Schema.ValueKind
+Kedo.Schema.FieldSchema.ListStrategy.get -> Kedo.Schema.ListStrategy
+Kedo.Schema.FieldSchema.ListStrategy.init -> void
+Kedo.Schema.FieldSchema.Max.get -> long?
+Kedo.Schema.FieldSchema.Max.init -> void
+Kedo.Schema.FieldSchema.MaxDecimal.get -> decimal?
+Kedo.Schema.FieldSchema.MaxDecimal.init -> void
+Kedo.Schema.FieldSchema.MaxItems.get -> int?
+Kedo.Schema.FieldSchema.MaxItems.init -> void
+Kedo.Schema.FieldSchema.MaxLength.get -> int?
+Kedo.Schema.FieldSchema.MaxLength.init -> void
+Kedo.Schema.FieldSchema.Min.get -> long?
+Kedo.Schema.FieldSchema.Min.init -> void
+Kedo.Schema.FieldSchema.MinDecimal.get -> decimal?
+Kedo.Schema.FieldSchema.MinDecimal.init -> void
+Kedo.Schema.FieldSchema.MinItems.get -> int?
+Kedo.Schema.FieldSchema.MinItems.init -> void
+Kedo.Schema.FieldSchema.MinLength.get -> int?
+Kedo.Schema.FieldSchema.MinLength.init -> void
+Kedo.Schema.FieldSchema.Name.get -> string!
+Kedo.Schema.FieldSchema.OneOf.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Kedo.Schema.FieldSchema.OneOf.init -> void
+Kedo.Schema.FieldSchema.RecordId.get -> string?
+Kedo.Schema.FieldSchema.RecordId.init -> void
+Kedo.Schema.FieldSchema.Required.get -> bool
+Kedo.Schema.FieldSchema.Required.init -> void
+Kedo.Schema.FieldSchema.Scale.get -> int
+Kedo.Schema.FieldSchema.Scale.init -> void
+Kedo.Schema.FieldSchema.TargetType.get -> string?
+Kedo.Schema.FieldSchema.TargetType.init -> void
+Kedo.Schema.HookSchema
+Kedo.Schema.HookSchema.AllowsAwait.get -> bool
+Kedo.Schema.HookSchema.AllowsAwait.init -> void
+Kedo.Schema.HookSchema.AllowsEffects.get -> bool
+Kedo.Schema.HookSchema.AllowsEffects.init -> void
+Kedo.Schema.HookSchema.Context.get -> Kedo.Schema.RecordSchema!
+Kedo.Schema.HookSchema.Doc.get -> string?
+Kedo.Schema.HookSchema.Doc.init -> void
+Kedo.Schema.HookSchema.HookSchema(string! id, Kedo.Schema.RecordSchema! context) -> void
+Kedo.Schema.HookSchema.Id.get -> string!
+Kedo.Schema.IKedoModule
+Kedo.Schema.IKedoModule.Id.get -> string!
+Kedo.Schema.IKedoModule.Register(Kedo.Schema.SchemaRegistry! registry) -> void
+Kedo.Schema.ListStrategy
+Kedo.Schema.ListStrategy.Append = 3 -> Kedo.Schema.ListStrategy
+Kedo.Schema.ListStrategy.Atomic = 0 -> Kedo.Schema.ListStrategy
+Kedo.Schema.ListStrategy.Keyed = 2 -> Kedo.Schema.ListStrategy
+Kedo.Schema.ListStrategy.Set = 1 -> Kedo.Schema.ListStrategy
+Kedo.Schema.RecordSchema
+Kedo.Schema.RecordSchema.Add(Kedo.Schema.FieldSchema! field) -> Kedo.Schema.RecordSchema!
+Kedo.Schema.RecordSchema.Closed.get -> bool
+Kedo.Schema.RecordSchema.Closed.init -> void
+Kedo.Schema.RecordSchema.Doc.get -> string?
+Kedo.Schema.RecordSchema.Doc.init -> void
+Kedo.Schema.RecordSchema.Fields.get -> System.Collections.Generic.IReadOnlyCollection<Kedo.Schema.FieldSchema!>!
+Kedo.Schema.RecordSchema.Find(string! name) -> Kedo.Schema.FieldSchema?
+Kedo.Schema.RecordSchema.Id.get -> string!
+Kedo.Schema.RecordSchema.RecordSchema(string! id) -> void
+Kedo.Schema.SchemaRegistry
+Kedo.Schema.SchemaRegistry.AddComponent(Kedo.Schema.RecordSchema! component) -> Kedo.Schema.SchemaRegistry!
+Kedo.Schema.SchemaRegistry.AddEnum(Kedo.Schema.EnumSchema! e) -> Kedo.Schema.SchemaRegistry!
+Kedo.Schema.SchemaRegistry.AddHook(Kedo.Schema.HookSchema! hook) -> Kedo.Schema.SchemaRegistry!
+Kedo.Schema.SchemaRegistry.AddRecord(Kedo.Schema.RecordSchema! record) -> Kedo.Schema.SchemaRegistry!
+Kedo.Schema.SchemaRegistry.AddType(Kedo.Schema.TypeSchema! type) -> Kedo.Schema.SchemaRegistry!
+Kedo.Schema.SchemaRegistry.Components.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Schema.RecordSchema!>!
+Kedo.Schema.SchemaRegistry.Enums.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Schema.EnumSchema!>!
+Kedo.Schema.SchemaRegistry.FindComponent(string! id) -> Kedo.Schema.RecordSchema?
+Kedo.Schema.SchemaRegistry.FindEnum(string! id) -> Kedo.Schema.EnumSchema?
+Kedo.Schema.SchemaRegistry.FindHook(string! id) -> Kedo.Schema.HookSchema?
+Kedo.Schema.SchemaRegistry.FindRecord(string! id) -> Kedo.Schema.RecordSchema?
+Kedo.Schema.SchemaRegistry.FindType(string! id) -> Kedo.Schema.TypeSchema?
+Kedo.Schema.SchemaRegistry.Hooks.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Schema.HookSchema!>!
+Kedo.Schema.SchemaRegistry.Permissive.get -> bool
+Kedo.Schema.SchemaRegistry.Permissive.init -> void
+Kedo.Schema.SchemaRegistry.Records.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Schema.RecordSchema!>!
+Kedo.Schema.SchemaRegistry.SchemaRegistry() -> void
+Kedo.Schema.SchemaRegistry.Types.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Schema.TypeSchema!>!
+Kedo.Schema.TypeSchema
+Kedo.Schema.TypeSchema.AllowedComponents.get -> System.Collections.Generic.IReadOnlySet<string!>?
+Kedo.Schema.TypeSchema.AllowedComponents.init -> void
+Kedo.Schema.TypeSchema.AllowedHooks.get -> System.Collections.Generic.IReadOnlySet<string!>?
+Kedo.Schema.TypeSchema.AllowedHooks.init -> void
+Kedo.Schema.TypeSchema.Body.get -> Kedo.Schema.RecordSchema!
+Kedo.Schema.TypeSchema.Doc.get -> string?
+Kedo.Schema.TypeSchema.Doc.init -> void
+Kedo.Schema.TypeSchema.Id.get -> string!
+Kedo.Schema.TypeSchema.TypeSchema(string! id, Kedo.Schema.RecordSchema! body) -> void
+Kedo.Schema.ValueKind
+Kedo.Schema.ValueKind.Any = 0 -> Kedo.Schema.ValueKind
+Kedo.Schema.ValueKind.Asset = 7 -> Kedo.Schema.ValueKind
+Kedo.Schema.ValueKind.Bool = 2 -> Kedo.Schema.ValueKind
+Kedo.Schema.ValueKind.Decimal = 10 -> Kedo.Schema.ValueKind
+Kedo.Schema.ValueKind.Duration = 4 -> Kedo.Schema.ValueKind
+Kedo.Schema.ValueKind.Enum = 5 -> Kedo.Schema.ValueKind
+Kedo.Schema.ValueKind.Int = 1 -> Kedo.Schema.ValueKind
+Kedo.Schema.ValueKind.List = 9 -> Kedo.Schema.ValueKind
+Kedo.Schema.ValueKind.Map = 11 -> Kedo.Schema.ValueKind
+Kedo.Schema.ValueKind.Record = 8 -> Kedo.Schema.ValueKind
+Kedo.Schema.ValueKind.Reference = 6 -> Kedo.Schema.ValueKind
+Kedo.Schema.ValueKind.Text = 3 -> Kedo.Schema.ValueKind
+Kedo.Text.LinePosition
+Kedo.Text.LinePosition.Column.get -> int
+Kedo.Text.LinePosition.Column.init -> void
+Kedo.Text.LinePosition.Line.get -> int
+Kedo.Text.LinePosition.Line.init -> void
+Kedo.Text.LinePosition.LinePosition() -> void
+Kedo.Text.LinePosition.LinePosition(int Line, int Column) -> void
+Kedo.Text.TextSpan
+Kedo.Text.TextSpan.End.get -> int
+Kedo.Text.TextSpan.Length.get -> int
+Kedo.Text.TextSpan.Length.init -> void
+Kedo.Text.TextSpan.Start.get -> int
+Kedo.Text.TextSpan.Start.init -> void
+Kedo.Text.TextSpan.TextSpan() -> void
+Kedo.Text.TextSpan.TextSpan(int Start, int Length) -> void
+abstract Kedo.Pack.PackValue.Tag.get -> Kedo.Pack.PackTag
+const Kedo.KedoVersion.LanguageMajor = 1 -> int
+const Kedo.Pack.KedoPack.FormatVersion = 2 -> int
+const Kedo.Pack.KedoPack.MinFormatVersion = 1 -> int
+const Kedo.Pack.KedoPack.SectionObjects = 2 -> int
+const Kedo.Pack.KedoPack.SectionPrograms = 3 -> int
+const Kedo.Pack.KedoPack.SectionStrings = 1 -> int
+const Kedo.Runtime.BehaviorFrame.CurrentFormat = 1 -> int
+override Kedo.Pack.PackBool.Tag.get -> Kedo.Pack.PackTag
+override Kedo.Pack.PackDecimal.Tag.get -> Kedo.Pack.PackTag
+override Kedo.Pack.PackInt.Tag.get -> Kedo.Pack.PackTag
+override Kedo.Pack.PackList.Tag.get -> Kedo.Pack.PackTag
+override Kedo.Pack.PackRecord.Tag.get -> Kedo.Pack.PackTag
+override Kedo.Pack.PackSymbol.Tag.get -> Kedo.Pack.PackTag
+override Kedo.Runtime.BehaviorJsonContext.GetTypeInfo(System.Type! type) -> System.Text.Json.Serialization.Metadata.JsonTypeInfo?
+override Kedo.Runtime.EffectKey.ToString() -> string!
+override Kedo.Text.LinePosition.ToString() -> string!
+override Kedo.Text.TextSpan.ToString() -> string!
+static Kedo.Pack.KedoPack.Load(byte[]! bytes) -> Kedo.Pack.KedoPack!
+static Kedo.Pack.KedoPack.Magic.get -> System.ReadOnlySpan<byte>
+static Kedo.Runtime.BehaviorJsonContext.Default.get -> Kedo.Runtime.BehaviorJsonContext!
+static Kedo.Runtime.BehaviorVm.Load(string! json) -> Kedo.Runtime.BehaviorFrame?
+static Kedo.Runtime.BehaviorVm.Save(Kedo.Runtime.BehaviorFrame! frame) -> string!
+static Kedo.Runtime.Budget.Default.get -> Kedo.Runtime.Budget!
+static Kedo.Runtime.Disassembler.Dump(Kedo.Runtime.BehaviorProgram! p) -> string!
+static Kedo.Runtime.HostValue.Int(long n) -> Kedo.Runtime.HostValue
+static Kedo.Runtime.HostValue.None.get -> Kedo.Runtime.HostValue
+static Kedo.Runtime.HostValue.Symbol(int handle) -> Kedo.Runtime.HostValue
+static Kedo.Runtime.Instr.A(uint w) -> int
+static Kedo.Runtime.Instr.AImm(Kedo.Runtime.OpCode op, int a, int imm) -> uint
+static Kedo.Runtime.Instr.Abc(Kedo.Runtime.OpCode op, int a, int b, int c) -> uint
+static Kedo.Runtime.Instr.B(uint w) -> int
+static Kedo.Runtime.Instr.C(uint w) -> int
+static Kedo.Runtime.Instr.Imm(uint w) -> int
+static Kedo.Runtime.Instr.Op(uint w) -> Kedo.Runtime.OpCode
+static Kedo.Text.TextSpan.Union(Kedo.Text.TextSpan a, Kedo.Text.TextSpan b) -> Kedo.Text.TextSpan
+static readonly Kedo.KedoVersion.Current -> string!
