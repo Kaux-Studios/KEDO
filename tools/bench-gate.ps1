@@ -16,13 +16,14 @@ function Convert-Quantity([string]$text, [hashtable]$units) {
     if ($clean -eq '' -or $clean -eq '-' -or $clean -eq 'NA') { return $null }
     if ($clean -notmatch '^([0-9.,]+)\s*(\S+)$') { throw "cannot read '$text'" }
     $number = [double]::Parse($Matches[1].Replace(',', ''), [Globalization.CultureInfo]::InvariantCulture)
-    $unit = $Matches[2]
+    $unit = $Matches[2].Replace([char]0x00B5, [char]0x03BC)
     if (-not $units.ContainsKey($unit)) { throw "unknown unit '$unit' in '$text'" }
     return $number * $units[$unit]
 }
 
 # The micro sign is written as a char code: Windows PowerShell 5.1 reads this file as ANSI.
-$time = @{ 'ns' = 1.0; ([string][char]0x03BC + 's') = 1e3; ([string][char]0x00B5 + 's') = 1e3; 'us' = 1e3; 'ms' = 1e6; 's' = 1e9 }
+# The micro sign (U+00B5) and the Greek mu (U+03BC) are one key for a case-insensitive hashtable: normalise to mu.
+$time = @{ 'ns' = 1.0; ([string][char]0x03BC + 's') = 1e3; 'us' = 1e3; 'ms' = 1e6; 's' = 1e9 }
 $size = @{ 'B' = 1.0; 'KB' = 1024.0; 'MB' = 1048576.0; 'GB' = 1073741824.0 }
 $measured = [ordered]@{}
 foreach ($csv in Get-ChildItem $Results -Filter '*-report.csv') {
