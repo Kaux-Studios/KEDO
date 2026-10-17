@@ -62,6 +62,8 @@ try
             return Build(positional.Skip(1).ToArray(), json, valued.TryGetValue("--out", out var outPath) ? outPath : null);
         case "fmt":
             return Fmt(positional.Skip(1).ToArray(), options.Contains("--check"), json);
+        case "eval":
+            return Kedo.Cli.Eval.Run(positional.Skip(1).ToArray(), valued, json, options.Contains("--reference"), options.Contains("--keep"), options.Contains("--mcp"));
         case "describe":
             return Describe(positional.Skip(1).ToArray(), json);
         case "edit":
@@ -96,6 +98,7 @@ static void PrintUsage()
     Console.WriteLine("  describe <paths> <type:id>   Fields of an object for forms: schema, resolved value as a literal and its layer (--json).");
     Console.WriteLine("  edit <file> set <type:id> <path> <value>|--value-file=<file> [--op==!|+=|-=] | unset <type:id> <path> | new <type> <id> [--extends=<parent>] | duplicate <type:id> <new id>");
     Console.WriteLine("                     Structural edit of one declaration, reprinted in canonical form; the file is rewritten only when the edit is valid.");
+    Console.WriteLine("  eval <suite.json> --reference | --agent=\"<command with {prompt_file} {workspace}>\"   Run the agent evaluation suite (eval/tasks.json) and verify each task.");
     Console.WriteLine("  --text=<file>=<copy>   Read <copy> in place of <file> (unsaved editor text).");
     Console.WriteLine("Without a registered schema the resolver runs in permissive mode (any type and field; list strategies inferred).");
     Console.WriteLine("Files with `variant <name>` after `module` are resolved over the base content; check reports every variant, and --variant=<name> makes resolve, explain, catalog, compile and build use that variant.");

@@ -23,7 +23,8 @@ internal static class McpServer
     public const string Instructions =
         "KEDO content tools: validate (check), format, resolve inherited objects, explain provenance, list the catalog, compile hooks to IR, export the JSON Schema. " +
         "Use kedo_check after writing or editing .kedo files and fix every error it reports; use kedo_resolve to see the effective object after `extends`/`with`; " +
-        "use kedo_explain for 'where does this value come from'; use kedo_catalog to learn valid types, fields, enums and existing object ids before inventing names. " +
+        "use kedo_explain for 'where does this value come from'; use kedo_catalog to learn valid types, fields, enums and existing object ids before inventing names; " +
+        "use kedo_describe before editing an object and kedo_run_trace to see what a hook does. The resource kedo://grammar is the syntax reference. " +
         "Inputs are workspace paths (files or directories) plus optional schema_paths (a KEDO-written schema: kedo_type, kedo_enum, ...). Nothing is cached between calls.";
 
     public static async Task<int> RunAsync()
@@ -37,7 +38,9 @@ internal static class McpServer
                 o.ServerInstructions = Instructions;
             })
             .WithStdioServerTransport()
-            .WithTools<KedoTools>();
+            .WithTools<KedoTools>()
+            .WithResources<KedoResources>()
+            .WithPrompts<KedoPrompts>();
         await builder.Build().RunAsync();
         return 0;
     }
@@ -287,6 +290,43 @@ internal sealed class KedoTools
         return new CompileResult(listings, ws.Diagnostics(50));
     }
 
+    [McpServerTool(Name = "kedo_run_trace", ReadOnly = true, Idempotent = true), Description("Run one hook of an object in the KEDO VM with a scripted host and report what it did: effects applied (as effect(args)), signals raised, waits (resumed at once) and the trace. Context values are integers or symbols such as room:reactor or crew:ada; queries answer with the given integers (0 when missing). Use it to check behaviour you wrote without running the game.")]
+    public static TraceResult RunTrace(
+        [Description("Files or directories with .kedo content")] string[] paths,
+        [Description("Object key as type:id")] string key,
+        [Description("Hook name, e.g. crew_enters")] string hook,
+        [Description("Context fields: name -> integer or symbol (type:id)")] Dictionary<string, string>? context = null,
+        [Description("Query answers: query id -> integer")] Dictionary<string, long>? queries = null,
+        [Description("Optional schema files or directories")] string[]? schema_paths = null)
+    {
+        var ws = Workspace.Load(paths, schema_paths);
+        if (!ws.Catalog.ByKey.TryGetValue(key, out var obj))
+        {
+            return new TraceResult("NotFound", new List<string>(), new List<string>(), new List<string> { $"no object `{key}`" }, ws.Diagnostics(20));
+        }
+
+        var functions = ws.Declarations.SelectMany(d => d.Functions).ToList();
+        var program = BehaviorCompiler.Compile(obj, functions, ws.Schema, ws.Bag);
+        if (program is null)
+        {
+            return new TraceResult("NoBehaviour", new List<string>(), new List<string>(), new List<string>(), ws.Diagnostics(20));
+        }
+
+        var host = new Kedo.Compiler.Evaluation.TraceHost();
+        foreach (var (name, value) in context ?? new Dictionary<string, string>())
+        {
+            host.Context[name] = long.TryParse(value, out var n) ? HostValue.Int(n) : host.Symbol(value);
+        }
+
+        foreach (var (name, value) in queries ?? new Dictionary<string, long>())
+        {
+            host.Queries[name] = HostValue.Int(value);
+        }
+
+        var status = host.Run(program, hook);
+        return new TraceResult(status, host.Applied, host.Raised, host.Lines, ws.Diagnostics(20));
+    }
+
     [McpServerTool(Name = "kedo_schema", ReadOnly = true, Idempotent = true), Description("Export the game's schema as a JSON Schema 2020-12 bundle (types, components, hooks, enums, records) for form generation or to learn the exact field names and kinds.")]
     public static string Schema([Description("Files or directories with the KEDO-written schema")] string[] schema_paths)
     {
@@ -303,3 +343,36 @@ internal sealed class KedoTools
 
 /// <summary>Unsaved text for a path.</summary>
 internal sealed record TextOverride(string Path, string Text);
+
+internal sealed record TraceResult(string Status, List<string> Applied, List<string> Raised, List<string> Trace, List<DiagnosticDto> Diagnostics);
+
+/// <summary>Reference material for agents (#17).</summary>
+[McpServerResourceType]
+internal sealed class KedoResources
+{
+    [McpServerResource(UriTemplate = "kedo://grammar", Name = "kedo-grammar", MimeType = "text/markdown"), Description("KEDO syntax reference: declarations, extends and mixins, list operators and pinned positions, variants, assets, hooks and functions, with examples.")]
+    public static string Grammar()
+    {
+        using var stream = typeof(KedoResources).Assembly.GetManifestResourceStream("kedo-syntax.md")!;
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
+    }
+}
+
+/// <summary>Guided workflows for agents (#17).</summary>
+[McpServerPromptType]
+internal sealed class KedoPrompts
+{
+    [McpServerPrompt(Name = "new-object"), Description("Add a new object of a type to KEDO content: learn the type, prefer inheritance, write it, then check and verify.")]
+    public static string NewObject(
+        [Description("Object type, e.g. room")] string type,
+        [Description("Object id")] string id,
+        [Description("What the object is for")] string? purpose = null)
+        => $"Add a KEDO object `{type} {id}`{(purpose is null ? "" : $" for: {purpose}")}.\n" +
+           "1. Read the resource kedo://grammar if you are not sure of the syntax.\n" +
+           $"2. Call kedo_catalog with kind=types and kind=objects to learn the fields of `{type}` and the existing objects; look for an abstract base or a similar object to extend.\n" +
+           "3. Prefer `extends` and mixins over copying values; write only what differs. Use `+=` to add to inherited lists and `=!` to replace them.\n" +
+           "4. Write the declaration in the file that holds objects of that type.\n" +
+           "5. Call kedo_check and fix every error; then kedo_describe on the new key to confirm each value and where it comes from.\n" +
+           "6. If the object has hooks, call kedo_run_trace with a representative context.";
+}

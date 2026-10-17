@@ -14,6 +14,10 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The syntax skill is served by the MCP server as kedo://grammar (#17). -->
+    <EmbeddedResource Include="../../.agents/skills/kedo-syntax/SKILL.md" LogicalName="kedo-syntax.md" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../Kedo.Core/Kedo.Core.csproj" />
     <ProjectReference Include="../Kedo.Compiler/Kedo.Compiler.csproj" />
   </ItemGroup>

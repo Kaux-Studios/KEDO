@@ -1,0 +1,332 @@
+{
+  // Agent evaluation suite (#17). Every task starts from a copy of `base` (content plus its schema in `schema/`),
+  // optionally altered by `setup`; `solution` is a reference answer that must pass the checks (kedo eval --reference).
+  "base": "../samples/outpost",
+  "tasks": [
+    {
+      "id": "add-room",
+      "prompt": "Add a room `storage` titled \"Storage\" of kind workshop. It extends `base_room`, uses the `pressurized` mixin, holds no crew and 40 storage, and is adjacent to the workshop.",
+      "solution": [{ "file": "rooms.kedo", "append": "room storage extends base_room with pressurized {\n    title = \"Storage\"\n    kind = workshop\n    component capacity { crew = 0  storage = 40 }\n    adjacent = [room:workshop]\n}" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "room:storage", "path": "title", "expected": "\"Storage\"" },
+        { "kind": "value", "key": "room:storage", "path": "kind", "expected": "workshop" },
+        { "kind": "value", "key": "room:storage", "path": "capacity.storage", "expected": "40" },
+        { "kind": "parent", "key": "room:storage", "expected": "base_room" },
+        { "kind": "mixin", "key": "room:storage", "expected": "pressurized" },
+        { "kind": "value", "key": "room:storage", "path": "adjacent", "expected": "[room:workshop]" }
+      ]
+    },
+    {
+      "id": "rename-title",
+      "prompt": "Change the title of the main airlock to \"Airlock A\".",
+      "solution": [{ "file": "rooms.kedo", "find": "title = \"Main airlock\"", "replace": "title = \"Airlock A\"" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "room:airlock_main", "path": "title", "expected": "\"Airlock A\"" }
+      ]
+    },
+    {
+      "id": "inherit-crew",
+      "prompt": "Add a crew member `eli` named \"Eli\", a pilot who lives in the reactor. Eli is an ordinary person: do not repeat values the base already provides.",
+      "solution": [{ "file": "crew.kedo", "append": "crew eli extends person { name = \"Eli\"  role = pilot  home = room:reactor }" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "crew:eli", "path": "role", "expected": "pilot" },
+        { "kind": "value", "key": "crew:eli", "path": "home", "expected": "room:reactor" },
+        { "kind": "layer", "key": "crew:eli", "path": "mood", "expected": "parent" },
+        { "kind": "layer", "key": "crew:eli", "path": "skill", "expected": "parent" }
+      ]
+    },
+    {
+      "id": "override-mixin-value",
+      "prompt": "The workshop should also produce 3 power per hour, while still consuming oxygen and water like every pressurized room.",
+      "solution": [{ "file": "rooms.kedo", "find": "    component capacity { crew = 2  storage = 25 }", "replace": "    component capacity { crew = 2  storage = 25 }\n    component life_support { power = 3 }" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "room:workshop", "path": "life_support.power", "expected": "3" },
+        { "kind": "value", "key": "room:workshop", "path": "life_support.oxygen", "expected": "-2" },
+        { "kind": "layer", "key": "room:workshop", "path": "life_support.oxygen", "expected": "mixin" }
+      ]
+    },
+    {
+      "id": "add-tag",
+      "prompt": "Tag the greenhouse as `organic` without losing any tag it already has.",
+      "solution": [{ "file": "rooms.kedo", "find": "    kind = greenhouse\n", "replace": "    kind = greenhouse\n    tags += [organic]\n" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "room:greenhouse", "path": "tags", "expected": "[interior, pressurized, organic]" }
+      ]
+    },
+    {
+      "id": "replace-tags",
+      "prompt": "The reactor must have exactly one tag, `sealed`: nothing inherited and no other tag.",
+      "solution": [{ "file": "rooms.kedo", "find": "    tags += [hazard]", "replace": "    tags =! [sealed]" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "room:reactor", "path": "tags", "expected": "[sealed]" }
+      ]
+    },
+    {
+      "id": "remove-inherited-tag",
+      "prompt": "The workshop should not carry the `interior` tag it inherits; keep its other tags.",
+      "solution": [{ "file": "rooms.kedo", "find": "    component capacity { crew = 2  storage = 25 }", "replace": "    component capacity { crew = 2  storage = 25 }\n    tags -= [interior]" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "room:workshop", "path": "tags", "expected": "[pressurized]" }
+      ]
+    },
+    {
+      "id": "remove-component",
+      "prompt": "The workshop must not have a soundscape.",
+      "solution": [{ "file": "rooms.kedo", "find": "    component capacity { crew = 2  storage = 25 }", "replace": "    component capacity { crew = 2  storage = 25 }\n    remove component soundscape" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "no_component", "key": "room:workshop", "expected": "soundscape" },
+        { "kind": "value", "key": "room:workshop", "path": "damage.integrity", "expected": "100" }
+      ]
+    },
+    {
+      "id": "add-choice",
+      "prompt": "Give the coolant leak crisis a new choice `seal`, labelled \"Seal the reactor room\", that takes one hour and costs 3 parts. Waiting must stay the last option.",
+      "solution": [{ "file": "crises.kedo", "find": "        { id = vent", "replace": "        { id = seal  label = \"Seal the reactor room\"  duration = 1h  costs = [{ resource = parts  amount = 3 }] }\n        { id = vent" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "crisis:coolant_leak", "path": "choices[seal].duration", "expected": "60min" },
+        { "kind": "value", "key": "crisis:coolant_leak", "path": "choices[seal].costs[parts].amount", "expected": "3" },
+        { "kind": "value", "key": "crisis:coolant_leak", "path": "choices[seal].label", "expected": "\"Seal the reactor room\"" },
+        { "kind": "present", "key": "crisis:coolant_leak", "path": "choices[wait]" }
+      ]
+    },
+    {
+      "id": "change-choice-cost",
+      "prompt": "In the small coolant leak, patching should cost 2 parts.",
+      "solution": [{ "file": "crises.kedo", "find": "choices[patch] { costs = [{ resource = parts  amount = 1 }] }", "replace": "choices[patch] { costs = [{ resource = parts  amount = 2 }] }" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "crisis:coolant_leak_minor", "path": "choices[patch].costs[parts].amount", "expected": "2" },
+        { "kind": "value", "key": "crisis:coolant_leak", "path": "choices[patch].costs[parts].amount", "expected": "2" }
+      ]
+    },
+    {
+      "id": "remove-choice",
+      "prompt": "The greenhouse blight crisis should no longer offer burning the beds.",
+      "solution": [{ "file": "crises.kedo", "find": "        { id = burn  label = \"Burn the infected beds\"  duration = 1h  costs = [{ resource = oxygen  amount = 3 }]  mood_shift = -1 }\n", "replace": "" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "keys", "key": "crisis:blight", "path": "choices", "expected": "prune,wait" }
+      ]
+    },
+    {
+      "id": "new-crisis",
+      "prompt": "Add a crisis `power_dip` titled \"Power dip\" in the reactor. It is an ordinary crisis (extend the common base) with one choice of its own, `reroute`, labelled \"Reroute power\", that needs an engineer and takes 30 minutes.",
+      "solution": [{ "file": "crises.kedo", "append": "crisis power_dip extends base_crisis {\n    title = \"Power dip\"\n    room = room:reactor\n    choices += [{ id = reroute  label = \"Reroute power\"  requires_role = engineer  duration = 30min }]\n}" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "parent", "key": "crisis:power_dip", "expected": "base_crisis" },
+        { "kind": "keys", "key": "crisis:power_dip", "path": "choices", "expected": "reroute,wait" },
+        { "kind": "value", "key": "crisis:power_dip", "path": "choices[reroute].requires_role", "expected": "engineer" },
+        { "kind": "layer", "key": "crisis:power_dip", "path": "severity", "expected": "parent" }
+      ]
+    },
+    {
+      "id": "base-default",
+      "prompt": "Every crisis should wait 24 hours before it can happen again, unless a crisis says otherwise.",
+      "solution": [{ "file": "crises.kedo", "find": "    cooldown = 12h", "replace": "    cooldown = 24h" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "crisis:blight", "path": "cooldown", "expected": "1440min" },
+        { "kind": "layer", "key": "crisis:blight", "path": "cooldown", "expected": "parent" }
+      ]
+    },
+    {
+      "id": "fix-enum",
+      "prompt": "`kedo check` reports an error in the greenhouse. Fix it; the room is a greenhouse.",
+      "setup": [{ "file": "rooms.kedo", "find": "    kind = greenhouse", "replace": "    kind = garden" }],
+      "solution": [{ "file": "rooms.kedo", "find": "    kind = garden", "replace": "    kind = greenhouse" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "room:greenhouse", "path": "kind", "expected": "greenhouse" }
+      ]
+    },
+    {
+      "id": "fix-required",
+      "prompt": "`kedo check` reports an error in the workshop. Fix it; the room's title is \"Workshop\".",
+      "setup": [{ "file": "rooms.kedo", "find": "    title = \"Workshop\"\n", "replace": "" }],
+      "solution": [{ "file": "rooms.kedo", "find": "    kind = workshop\n", "replace": "    title = \"Workshop\"\n    kind = workshop\n" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "room:workshop", "path": "title", "expected": "\"Workshop\"" }
+      ]
+    },
+    {
+      "id": "fix-reference",
+      "prompt": "`kedo check` reports a broken reference in the workshop's connections. Fix it.",
+      "setup": [{ "file": "rooms.kedo", "find": "    adjacent = [room:reactor, room:airlock_main]", "replace": "    adjacent = [room:reactorr, room:airlock_main]" }],
+      "solution": [{ "file": "rooms.kedo", "find": "room:reactorr", "replace": "room:reactor" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "room:workshop", "path": "adjacent", "expected": "[room:reactor, room:airlock_main]" }
+      ]
+    },
+    {
+      "id": "fix-asset-kind",
+      "prompt": "`kedo check` reports an error about the greenhouse backdrop. Fix it with an image asset that already exists.",
+      "setup": [{ "file": "rooms.kedo", "find": "    kind = greenhouse\n", "replace": "    kind = greenhouse\n    backdrop = asset:hum\n" }],
+      "solution": [{ "file": "rooms.kedo", "find": "    backdrop = asset:hum\n", "replace": "    backdrop = asset:habitat_bg\n" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "present", "key": "room:greenhouse", "path": "backdrop" }
+      ]
+    },
+    {
+      "id": "add-asset",
+      "prompt": "Give the reactor a backdrop: a new image asset `reactor_bg` stored at art/reactor.png.",
+      "solution": [
+        { "file": "rooms.kedo", "append": "asset reactor_bg { kind = texture  path = \"art/reactor.png\" }" },
+        { "file": "rooms.kedo", "find": "    kind = reactor\n", "replace": "    kind = reactor\n    backdrop = asset:reactor_bg\n" }
+      ],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "room:reactor", "path": "backdrop", "expected": "asset:reactor_bg" },
+        { "kind": "value", "key": "asset:reactor_bg", "path": "kind", "expected": "texture" },
+        { "kind": "value", "key": "asset:reactor_bg", "path": "path", "expected": "\"art/reactor.png\"" }
+      ]
+    },
+    {
+      "id": "hook-effect",
+      "prompt": "When a crew member enters the reactor, apply the effect `radiation_check` to that member.",
+      "solution": [{ "file": "rooms.kedo", "find": "    adjacent = [room:workshop]\n}", "replace": "    adjacent = [room:workshop]\n\n    on crew_enters(ctx) {\n        apply effect:radiation_check(ctx.member)\n    }\n}" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "compiles", "key": "room:reactor" },
+        { "kind": "effect", "key": "room:reactor", "hook": "crew_enters", "context": { "member": "crew:ada", "room": "room:reactor" }, "expected": "radiation_check(crew:ada)" }
+      ]
+    },
+    {
+      "id": "hook-condition",
+      "prompt": "Every 4 hours (when the hour is divisible by 4) the workshop's hourly tick applies the effect `maintenance` to the room; at other hours it does nothing.",
+      "solution": [{ "file": "rooms.kedo", "find": "    adjacent = [room:reactor, room:airlock_main]\n}", "replace": "    adjacent = [room:reactor, room:airlock_main]\n\n    on hour_tick(ctx) {\n        if (ctx.hour % 4 == 0) {\n            apply effect:maintenance(ctx.room)\n        }\n    }\n}" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "effect", "key": "room:workshop", "hook": "hour_tick", "context": { "hour": 8, "room": "room:workshop" }, "expected": "maintenance(room:workshop)" },
+        { "kind": "no_effect", "key": "room:workshop", "hook": "hour_tick", "context": { "hour": 6, "room": "room:workshop" }, "expected": "maintenance(" }
+      ]
+    },
+    {
+      "id": "function-call",
+      "prompt": "Add a function `oxygen_need(crew: int) -> int` that returns twice the crew count, and make Habitat A's hourly tick apply the effect `consume` with the room and the oxygen need of 4 crew.",
+      "solution": [
+        { "file": "crew.kedo", "append": "function oxygen_need(crew: int) -> int {\n    return crew * 2\n}" },
+        { "file": "rooms.kedo", "find": "            apply effect:calm_down(ctx.member, 1)\n        }\n    }\n", "replace": "            apply effect:calm_down(ctx.member, 1)\n        }\n    }\n\n    on hour_tick(ctx) {\n        apply effect:consume(ctx.room, oxygen_need(4))\n    }\n" }
+      ],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "effect", "key": "room:habitat_a", "hook": "hour_tick", "context": { "hour": 1, "room": "room:habitat_a" }, "expected": "consume(room:habitat_a,8)" }
+      ]
+    },
+    {
+      "id": "variant-override",
+      "prompt": "Create a variant `hard` of the content in a new file: in it the reactor needs 8 repair parts and the greenhouse produces 4 oxygen. The base content must not change.",
+      "solution": [{ "file": "hard.kedo", "content": "kedo 1\nmodule outpost\nvariant hard\n\noverride room reactor {\n    component damage { repair_parts = 8 }\n}\n\noverride room greenhouse {\n    component life_support { oxygen = 4 }\n}\n" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "variant": "hard", "key": "room:reactor", "path": "damage.repair_parts", "expected": "8" },
+        { "kind": "value", "variant": "hard", "key": "room:greenhouse", "path": "life_support.oxygen", "expected": "4" },
+        { "kind": "value", "key": "room:reactor", "path": "damage.repair_parts", "expected": "4" },
+        { "kind": "value", "key": "room:greenhouse", "path": "life_support.oxygen", "expected": "6" }
+      ]
+    },
+    {
+      "id": "variant-object",
+      "prompt": "Create a variant `hard` in a new file with a critical crisis `meteor` titled \"Meteor strike\" in the main airlock, with a choice `brace` labelled \"Brace for impact\". The crisis must not exist in the base content.",
+      "solution": [{ "file": "hard.kedo", "content": "kedo 1\nmodule outpost\nvariant hard\n\ncrisis meteor extends base_crisis {\n    title = \"Meteor strike\"\n    severity = critical\n    room = room:airlock_main\n    choices += [{ id = brace  label = \"Brace for impact\" }]\n}\n" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "exists", "variant": "hard", "key": "crisis:meteor" },
+        { "kind": "absent", "key": "crisis:meteor" },
+        { "kind": "value", "variant": "hard", "key": "crisis:meteor", "path": "severity", "expected": "critical" }
+      ]
+    },
+    {
+      "id": "pinned-choice",
+      "prompt": "Add a mixin `ask_help` that gives a crisis the choice `radio` (\"Call for help\") as its very last option, after waiting too. Use it in the greenhouse blight.",
+      "solution": [
+        { "file": "crises.kedo", "append": "mixin ask_help {\n    choices += last [{ id = radio  label = \"Call for help\" }]\n}" },
+        { "file": "crises.kedo", "find": "crisis blight extends base_crisis {", "replace": "crisis blight extends base_crisis with ask_help {" }
+      ],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "keys", "key": "crisis:blight", "path": "choices", "expected": "prune,burn,wait,radio" },
+        { "kind": "mixin", "key": "crisis:blight", "expected": "ask_help" }
+      ]
+    },
+    {
+      "id": "extract-base",
+      "prompt": "Introduce an abstract room `utility_room` for pressurized workshops: it extends `base_room`, uses `pressurized` and has kind workshop. Make the workshop extend it without changing any of the workshop's resolved values.",
+      "solution": [
+        { "file": "rooms.kedo", "append": "abstract room utility_room extends base_room with pressurized {\n    kind = workshop\n}" },
+        { "file": "rooms.kedo", "find": "room workshop extends base_room with pressurized {", "replace": "room workshop extends utility_room {" }
+      ],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "parent", "key": "room:workshop", "expected": "utility_room" },
+        { "kind": "value", "key": "room:workshop", "path": "kind", "expected": "workshop" },
+        { "kind": "value", "key": "room:workshop", "path": "tags", "expected": "[interior, pressurized]" },
+        { "kind": "value", "key": "room:workshop", "path": "life_support.oxygen", "expected": "-2" },
+        { "kind": "value", "key": "room:workshop", "path": "capacity.storage", "expected": "25" }
+      ]
+    },
+    {
+      "id": "format",
+      "prompt": "The crew file is badly formatted. Format all the content canonically without changing any value.",
+      "setup": [{ "file": "crew.kedo", "find": "crew ada extends person { name = \"Ada\"  role = engineer  skill = 4  home = room:workshop }", "replace": "crew   ada extends person {name = \"Ada\" role = engineer   skill=4  home = room:workshop}" }],
+      "solution": [{ "file": "crew.kedo", "find": "crew   ada extends person {name = \"Ada\" role = engineer   skill=4  home = room:workshop}", "replace": "crew ada extends person { name = \"Ada\"  role = engineer  skill = 4  home = room:workshop }" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "formatted" },
+        { "kind": "value", "key": "crew:ada", "path": "skill", "expected": "4" }
+      ]
+    },
+    {
+      "id": "inherit-room",
+      "prompt": "Add a second habitat `habitat_b` that is like Habitat A in every way except its title, \"Habitat B\", and a capacity of 6 crew. Prefer inheritance over copying.",
+      "solution": [{ "file": "rooms.kedo", "append": "room habitat_b extends habitat_a {\n    title = \"Habitat B\"\n    component capacity { crew = 6 }\n}" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "parent", "key": "room:habitat_b", "expected": "habitat_a" },
+        { "kind": "value", "key": "room:habitat_b", "path": "capacity.crew", "expected": "6" },
+        { "kind": "layer", "key": "room:habitat_b", "path": "kind", "expected": "parent" }
+      ]
+    },
+    {
+      "id": "base-mood",
+      "prompt": "Crew members should start tense unless they say otherwise.",
+      "solution": [{ "file": "crew.kedo", "find": "abstract crew person { mood = calm", "replace": "abstract crew person { mood = tense" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "crew:cy", "path": "mood", "expected": "tense" },
+        { "kind": "layer", "key": "crew:cy", "path": "mood", "expected": "parent" }
+      ]
+    },
+    {
+      "id": "fix-range",
+      "prompt": "Bo's skill is out of range. Set it to the highest value the schema allows.",
+      "setup": [{ "file": "crew.kedo", "find": "role = botanist  skill = 3", "replace": "role = botanist  skill = 7" }],
+      "solution": [{ "file": "crew.kedo", "find": "role = botanist  skill = 7", "replace": "role = botanist  skill = 5" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "crew:bo", "path": "skill", "expected": "5" }
+      ]
+    },
+    {
+      "id": "replace-adjacent",
+      "prompt": "The greenhouse should connect only to the workshop.",
+      "solution": [{ "file": "rooms.kedo", "find": "    adjacent = [room:habitat_a]\n", "replace": "    adjacent = [room:workshop]\n" }],
+      "checks": [
+        { "kind": "clean" },
+        { "kind": "value", "key": "room:greenhouse", "path": "adjacent", "expected": "[room:workshop]" }
+      ]
+    }
+  ]
+}
