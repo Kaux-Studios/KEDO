@@ -32,10 +32,13 @@ static func from_editor_settings() -> KedoCli:
 		for key in [SETTING_COMMAND, SETTING_CONTENT, SETTING_SCHEMA]:
 			if not settings.has_setting(key):
 				settings.set_setting(key, "" if key == SETTING_COMMAND else PackedStringArray())
-		if str(settings.get_setting(SETTING_COMMAND)) != "":
-			command = str(settings.get_setting(SETTING_COMMAND))
-		if (settings.get_setting(SETTING_CONTENT) as PackedStringArray).size() > 0:
-			content = settings.get_setting(SETTING_CONTENT)
+		# Empty or the built-in default ("kedo", res://content) means "not set here": earlier versions wrote those defaults.
+		var editor_command := str(settings.get_setting(SETTING_COMMAND))
+		if editor_command != "" and editor_command != "kedo":
+			command = editor_command
+		var editor_content := settings.get_setting(SETTING_CONTENT) as PackedStringArray
+		if editor_content.size() > 0 and editor_content != PackedStringArray(["res://content"]):
+			content = editor_content
 		if (settings.get_setting(SETTING_SCHEMA) as PackedStringArray).size() > 0:
 			schema = settings.get_setting(SETTING_SCHEMA)
 	cli.command = KedoCli.split_command(command)

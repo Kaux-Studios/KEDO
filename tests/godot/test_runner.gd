@@ -84,6 +84,7 @@ func _form_tests(base_cli: KedoCli, content: String, schema: String) -> void:
 	var panel := KedoPanel.new()
 	panel.cli = cli
 	root.add_child(panel)
+	panel.refresh_catalog()
 	check(panel.catalog_objects.size() > 0, "panel lists the copied content")
 	var rooms := dir.path_join("rooms.kedo")
 	panel.open_file(rooms, 1)

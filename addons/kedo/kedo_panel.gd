@@ -28,7 +28,9 @@ func _ready() -> void:
 	if cli == null:
 		cli = KedoCli.from_editor_settings()
 	_build_ui()
-	refresh_catalog()
+	# A headless editor (imports, CI) never shows the screen: do not spawn the CLI there.
+	if DisplayServer.get_name() != "headless":
+		refresh_catalog()
 
 
 func _build_ui() -> void:
