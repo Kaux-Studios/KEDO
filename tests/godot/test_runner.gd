@@ -4,9 +4,10 @@ extends SceneTree
 ## The addon is copied into tests/godot/addons/kedo by tools/godot-test.ps1 before running.
 
 var failures := 0
+var _pending_form: Array = []
 
 
-func _init() -> void:
+func _initialize() -> void:
 	var user_args := OS.get_cmdline_user_args()
 	if user_args.size() < 2:
 		push_error("usage: -- <kedo command> <content path> [schema path]")
@@ -46,8 +47,102 @@ func _init() -> void:
 	var h := KedoHighlighter.new()
 	check(h.has_keyword_color("extends"), "highlighter knows keywords")
 
+	if user_args.size() > 2:
+		# The form needs a running tree (nodes get _ready): finish on the first frame.
+		_pending_form = [cli, user_args[1], user_args[2]]
+		return
+	_finish()
+
+
+func _process(_delta: float) -> bool:
+	if _pending_form.size() > 0:
+		var args := _pending_form
+		_pending_form = []
+		_form_tests(args[0], args[1], args[2])
+		_finish()
+	return false
+
+
+func _finish() -> void:
 	print("godot addon tests: %d failure(s)" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+## Form (#14): describe an object, edit a field through the form, undo it in the source editor, create and duplicate.
+func _form_tests(base_cli: KedoCli, content: String, schema: String) -> void:
+	var dir := ProjectSettings.globalize_path("user://form_test")
+	_copy_dir(content, dir)
+	# Drafts of earlier runs would be restored over the fresh copies (KedoDocument keeps unsaved text across restarts).
+	var drafts := ProjectSettings.globalize_path("user://kedo_drafts")
+	if DirAccess.dir_exists_absolute(drafts):
+		for file in DirAccess.get_files_at(drafts):
+			DirAccess.remove_absolute(drafts.path_join(file))
+	var cli := KedoCli.new()
+	cli.command = base_cli.command
+	cli.content_paths = PackedStringArray([dir])
+	cli.schema_paths = PackedStringArray([schema])
+	var panel := KedoPanel.new()
+	panel.cli = cli
+	root.add_child(panel)
+	check(panel.catalog_objects.size() > 0, "panel lists the copied content")
+	var rooms := dir.path_join("rooms.kedo")
+	panel.open_file(rooms, 1)
+	panel.select_object("room:reactor")
+	var desc := panel.describe("room:reactor")
+	check(desc.get("fields", []).size() > 0, "describe returns the fields of room:reactor")
+	var title: Dictionary = {}
+	for f in desc.get("fields", []):
+		if f.get("name") == "title":
+			title = f
+	check(title.get("value") == "\"Reactor\"" and title.get("layer") == "own", "title is own and quoted: " + str(title))
+	check(panel._form.find_child("field_title", true, false) != null, "form has a row for title")
+	var before := panel.current.text
+	check(panel.apply_edit(PackedStringArray(["set", "room:reactor", "title", "\"Main reactor\""])), "form edit applied")
+	check(panel.current.text.find("title = \"Main reactor\"") >= 0, "source shows the edit")
+	check(panel.current.is_dirty(), "edited document is dirty")
+	var after_edit := panel.describe("room:reactor")
+	var shown := ""
+	for f in after_edit.get("fields", []):
+		if f.get("name") == "title":
+			shown = str(f.get("value"))
+	check(shown == "\"Main reactor\"", "describe reads the unsaved text: " + shown)
+	panel._editor.undo()
+	panel.sync_from_editor()
+	check(panel.current.text == before, "undo in the source editor reverts the form edit")
+	panel._editor.redo()
+	panel.sync_from_editor()
+	check(panel.current.text.find("title = \"Main reactor\"") >= 0, "redo applies it again")
+	panel._editor.undo()
+	panel.sync_from_editor()
+	check(not panel.apply_edit(PackedStringArray(["set", "room:reactor", "title", "a = 1"])), "invalid literal refused")
+	check(panel.current.text == before, "refused edit leaves the text unchanged")
+	check(panel.apply_edit(PackedStringArray(["duplicate", "room:reactor", "reactor_copy"])), "duplicate applied")
+	check(panel.current_key == "room:reactor_copy", "duplicate selects the copy")
+	check(panel.apply_edit(PackedStringArray(["new", "room", "spare", "--extends=base_room"])), "new object applied")
+	check(panel.current.text.find("room spare extends base_room { }") >= 0, "new object declared")
+	var registered := [false]
+	KedoForm.register_sheet("room", func(d: Dictionary, form: KedoForm) -> void:
+		registered[0] = true
+		for f in d.get("fields", []):
+			if f.get("name") == "title":
+				form.add_field_row(f, "title", form))
+	panel.select_object("room:reactor")
+	check(registered[0], "a registered sheet replaces the generic form")
+	check(panel._form.find_child("field_title", true, false) != null and panel._form.find_child("field_kind", true, false) == null, "the sheet decides the rows")
+	KedoForm.register_sheet("room", Callable())
+	check(panel.unsaved_status() != "", "unsaved status reports the edited file")
+	for doc in panel.documents.values():
+		doc.discard()
+	check(panel.unsaved_status() == "", "discarding leaves nothing pending")
+	panel.queue_free()
+
+
+func _copy_dir(from: String, to: String) -> void:
+	DirAccess.make_dir_recursive_absolute(to)
+	var d := DirAccess.open(from)
+	for file in d.get_files():
+		if file.ends_with(".kedo"):
+			DirAccess.copy_absolute(from.path_join(file), to.path_join(file))
 
 
 func check(condition: bool, label: String) -> void:

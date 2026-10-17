@@ -13,6 +13,17 @@ var positional = args.Where(a => !a.StartsWith("--", StringComparison.Ordinal)).
 var json = options.Contains("--json");
 Kedo.Cli.CliOptions.SchemaPaths = valued.TryGetValue("--schema", out var schemaPath) ? schemaPath.Split(';', StringSplitOptions.RemoveEmptyEntries) : Array.Empty<string>();
 Kedo.Cli.CliOptions.Variant = valued.TryGetValue("--variant", out var variantName) ? variantName : null;
+if (valued.TryGetValue("--text", out var textOverrides))
+{
+    foreach (var pair in textOverrides.Split(';', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var split = pair.LastIndexOf('=');
+        if (split > 0)
+        {
+            Kedo.Cli.CliOptions.TextOverrides[Path.GetFullPath(pair[..split])] = pair[(split + 1)..];
+        }
+    }
+}
 
 if (positional.Length == 0 || options.Contains("--help"))
 {
@@ -51,6 +62,10 @@ try
             return Build(positional.Skip(1).ToArray(), json, valued.TryGetValue("--out", out var outPath) ? outPath : null);
         case "fmt":
             return Fmt(positional.Skip(1).ToArray(), options.Contains("--check"), json);
+        case "describe":
+            return Describe(positional.Skip(1).ToArray(), json);
+        case "edit":
+            return Edit(positional.Skip(1).ToArray(), valued, json);
         default:
             Console.Error.WriteLine($"unknown command `{positional[0]}`");
             PrintUsage();
@@ -76,8 +91,12 @@ static void PrintUsage()
     Console.WriteLine("  compile <paths>    Resolve and compile hooks and functions to IR; print the disassembly.");
     Console.WriteLine("  build <paths> --out=<file.kpk>   Resolve, compile and write the KEDO Pack binary.");
     Console.WriteLine("  import-json <file.json> --out=<dir> --module=<name> [--map=events:event,items:item] [--enums=f1,f2] [--pack-type=pack]   Draft .kedo files from existing JSON content.");
-    Console.WriteLine("  mcp                Start the stdio MCP server (stateless; tools kedo_check, kedo_format, kedo_resolve, kedo_explain, kedo_catalog, kedo_compile, kedo_schema).");
+    Console.WriteLine("  mcp                Start the stdio MCP server (stateless; tools kedo_check, kedo_format, kedo_resolve, kedo_describe, kedo_explain, kedo_catalog, kedo_compile, kedo_schema).");
     Console.WriteLine("  fmt <paths>        Rewrite files in canonical form; with --check only report files that would change.");
+    Console.WriteLine("  describe <paths> <type:id>   Fields of an object for forms: schema, resolved value as a literal and its layer (--json).");
+    Console.WriteLine("  edit <file> set <type:id> <path> <value>|--value-file=<file> [--op==!|+=|-=] | unset <type:id> <path> | new <type> <id> [--extends=<parent>] | duplicate <type:id> <new id>");
+    Console.WriteLine("                     Structural edit of one declaration, reprinted in canonical form; the file is rewritten only when the edit is valid.");
+    Console.WriteLine("  --text=<file>=<copy>   Read <copy> in place of <file> (unsaved editor text).");
     Console.WriteLine("Without a registered schema the resolver runs in permissive mode (any type and field; list strategies inferred).");
     Console.WriteLine("Files with `variant <name>` after `module` are resolved over the base content; check reports every variant, and --variant=<name> makes resolve, explain, catalog, compile and build use that variant.");
 }
@@ -87,7 +106,7 @@ static Kedo.Compiler.Resolution.ResolvedCatalog Load(string[] paths, DiagnosticB
     var decls = new List<Kedo.Compiler.Model.FileDeclarations>();
     foreach (var file in ExpandFiles(paths))
     {
-        var tree = Parser.Parse(SourceText.FromFile(file), bag);
+        var tree = Parser.Parse(ReadSource(file), bag);
         trees.Add(tree);
         decls.Add(Kedo.Compiler.Model.DeclarationBuilder.Build(tree, bag));
     }
@@ -112,6 +131,128 @@ static Kedo.Compiler.Resolution.ResolvedCatalog View(Kedo.Compiler.Resolution.Re
     Console.Error.WriteLine($"no variant `{variant}` in the input{(catalog.Variants.Count == 0 ? "" : $" (variants: {string.Join(", ", catalog.Variants.Keys)})")}");
     Environment.Exit(2);
     return catalog;
+}
+
+// A file, or the copy given with --text for it (the same path for diagnostics).
+static SourceText ReadSource(string file)
+    => Kedo.Cli.CliOptions.TextOverrides.TryGetValue(Path.GetFullPath(file), out var copy)
+        ? SourceText.FromBytes(File.ReadAllBytes(copy), file)
+        : SourceText.FromFile(file);
+
+static int Describe(string[] args, bool json)
+{
+    if (args.Length < 2)
+    {
+        Console.Error.WriteLine("usage: kedo describe <paths...> <type:id> --json [--schema=...]");
+        return 2;
+    }
+
+    var bag = new DiagnosticBag();
+    var trees = new List<SyntaxTree>();
+    var catalog = Load(args[..^1], bag, trees);
+    var schema = LoadSchema(Kedo.Cli.CliOptions.SchemaPaths, new DiagnosticBag(), new List<SyntaxTree>());
+    using var stream = Console.OpenStandardOutput();
+    using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+    if (!catalog.ByKey.TryGetValue(args[^1], out var obj))
+    {
+        writer.WriteStartObject();
+        writer.WriteBoolean("ok", false);
+        writer.WriteString("error", $"no object `{args[^1]}`");
+        writer.WriteEndObject();
+        writer.Flush();
+        Console.WriteLine();
+        return 1;
+    }
+
+    Kedo.Compiler.Editing.ObjectDescriber.Write(writer, obj, schema);
+    writer.Flush();
+    Console.WriteLine();
+    return 0;
+}
+
+static int Edit(string[] args, Dictionary<string, string> valued, bool json)
+{
+    if (args.Length < 3)
+    {
+        Console.Error.WriteLine("usage: kedo edit <file> set <type:id> <path> <value> | unset <type:id> <path> | new <type> <id> | duplicate <type:id> <new id>");
+        return 2;
+    }
+
+    var file = args[0];
+    var source = File.ReadAllText(file);
+    static (string Type, string Id) Split(string key)
+    {
+        var colon = key.IndexOf(':');
+        return colon > 0 ? (key[..colon], key[(colon + 1)..]) : ("", key);
+    }
+
+    Kedo.Compiler.Editing.EditResult result;
+    switch (args[1])
+    {
+        case "set" when args.Length >= 5 || (args.Length >= 4 && valued.ContainsKey("--value-file")):
+        {
+            // --value-file carries the literal untouched: command lines lose quotes on some platforms.
+            var (type, id) = Split(args[2]);
+            var value = valued.TryGetValue("--value-file", out var valueFile) ? File.ReadAllText(valueFile).Trim() : string.Join(" ", args[4..]);
+            result = Kedo.Compiler.Editing.SourceEditor.SetField(source, type, id, args[3], value, valued.TryGetValue("--op", out var op) ? op : "=");
+            break;
+        }
+
+        case "unset" when args.Length >= 4:
+        {
+            var (type, id) = Split(args[2]);
+            result = Kedo.Compiler.Editing.SourceEditor.RemoveField(source, type, id, args[3]);
+            break;
+        }
+
+        case "new" when args.Length >= 4:
+            result = Kedo.Compiler.Editing.SourceEditor.AddObject(source, args[2], args[3], valued.TryGetValue("--extends", out var parent) ? parent : null);
+            break;
+        case "duplicate" when args.Length >= 4:
+        {
+            var (type, id) = Split(args[2]);
+            result = Kedo.Compiler.Editing.SourceEditor.DuplicateObject(source, type, id, args[3]);
+            break;
+        }
+
+        default:
+            Console.Error.WriteLine($"unknown edit `{args[1]}` or missing arguments");
+            return 2;
+    }
+
+    if (result.Ok)
+    {
+        // Atomic replace: write next to the file, then move over it.
+        var temp = file + ".kedo-edit";
+        File.WriteAllText(temp, result.Text, new UTF8Encoding(false));
+        File.Move(temp, file, overwrite: true);
+    }
+
+    if (json)
+    {
+        using var stream = Console.OpenStandardOutput();
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+        writer.WriteStartObject();
+        writer.WriteBoolean("ok", result.Ok);
+        if (result.Ok)
+        {
+            writer.WriteBoolean("changed", result.Text != source);
+        }
+        else
+        {
+            writer.WriteString("error", result.Error);
+        }
+
+        writer.WriteEndObject();
+        writer.Flush();
+        Console.WriteLine();
+    }
+    else
+    {
+        Console.WriteLine(result.Ok ? $"edited {file}" : $"not edited: {result.Error}");
+    }
+
+    return result.Ok ? 0 : 1;
 }
 
 static int Check(string[] paths, bool json, bool dump, bool provenance)
@@ -172,7 +313,7 @@ static int Compile(string[] paths, bool json)
     var decls = new List<Kedo.Compiler.Model.FileDeclarations>();
     foreach (var file in ExpandFiles(paths))
     {
-        var tree = Parser.Parse(SourceText.FromFile(file), bag);
+        var tree = Parser.Parse(ReadSource(file), bag);
         trees.Add(tree);
         decls.Add(Kedo.Compiler.Model.DeclarationBuilder.Build(tree, bag));
     }
@@ -237,7 +378,7 @@ static int Build(string[] paths, bool json, string? outPath)
     var decls = new List<Kedo.Compiler.Model.FileDeclarations>();
     foreach (var file in ExpandFiles(paths))
     {
-        var tree = Parser.Parse(SourceText.FromFile(file), bag);
+        var tree = Parser.Parse(ReadSource(file), bag);
         trees.Add(tree);
         decls.Add(Kedo.Compiler.Model.DeclarationBuilder.Build(tree, bag));
     }
@@ -469,7 +610,7 @@ static Kedo.Schema.SchemaRegistry LoadSchema(string[] paths, DiagnosticBag bag, 
     var decls = new List<Kedo.Compiler.Model.FileDeclarations>();
     foreach (var file in ExpandFiles(paths, excludeSchema: false))
     {
-        var tree = Parser.Parse(SourceText.FromFile(file), bag);
+        var tree = Parser.Parse(ReadSource(file), bag);
         trees.Add(tree);
         decls.Add(Kedo.Compiler.Model.DeclarationBuilder.Build(tree, bag));
     }
@@ -519,7 +660,7 @@ static int Parse(string[] paths, bool json, bool dumpTree)
     var trees = new List<SyntaxTree>();
     foreach (var file in ExpandFiles(paths))
     {
-        trees.Add(Parser.Parse(SourceText.FromFile(file), bag));
+        trees.Add(Parser.Parse(ReadSource(file), bag));
     }
 
     if (json)

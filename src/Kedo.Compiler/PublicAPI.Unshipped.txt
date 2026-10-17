@@ -1,2 +1,16 @@
 #nullable enable
+Kedo.Compiler.Editing.EditResult
+Kedo.Compiler.Editing.EditResult.EditResult(string? Text, string? Error) -> void
+Kedo.Compiler.Editing.EditResult.Error.get -> string?
+Kedo.Compiler.Editing.EditResult.Error.init -> void
+Kedo.Compiler.Editing.EditResult.Ok.get -> bool
+Kedo.Compiler.Editing.EditResult.Text.get -> string?
+Kedo.Compiler.Editing.EditResult.Text.init -> void
+Kedo.Compiler.Editing.ObjectDescriber
+Kedo.Compiler.Editing.SourceEditor
 Kedo.Compiler.Syntax.SyntaxTree.OwnToken(int node, int index) -> int
+static Kedo.Compiler.Editing.ObjectDescriber.Write(System.Text.Json.Utf8JsonWriter! w, Kedo.Compiler.Resolution.ResolvedObject! obj, Kedo.Schema.SchemaRegistry! schema) -> void
+static Kedo.Compiler.Editing.SourceEditor.AddObject(string! source, string! type, string! id, string? parent = null) -> Kedo.Compiler.Editing.EditResult!
+static Kedo.Compiler.Editing.SourceEditor.DuplicateObject(string! source, string! type, string! id, string! newId) -> Kedo.Compiler.Editing.EditResult!
+static Kedo.Compiler.Editing.SourceEditor.RemoveField(string! source, string! type, string! id, string! path) -> Kedo.Compiler.Editing.EditResult!
+static Kedo.Compiler.Editing.SourceEditor.SetField(string! source, string! type, string! id, string! path, string! value, string! op = "=") -> Kedo.Compiler.Editing.EditResult!

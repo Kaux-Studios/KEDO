@@ -201,6 +201,28 @@ internal sealed class KedoTools
         return new ResolveResult(key, true, obj.IsAbstract, obj.Hash, obj.Chain.ToArray(), obj.Mixins.ToArray(), ResolvedDump.DumpObject(obj, withProvenance: true), ws.Diagnostics(20));
     }
 
+    [McpServerTool(Name = "kedo_describe", ReadOnly = true, Idempotent = true), Description("Describe one object for editing: every field of its type's schema in schema order with kind, doc, enum values or reference target, the resolved value as a KEDO literal and the layer it comes from (own, parent, mixin, default, variant or absent). Use it before changing an object to see what is inherited and what the object writes itself.")]
+    public static string Describe(
+        [Description("Files or directories with .kedo content")] string[] paths,
+        [Description("Object key as type:id")] string key,
+        [Description("Optional schema files or directories")] string[]? schema_paths = null,
+        [Description("Optional variant name; default: the base content")] string? variant = null)
+    {
+        var ws = Workspace.Load(paths, schema_paths);
+        if (ws.CatalogFor(variant) is not { } catalog || !catalog.ByKey.TryGetValue(key, out var obj))
+        {
+            return $"{{\"ok\":false,\"error\":\"no object `{key}`{(variant is null ? "" : $" in variant `{variant}`")}; use kedo_catalog with kind=objects\"}}";
+        }
+
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }))
+        {
+            Kedo.Compiler.Editing.ObjectDescriber.Write(writer, obj, ws.Schema);
+        }
+
+        return Encoding.UTF8.GetString(stream.ToArray());
+    }
+
     [McpServerTool(Name = "kedo_explain", ReadOnly = true, Idempotent = true), Description("Explain where a resolved value came from: the winning layer (own, mixin, parent, schema default) with file and line, and every shadowed candidate. Path syntax: field.sub, component.field, list[key].field.")]
     public static ExplainResult Explain(
         [Description("Files or directories with .kedo content")] string[] paths,
