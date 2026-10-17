@@ -99,6 +99,8 @@ Kedo.Compiler.Model.FileDeclarations.Objects.get -> System.Collections.Generic.I
 Kedo.Compiler.Model.FileDeclarations.Objects.init -> void
 Kedo.Compiler.Model.FileDeclarations.Path.get -> string?
 Kedo.Compiler.Model.FileDeclarations.Path.init -> void
+Kedo.Compiler.Model.FileDeclarations.Variant.get -> string?
+Kedo.Compiler.Model.FileDeclarations.Variant.init -> void
 Kedo.Compiler.Model.FunctionEntry
 Kedo.Compiler.Model.FunctionEntry.BlockNode.get -> int
 Kedo.Compiler.Model.FunctionEntry.BlockNode.init -> void
@@ -168,6 +170,8 @@ Kedo.Compiler.Model.ObjectDeclaration.Id.get -> string!
 Kedo.Compiler.Model.ObjectDeclaration.Id.init -> void
 Kedo.Compiler.Model.ObjectDeclaration.IsAbstract.get -> bool
 Kedo.Compiler.Model.ObjectDeclaration.IsAbstract.init -> void
+Kedo.Compiler.Model.ObjectDeclaration.IsOverride.get -> bool
+Kedo.Compiler.Model.ObjectDeclaration.IsOverride.init -> void
 Kedo.Compiler.Model.ObjectDeclaration.Key.get -> string!
 Kedo.Compiler.Model.ObjectDeclaration.Mixins.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Kedo.Compiler.Model.ObjectDeclaration.Mixins.init -> void
@@ -224,6 +228,7 @@ Kedo.Compiler.Resolution.LayerKind.Default = 0 -> Kedo.Compiler.Resolution.Layer
 Kedo.Compiler.Resolution.LayerKind.Mixin = 2 -> Kedo.Compiler.Resolution.LayerKind
 Kedo.Compiler.Resolution.LayerKind.Own = 3 -> Kedo.Compiler.Resolution.LayerKind
 Kedo.Compiler.Resolution.LayerKind.Parent = 1 -> Kedo.Compiler.Resolution.LayerKind
+Kedo.Compiler.Resolution.LayerKind.Variant = 4 -> Kedo.Compiler.Resolution.LayerKind
 Kedo.Compiler.Resolution.OrderedFields
 Kedo.Compiler.Resolution.OrderedFields.Count.get -> int
 Kedo.Compiler.Resolution.OrderedFields.GetEnumerator() -> System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string!, Kedo.Compiler.Resolution.ResolvedValue!>>!
@@ -293,6 +298,8 @@ Kedo.Compiler.Resolution.ResolvedCatalog.Hash.get -> string!
 Kedo.Compiler.Resolution.ResolvedCatalog.InDeclarationOrder.get -> System.Collections.Generic.IEnumerable<Kedo.Compiler.Resolution.ResolvedObject!>!
 Kedo.Compiler.Resolution.ResolvedCatalog.Mixins.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Compiler.Model.MixinDeclaration!>!
 Kedo.Compiler.Resolution.ResolvedCatalog.Objects.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Resolution.ResolvedObject!>!
+Kedo.Compiler.Resolution.ResolvedCatalog.Variant.get -> string?
+Kedo.Compiler.Resolution.ResolvedCatalog.Variants.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Compiler.Resolution.ResolvedCatalog!>!
 Kedo.Compiler.Resolution.ResolvedDump
 Kedo.Compiler.Resolution.ResolvedObject
 Kedo.Compiler.Resolution.ResolvedObject.Body.get -> Kedo.Compiler.Resolution.RRecord!

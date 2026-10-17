@@ -14,6 +14,8 @@ public enum LayerKind
     Mixin,
     /// <summary>Written in the object itself.</summary>
     Own,
+    /// <summary>Written in an <c>override</c> of a variant file, over the own layer (ADR-0012).</summary>
+    Variant,
 }
 
 /// <summary>Provenance of a resolved value: where it was authored and through which layer it arrived.</summary>
@@ -25,6 +27,7 @@ public sealed record Provenance(Origin Origin, LayerKind Layer, string LayerName
         LayerKind.Mixin => $"mixin {LayerName} ({Origin})",
         LayerKind.Parent => $"parent {LayerName} ({Origin})",
         LayerKind.Default => "schema default",
+        LayerKind.Variant => $"variant {LayerName} ({Origin})",
         _ => $"own ({Origin})",
     };
 }

@@ -22,6 +22,7 @@ public static class DeclarationBuilder
         private readonly SyntaxTree _t;
         private readonly DiagnosticBag _d;
         private string _module = "";
+        private string? _variant;
 
         public Builder(SyntaxTree tree, DiagnosticBag diagnostics)
         {
@@ -54,6 +55,10 @@ public static class DeclarationBuilder
                         if (moduleIndex >= 0 && moduleIndex + 1 < own.Count && _t.Tokens[own[moduleIndex + 1]].Kind == TokenKind.Identifier)
                         {
                             _module = Text(own[moduleIndex + 1]);
+                            if (moduleIndex + 3 < own.Count && Text(own[moduleIndex + 2]) == "variant")
+                            {
+                                _variant = Text(own[moduleIndex + 3]);
+                            }
                         }
 
                         break;
@@ -102,7 +107,7 @@ public static class DeclarationBuilder
                 }
             }
 
-            return new FileDeclarations(File, _module, objects, mixins, functions, manifest);
+            return new FileDeclarations(File, _module, objects, mixins, functions, manifest) { Variant = _variant };
         }
 
         private string? DocBefore(int node)
@@ -138,7 +143,8 @@ public static class DeclarationBuilder
         private ObjectDeclaration? BuildObject(int node, Annotation[] annotations)
         {
             var own = _t.OwnTokens(node);
-            var isAbstract = own.Count > 0 && _t.Tokens[own[0]].Kind == TokenKind.KwAbstract;
+            var isAbstract = own.Any(tk => _t.Tokens[tk].Kind == TokenKind.KwAbstract);
+            var isOverride = own.Count > 0 && _t.Tokens[own[0]].Kind == TokenKind.Identifier && Text(own[0]) == "override";
             var typeNode = _t.FirstChildOfKind(node, NodeKind.TypeName);
             var nameNode = _t.FirstChildOfKind(node, NodeKind.Name);
             var bodyNode = _t.FirstChildOfKind(node, NodeKind.Body);
@@ -176,7 +182,7 @@ public static class DeclarationBuilder
                 }
             }
 
-            return new ObjectDeclaration(OriginOf(node), _module, Text(typeTokens[0]), id, isAbstract, parent, mixins, BuildEntries(bodyNode), annotations, DocBefore(node));
+            return new ObjectDeclaration(OriginOf(node), _module, Text(typeTokens[0]), id, isAbstract, parent, mixins, BuildEntries(bodyNode), annotations, DocBefore(node)) { IsOverride = isOverride };
         }
 
         private MixinDeclaration? BuildMixin(int node, Annotation[] annotations)

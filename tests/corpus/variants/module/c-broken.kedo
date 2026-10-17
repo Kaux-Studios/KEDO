@@ -1,0 +1,7 @@
+kedo 1
+module demo
+variant broken
+
+override guild mender { resources = { water = 5 } }
+override character ilan extends mara { level = 3 }
+character mara { name = "Other" }

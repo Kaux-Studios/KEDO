@@ -356,4 +356,56 @@ public class ResolverTests
         Assert.Equal("last", body.First(f => f.Key == "first").Value.CanonicalText);
         Assert.Equal("[first, last]", body.First(f => f.Key == "tags").Value.CanonicalText);
     }
+
+    [Fact]
+    public void VariantWordsStayUsableAsTypesAndIds()
+    {
+        var (catalog, bag) = Resolve(Permissive(), ("w.kedo", """
+            kedo 1
+            module m
+            variant base_like { level = 1 }
+            override plain { level = 2 }
+            override dotted.id { level = 3 }
+            """));
+        Assert.False(bag.HasErrors, Errors(bag));
+        Assert.Empty(catalog.Variants);
+        Assert.True(catalog.ByKey.ContainsKey("variant:base_like"));
+        Assert.True(catalog.ByKey.ContainsKey("override:plain"));
+        Assert.True(catalog.ByKey.ContainsKey("override:dotted.id"));
+    }
+
+    [Fact]
+    public void VariantOverridesAreValidatedAgainstTheSchema()
+    {
+        var bag = new DiagnosticBag();
+        var schemaText = """
+            kedo 1
+            module s
+            kedo_type guild { fields = [{ name = name  kind = text  required = true }, { name = roster  kind = list  strategy = set  element = { kind = reference  target = character } }] }
+            kedo_type character { fields = [{ name = level  kind = int  min = 1  max = 99 }] }
+            """;
+        var schema = Kedo.Compiler.Schema.SchemaLoader.Load(new[] { DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(schemaText, "s.kedo"), bag), bag) }, bag);
+        Assert.False(bag.HasErrors, Errors(bag));
+        var (catalog, diagnostics) = Resolve(schema,
+            ("a.kedo", """
+                kedo 1
+                module m
+                character mara { level = 1 }
+                guild menders { name = "Menders"  roster = [character:mara] }
+                """),
+            ("b.kedo", """
+                kedo 1
+                module m
+                variant test
+                override guild menders { roster =! [character:tester]  nam = "x" }
+                character tester extends mara { level = 120 }
+                """));
+        Assert.Contains(diagnostics.Items, d => d.Code == "K2005" && d.File == "b.kedo");
+        Assert.Contains(diagnostics.Items, d => d.Code == "K4004" && d.File == "b.kedo");
+        Assert.False(catalog.ByKey.ContainsKey("character:tester"));
+        var test = catalog.Variants["test"];
+        Assert.Equal("[character:tester]", test.ByKey["guild:menders"].Body.Fields.First(f => f.Key == "roster").Value.CanonicalText);
+        Assert.NotEqual(catalog.Hash, test.Hash);
+        Assert.Equal(catalog.ByKey["character:mara"].Hash, test.ByKey["character:mara"].Hash);
+    }
 }

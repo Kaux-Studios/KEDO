@@ -93,6 +93,10 @@ internal sealed class Workspace
         return ws;
     }
 
+    /// <summary>The base catalog, or the view of a variant (ADR-0012); null when the variant does not exist.</summary>
+    public ResolvedCatalog? CatalogFor(string? variant)
+        => variant is null ? Catalog : Catalog.Variants.TryGetValue(variant, out var view) ? view : null;
+
     public static IEnumerable<string> Expand(IEnumerable<string> paths, string[] excludeDirs)
     {
         bool Excluded(string f) => excludeDirs.Any(d => Path.GetFullPath(f).StartsWith(d, StringComparison.OrdinalIgnoreCase));
@@ -180,10 +184,16 @@ internal sealed class KedoTools
     public static ResolveResult Resolve(
         [Description("Files or directories with .kedo content")] string[] paths,
         [Description("Object key as type:id, e.g. actor:depot_sentinel")] string key,
-        [Description("Optional schema files or directories")] string[]? schema_paths = null)
+        [Description("Optional schema files or directories")] string[]? schema_paths = null,
+        [Description("Optional variant name (files with `variant <name>` after `module`); default: the base content")] string? variant = null)
     {
         var ws = Workspace.Load(paths, schema_paths);
-        if (!ws.Catalog.ByKey.TryGetValue(key, out var obj))
+        if (ws.CatalogFor(variant) is not { } catalog)
+        {
+            return new ResolveResult(key, false, false, "", Array.Empty<string>(), Array.Empty<string>(), $"no variant `{variant}`; variants: {string.Join(", ", ws.Catalog.Variants.Keys)}", ws.Diagnostics(20));
+        }
+
+        if (!catalog.ByKey.TryGetValue(key, out var obj))
         {
             return new ResolveResult(key, false, false, "", Array.Empty<string>(), Array.Empty<string>(), $"no object `{key}`; use kedo_catalog with kind=objects to list ids", ws.Diagnostics(20));
         }
@@ -196,30 +206,34 @@ internal sealed class KedoTools
         [Description("Files or directories with .kedo content")] string[] paths,
         [Description("Object key as type:id")] string key,
         [Description("Field path, e.g. stats.hp or options[risk].check.difficulty")] string field_path,
-        [Description("Optional schema files or directories")] string[]? schema_paths = null)
+        [Description("Optional schema files or directories")] string[]? schema_paths = null,
+        [Description("Optional variant name; default: the base content")] string? variant = null)
     {
         var ws = Workspace.Load(paths, schema_paths);
-        return new ExplainResult(key, field_path, Resolver.Explain(ws.Catalog, key, field_path));
+        return new ExplainResult(key, field_path, ws.CatalogFor(variant) is { } catalog ? Resolver.Explain(catalog, key, field_path) : $"no variant `{variant}`");
     }
 
     [McpServerTool(Name = "kedo_catalog", ReadOnly = true, Idempotent = true), Description("List what exists: kind=objects (type:id with chain), types (registered types and their fields), components, enums (values), hooks (context fields), mixins. Filter with query. Use before inventing a type, field, enum value or id.")]
     public static CatalogResult Catalog(
         [Description("Files or directories with .kedo content")] string[] paths,
-        [Description("objects | types | components | enums | hooks | mixins")] string kind,
+        [Description("objects | types | components | enums | hooks | mixins | variants")] string kind,
         [Description("Optional schema files or directories")] string[]? schema_paths = null,
         [Description("Optional substring filter on names")] string? query = null,
-        [Description("Maximum items (default 100)")] int limit = 100)
+        [Description("Maximum items (default 100)")] int limit = 100,
+        [Description("Optional variant name for kind=objects and mixins; default: the base content. kind=variants lists them")] string? variant = null)
     {
         var ws = Workspace.Load(paths, schema_paths);
+        var catalog = ws.CatalogFor(variant) ?? ws.Catalog;
         IEnumerable<CatalogItem> items = kind switch
         {
-            "objects" => ws.Catalog.Objects.Select(o => new CatalogItem(o.Type, o.Key, (o.IsAbstract ? "abstract; " : "") + (o.Chain.Count > 1 ? "extends " + o.Chain[^2] : "root") + (o.Mixins.Count > 0 ? "; with " + string.Join(", ", o.Mixins) : ""))),
+            "variants" => ws.Catalog.Variants.Select(v => new CatalogItem("variant", v.Key, $"{v.Value.Objects.Count(o => !ws.Catalog.ByKey.TryGetValue(o.Key, out var b) || b.Hash != o.Hash)} object(s) added or changed")),
+            "objects" => catalog.Objects.Select(o => new CatalogItem(o.Type, o.Key, (o.IsAbstract ? "abstract; " : "") + (o.Chain.Count > 1 ? "extends " + o.Chain[^2] : "root") + (o.Mixins.Count > 0 ? "; with " + string.Join(", ", o.Mixins) : ""))),
             "types" => ws.Schema.Types.Values.Select(t => new CatalogItem("type", t.Id, string.Join(", ", t.Body.Fields.Select(f => f.Name + ":" + f.Kind.ToString().ToLowerInvariant() + (f.Required ? "!" : ""))))),
             "components" => ws.Schema.Components.Values.Select(c => new CatalogItem("component", c.Id, string.Join(", ", c.Fields.Select(f => f.Name + ":" + f.Kind.ToString().ToLowerInvariant())))),
             "enums" => ws.Schema.Enums.Values.Select(e => new CatalogItem("enum", e.Id, string.Join(", ", e.Values))),
             "hooks" => ws.Schema.Hooks.Values.Select(h => new CatalogItem("hook", h.Id, "ctx: " + string.Join(", ", h.Context.Fields.Select(f => f.Name)) + (h.AllowsAwait ? "" : "; no wait") + (h.AllowsEffects ? "" : "; no apply"))),
-            "mixins" => ws.Catalog.Mixins.Values.Select(m => new CatalogItem("mixin", m.Id, m.Doc ?? "")),
-            _ => new[] { new CatalogItem("error", kind, "unknown kind; use objects, types, components, enums, hooks or mixins") },
+            "mixins" => catalog.Mixins.Values.Select(m => new CatalogItem("mixin", m.Id, m.Doc ?? "")),
+            _ => new[] { new CatalogItem("error", kind, "unknown kind; use objects, types, components, enums, hooks, mixins or variants") },
         };
         if (!string.IsNullOrEmpty(query))
         {

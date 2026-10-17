@@ -16,6 +16,19 @@ public static class ResolvedDump
         }
 
         sb.Append("catalog ").Append(catalog.Hash).Append('\n');
+
+        // Variants (ADR-0012): only the objects a variant adds or changes, then its catalog hash.
+        foreach (var (name, variant) in catalog.Variants)
+        {
+            sb.Append("variant ").Append(name).Append('\n');
+            foreach (var obj in variant.Objects.Where(o => !catalog.ByKey.TryGetValue(o.Key, out var b) || b.Hash != o.Hash))
+            {
+                DumpObject(sb, obj, withProvenance);
+            }
+
+            sb.Append("catalog ").Append(variant.Hash).Append('\n');
+        }
+
         return sb.ToString();
     }
 

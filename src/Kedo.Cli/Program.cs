@@ -12,6 +12,7 @@ var valued = args.Where(a => a.StartsWith("--", StringComparison.Ordinal) && a.C
 var positional = args.Where(a => !a.StartsWith("--", StringComparison.Ordinal)).ToArray();
 var json = options.Contains("--json");
 Kedo.Cli.CliOptions.SchemaPaths = valued.TryGetValue("--schema", out var schemaPath) ? schemaPath.Split(';', StringSplitOptions.RemoveEmptyEntries) : Array.Empty<string>();
+Kedo.Cli.CliOptions.Variant = valued.TryGetValue("--variant", out var variantName) ? variantName : null;
 
 if (positional.Length == 0 || options.Contains("--help"))
 {
@@ -64,7 +65,7 @@ catch (IOException ex)
 
 static void PrintUsage()
 {
-    Console.WriteLine("kedo <command> [files or directories...] [--json] [--schema=<paths>]");
+    Console.WriteLine("kedo <command> [files or directories...] [--json] [--schema=<paths>] [--variant=<name>]");
     Console.WriteLine("  schema <paths>     Load a KEDO-written schema (kedo_type, kedo_component, ...) and print it as a JSON Schema bundle.");
     Console.WriteLine("  version            Print the toolchain version.");
     Console.WriteLine("  parse <paths>      Parse and print the syntax tree and diagnostics.");
@@ -78,6 +79,7 @@ static void PrintUsage()
     Console.WriteLine("  mcp                Start the stdio MCP server (stateless; tools kedo_check, kedo_format, kedo_resolve, kedo_explain, kedo_catalog, kedo_compile, kedo_schema).");
     Console.WriteLine("  fmt <paths>        Rewrite files in canonical form; with --check only report files that would change.");
     Console.WriteLine("Without a registered schema the resolver runs in permissive mode (any type and field; list strategies inferred).");
+    Console.WriteLine("Files with `variant <name>` after `module` are resolved over the base content; check reports every variant, and --variant=<name> makes resolve, explain, catalog, compile and build use that variant.");
 }
 
 static Kedo.Compiler.Resolution.ResolvedCatalog Load(string[] paths, DiagnosticBag bag, List<SyntaxTree> trees)
@@ -91,7 +93,25 @@ static Kedo.Compiler.Resolution.ResolvedCatalog Load(string[] paths, DiagnosticB
     }
 
     var schema = LoadSchema(Kedo.Cli.CliOptions.SchemaPaths, bag, trees);
-    return Kedo.Compiler.Resolution.Resolver.Resolve(decls, schema, bag);
+    return View(Kedo.Compiler.Resolution.Resolver.Resolve(decls, schema, bag));
+}
+
+// The catalog the command works on: the base, or the variant named with --variant (ADR-0012).
+static Kedo.Compiler.Resolution.ResolvedCatalog View(Kedo.Compiler.Resolution.ResolvedCatalog catalog)
+{
+    if (Kedo.Cli.CliOptions.Variant is not { } variant)
+    {
+        return catalog;
+    }
+
+    if (catalog.Variants.TryGetValue(variant, out var view))
+    {
+        return view;
+    }
+
+    Console.Error.WriteLine($"no variant `{variant}` in the input{(catalog.Variants.Count == 0 ? "" : $" (variants: {string.Join(", ", catalog.Variants.Keys)})")}");
+    Environment.Exit(2);
+    return catalog;
 }
 
 static int Check(string[] paths, bool json, bool dump, bool provenance)
@@ -158,7 +178,7 @@ static int Compile(string[] paths, bool json)
     }
 
     var schema = LoadSchema(Kedo.Cli.CliOptions.SchemaPaths, bag, trees);
-    var catalog = Kedo.Compiler.Resolution.Resolver.Resolve(decls, schema, bag);
+    var catalog = View(Kedo.Compiler.Resolution.Resolver.Resolve(decls, schema, bag));
     var moduleFunctions = decls.SelectMany(d => d.Functions).ToList();
     var programs = new List<Kedo.Runtime.BehaviorProgram>();
     foreach (var obj in catalog.Objects)
@@ -223,7 +243,7 @@ static int Build(string[] paths, bool json, string? outPath)
     }
 
     var schema = LoadSchema(Kedo.Cli.CliOptions.SchemaPaths, bag, trees);
-    var catalog = Kedo.Compiler.Resolution.Resolver.Resolve(decls, schema, bag);
+    var catalog = View(Kedo.Compiler.Resolution.Resolver.Resolve(decls, schema, bag));
     var moduleFunctions = decls.SelectMany(d => d.Functions).ToList();
     var programs = new List<Kedo.Runtime.BehaviorProgram>();
     foreach (var obj in catalog.Objects)

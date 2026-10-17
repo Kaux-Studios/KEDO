@@ -23,6 +23,7 @@ Defaults(esquema del tipo) → Resuelto(P) → M1 … Mn (aplanados) → Propio(
 - R2. La lista de mixins se **aplana** en profundidad, de izquierda a derecha, eliminando repetidos y conservando la **primera** aparición. No hay relación padre-hijo entre mixins, así que no hace falta C3. Si dos mixins escriben el mismo escalar, gana el posterior y se emite K3010 con ambas ubicaciones.
 - R3. Las aristas `extends` y `with` forman un DAG entre todos los módulos cargados; la resolución es en orden topológico; cada objeto se resuelve una sola vez; el resultado es inmutable y comparte estructura con el padre donde no cambió.
 - R4. Los defaults del esquema son la capa inferior virtual: cualquier valor explícito gana a un default; la procedencia registra "default" vs "autoría".
+- R4b. Variantes ([ADR-0012](adr/0012-variantes.md)): en la vista de una variante, `override tipo id { }` agrega una capa después de la propia: `… → Propio(O) → Override₁(O) … Overrideₙ(O)` (en orden de archivo). La procedencia es `variant nombre`. Un objeto que extiende a uno sobrescrito hereda el resultado sobrescrito. Cada variante es un catálogo completo (base + objetos nuevos de la variante + overrides), con su propio hash; la base no ve los archivos de variantes.
 
 ## 3. Reglas de mezcla por clase de valor
 

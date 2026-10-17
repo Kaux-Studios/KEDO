@@ -191,8 +191,19 @@ public sealed class Parser
             Error("K1002", $"expected `module <name>` after the `kedo` line, found {Describe(Current)}", Current.Span);
         }
 
+        // `variant name` right after the module (ADR-0012): every declaration of the file belongs to that variant.
+        // Contextual: `variant x {`, `variant x extends ..`, `variant x with ..` and `variant x.y` stay object declarations.
+        if (AtWord("variant") && Peek(1) == TokenKind.Identifier
+            && Peek(2) is not (TokenKind.LBrace or TokenKind.KwExtends or TokenKind.KwWith or TokenKind.Dot))
+        {
+            Advance();
+            Advance();
+        }
+
         Close();
     }
+
+    private bool AtWord(string word) => At(TokenKind.Identifier) && _source.GetText(Current.Span) == word;
 
     private void ParseDeclaration()
     {
@@ -204,6 +215,12 @@ public sealed class Parser
         switch (Peek())
         {
             case TokenKind.KwAbstract:
+                Open(NodeKind.ObjectDecl);
+                Advance();
+                ParseObjectRest();
+                break;
+            case TokenKind.Identifier when Peek(1) == TokenKind.Identifier && Peek(2) == TokenKind.Identifier && AtWord("override"):
+                // `override type id { }` (ADR-0012): contextual, so a type named `override` still declares `override x { }`.
                 Open(NodeKind.ObjectDecl);
                 Advance();
                 ParseObjectRest();

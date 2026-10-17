@@ -36,6 +36,15 @@ public sealed class ResolvedCatalog
 
     /// <summary>All objects in declaration order (<see cref="ResolvedObject.Order"/>), for adapters whose output follows authoring order.</summary>
     public IEnumerable<ResolvedObject> InDeclarationOrder => Objects.OrderBy(o => o.Order);
+
+    /// <summary>Variant this catalog resolves (ADR-0012), or null for the base content.</summary>
+    public string? Variant { get; internal set; }
+
+    /// <summary>
+    /// Catalogs of the variants declared in the input (files with <c>variant name</c>), by name, in order of first
+    /// appearance. Each one is the base content plus that variant's new objects and overrides. Empty on a variant catalog.
+    /// </summary>
+    public IReadOnlyDictionary<string, ResolvedCatalog> Variants { get; internal set; } = new Dictionary<string, ResolvedCatalog>();
 }
 
 /// <summary>
@@ -56,22 +65,59 @@ public sealed class Resolver
     private readonly HashSet<string> _failed = new(StringComparer.Ordinal);
     private readonly Dictionary<string, int> _order = new(StringComparer.Ordinal);
 
+    // Active variant (ADR-0012) and its overrides by object key, in file order.
+    private readonly string? _variant;
+    private readonly Dictionary<string, List<ObjectDeclaration>> _overrides = new(StringComparer.Ordinal);
+
     // `objectKey.path` of fields that were written but rejected, so stage B does not also report them missing (ADR-0010).
     private readonly HashSet<string> _invalid = new(StringComparer.Ordinal);
     private readonly HashSet<string> _warned = new(StringComparer.Ordinal);
     private string _current = "";
     private bool _objectFailed;
 
-    private Resolver(SchemaRegistry schema, DiagnosticBag diagnostics)
+    private Resolver(SchemaRegistry schema, DiagnosticBag diagnostics, string? variant)
     {
         _schema = schema;
         _d = diagnostics;
+        _variant = variant;
     }
 
-    /// <summary>Resolves the declarations of several files against a schema.</summary>
+    /// <summary>
+    /// Resolves the declarations of several files against a schema. Files of a variant (<c>variant name</c> in the header)
+    /// stay out of the returned base catalog; each variant is resolved over the base into <see cref="ResolvedCatalog.Variants"/>
+    /// and its diagnostics that the base did not already report are added to <paramref name="diagnostics"/> (ADR-0012).
+    /// </summary>
     public static ResolvedCatalog Resolve(IEnumerable<FileDeclarations> files, SchemaRegistry schema, DiagnosticBag diagnostics)
     {
-        var r = new Resolver(schema, diagnostics);
+        var all = files as IReadOnlyList<FileDeclarations> ?? files.ToList();
+        var catalog = ResolveView(all, schema, diagnostics, null);
+        var names = all.Where(f => f.Variant is not null).Select(f => f.Variant!).Distinct(StringComparer.Ordinal).ToList();
+        if (names.Count == 0)
+        {
+            return catalog;
+        }
+
+        var seen = new HashSet<string>(diagnostics.Items.Select(DiagnosticKey), StringComparer.Ordinal);
+        var variants = new Dictionary<string, ResolvedCatalog>(StringComparer.Ordinal);
+        foreach (var name in names)
+        {
+            var bag = new DiagnosticBag();
+            variants[name] = ResolveView(all, schema, bag, name);
+            foreach (var d in bag.Items.Where(d => seen.Add(DiagnosticKey(d))))
+            {
+                diagnostics.Add(d);
+            }
+        }
+
+        catalog.Variants = variants;
+        return catalog;
+    }
+
+    private static string DiagnosticKey(Diagnostic d) => $"{d.Code}|{d.File}|{d.Span.Start}|{d.Message}";
+
+    private static ResolvedCatalog ResolveView(IReadOnlyList<FileDeclarations> files, SchemaRegistry schema, DiagnosticBag diagnostics, string? variant)
+    {
+        var r = new Resolver(schema, diagnostics, variant);
         r.Index(files);
         r.CheckReferencesToBases();
         foreach (var key in r.TopologicalOrder())
@@ -80,7 +126,7 @@ public sealed class Resolver
         }
 
         var objects = r._resolved.Values.OrderBy(o => o.Type, StringComparer.Ordinal).ThenBy(o => o.Id, StringComparer.Ordinal).ToList();
-        var catalog = new ResolvedCatalog(objects, r._resolved, r._mixins, diagnostics);
+        var catalog = new ResolvedCatalog(objects, r._resolved, r._mixins, diagnostics) { Variant = variant };
         r.ValidateStageB(catalog);
         CatalogHasher.Hash(catalog);
         return catalog;
@@ -88,15 +134,32 @@ public sealed class Resolver
 
     // ----- indexing -----
 
-    private void Index(IEnumerable<FileDeclarations> files)
+    private void Index(IReadOnlyList<FileDeclarations> files)
     {
-        foreach (var file in files)
+        // Base files first, then the active variant's files: a variant object that repeats a base id is the duplicate.
+        var overrides = new List<ObjectDeclaration>();
+        foreach (var file in files.Where(f => f.Variant is null).Concat(files.Where(f => f.Variant is not null && f.Variant == _variant)))
         {
             foreach (var obj in file.Objects)
             {
+                if (obj.IsOverride)
+                {
+                    if (file.Variant is null)
+                    {
+                        _d.Error("K2009", $"`override {obj.Key}` is only allowed in a variant file (`variant <name>` after `module`)", obj.Origin.File, obj.Origin.Span);
+                    }
+                    else
+                    {
+                        overrides.Add(obj);
+                    }
+
+                    continue;
+                }
+
                 if (_objects.TryGetValue(obj.Key, out var existing))
                 {
-                    _d.Add(new Diagnostic("K2002", Severity.Error, $"duplicate id `{obj.Key}`", obj.Origin.File, obj.Origin.Span,
+                    var hint = file.Variant is null ? "" : $"; to change the base object in variant `{file.Variant}` write `override {obj.Type} {obj.Id} {{ }}`";
+                    _d.Add(new Diagnostic("K2002", Severity.Error, $"duplicate id `{obj.Key}`{hint}", obj.Origin.File, obj.Origin.Span,
                         new[] { new DiagnosticLabel(existing.Origin.File, existing.Origin.Span, "first declared here") }, Array.Empty<string>()));
                     continue;
                 }
@@ -122,6 +185,29 @@ public sealed class Resolver
 
                 _mixins.Add(mixin.Id, mixin);
             }
+        }
+
+        foreach (var o in overrides)
+        {
+            if (!_objects.ContainsKey(o.Key))
+            {
+                var near = Suggest(o.Id, _objects.Values.Where(x => x.Type == o.Type).Select(x => x.Id));
+                _d.Error("K2010", $"`override {o.Key}`: there is no base `{o.Key}` to override{(near is null ? "" : $"; did you mean `{near}`?")}", o.Origin.File, o.Origin.Span);
+                continue;
+            }
+
+            if (o.IsAbstract || o.Parent is not null || o.Mixins.Count > 0)
+            {
+                _d.Error("K2008", $"`override {o.Key}` only adds entries; `abstract`, `extends` and `with` belong to the base declaration", o.Origin.File, o.Origin.Span);
+                continue;
+            }
+
+            if (!_overrides.TryGetValue(o.Key, out var list))
+            {
+                _overrides[o.Key] = list = new List<ObjectDeclaration>();
+            }
+
+            list.Add(o);
         }
     }
 
@@ -331,6 +417,15 @@ public sealed class Resolver
 
         // Layer 3: own.
         ApplyEntries(decl.Entries, ref body, ref components, hooks, functions, typeSchema, bodySchema, ownProv, key, null, null);
+
+        // Layer 4: overrides of the active variant (ADR-0012), in file order.
+        if (_overrides.TryGetValue(key, out var overrides))
+        {
+            foreach (var o in overrides)
+            {
+                ApplyEntries(o.Entries, ref body, ref components, hooks, functions, typeSchema, bodySchema, new Provenance(o.Origin, LayerKind.Variant, _variant!), key, null, null);
+            }
+        }
 
         if (parent is not null)
         {

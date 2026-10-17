@@ -1,0 +1,62 @@
+campaign main
+    version = "main"
+    guilds [set] [guild:menders]
+    hash 0698b2b38a8cd5c50149a4d57aeddb3f
+character ilan <- character:mara
+    name = "Ilan"
+    level = 1
+    training
+        swim = 2
+    hash 0a9003cd2ffc965cc85751325448452f
+character mara
+    name = "Mara"
+    level = 1
+    training
+        swim = 2
+    hash 1d4c8a5c885d8ea9e008b2dc3b8e6d85
+guild menders
+    roster [set] [character:mara, character:ilan]
+    resources
+        water = 20
+    hash bceb47ac2ea8df52fab9ea5b022eab24
+inventory guild
+    items [keyed]
+        - item
+            id = rope
+            count = 2
+    hash 61f01140c0e777884f85f2db16118387
+catalog 53af6b643f1b7ba4c0d4b1283a1f8712
+variant test
+campaign main
+    version = "test"
+    guilds [set] [guild:menders]
+    test_points = 999
+    hash fa4148c7b692316cd74af47877025f05
+character ilan <- character:mara
+    name = "Ilan"
+    level = 5
+    training
+        swim = 2
+    hash 9345b6d47eacae9df6b157210e2cf3f1
+character mara
+    name = "Mara"
+    level = 5
+    training
+        swim = 2
+    hash 8d6cc6004e0c14980829258d44edeeeb
+character tester <- character:mara
+    name = "Tester"
+    level = 5
+    training
+    hash aad5c57879a733578834180e75f047ed
+guild menders
+    roster [set] [character:tester]
+    resources
+        water = 20
+    hash bd2e80123ce127bb175854847e30e60a
+inventory guild
+    items [atomic] []
+    hash 128253e632980730bee46d8a1a560478
+catalog 951bfd9465c1164c7025a7dc07ee651e
+variant broken
+catalog 53af6b643f1b7ba4c0d4b1283a1f8712

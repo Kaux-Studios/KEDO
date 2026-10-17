@@ -1,0 +1,12 @@
+kedo 1
+module demo
+variant test
+
+/// Test campaign: same world, one guild with a single recruit.
+override campaign main { version = "test"  test_points = 999 }
+override guild menders { roster =! [character:tester] }
+override inventory guild { items =! [] }
+
+// Descendants of an overridden object see the override: ilan and tester get level 5.
+override character mara { level = 5 }
+character tester extends mara { name = "Tester"  training =! { } }

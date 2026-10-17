@@ -126,6 +126,9 @@ public sealed record ObjectDeclaration(
 {
     /// <summary><c>type:id</c>.</summary>
     public string Key => $"{Type}:{Id}";
+
+    /// <summary><c>override type id { }</c> in a variant file: entries applied over the base object of the same key (ADR-0012).</summary>
+    public bool IsOverride { get; init; }
 }
 
 /// <summary>A mixin declaration.</summary>
@@ -145,4 +148,8 @@ public sealed record FileDeclarations(
     IReadOnlyList<ObjectDeclaration> Objects,
     IReadOnlyList<MixinDeclaration> Mixins,
     IReadOnlyList<FunctionEntry> Functions,
-    RecordValue? Manifest);
+    RecordValue? Manifest)
+{
+    /// <summary>Variant named by the file header (<c>variant name</c>), or null for the base content (ADR-0012).</summary>
+    public string? Variant { get; init; }
+}

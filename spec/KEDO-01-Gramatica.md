@@ -59,17 +59,19 @@ Palabras reservadas: `kedo module manifest abstract mixin extends with component
 
 ```ebnf
 file     = header { declaration } ;
-header   = "kedo" integer newline "module" ident newline ;
+header   = "kedo" integer newline "module" ident newline [ "variant" ident newline ] ;
 ```
 
 - `kedo 1`: major del lenguaje. Un toolchain 1.x acepta solo `kedo 1`; un major desconocido produce K1001 con el mensaje de migración (ADR-0001).
 - `module nombre`: módulo al que pertenecen los objetos del archivo. Debe coincidir con el manifiesto del directorio (§10). Todos los archivos de un módulo se cargan juntos: **no hay `import` por archivo**; la dependencia entre módulos se declara una vez en el manifiesto y las referencias cruzadas usan la ruta de módulo.
+- `variant nombre` (opcional, [ADR-0012](adr/0012-variantes.md)): las declaraciones del archivo pertenecen a esa variante del módulo. Los archivos sin `variant` son la base; cada variante se resuelve como base + sus archivos. `variant` es contextual: sólo cuenta en la cabecera, seguida de un identificador y sin `{`, `extends` ni `with`.
 
 ## 4. Declaraciones
 
 ```ebnf
 declaration = { annotation } [ doc ] ( object | mixin | function | asset ) ;
-object      = [ "abstract" ] type id [ "extends" id ] [ "with" id { "," id } ] body ;
+object      = [ "abstract" ] type id [ "extends" id ] [ "with" id { "," id } ] body
+            | "override" type id body ;          (* sólo en archivos de variante, ADR-0012 *)
 mixin       = "mixin" id [ "with" id { "," id } ] body ;
 asset       = "asset" id body ;
 type        = ident ;                      (* tipo registrado por el juego: actor, event, place... *)
@@ -79,6 +81,7 @@ annotation  = "@" ident [ "(" [ argument { "," argument } ] ")" ] ;
 ```
 
 - Los **tipos** no los define la gramática: los registra el juego (KEDO-00 §tabla). El parser acepta cualquier identificador en posición de tipo; el resolver rechaza los no registrados (K2001).
+- `override tipo id { }` (sólo en un archivo de variante): aplica sus entradas sobre el objeto base del mismo id, como una capa después de la propia; los objetos que lo extienden ven el resultado en esa variante. Sin `extends`, `with` ni `abstract` (K2008). `override` es contextual: sólo al inicio de una declaración seguida de tipo e id.
 - `abstract`: el objeto sirve solo como base; no entra al catálogo; las comprobaciones de campos obligatorios no se le aplican.
 - `extends`: un único padre, del mismo tipo (K2003), declarado en cualquier archivo del módulo o de un módulo requerido.
 - `with`: mixins en orden; se aplican después del padre y antes del cuerpo propio (KEDO-02 §2).
@@ -235,6 +238,9 @@ Todos los `.kedo` bajo ese directorio pertenecen al módulo. Un objeto puede her
 | K2005 | Clave desconocida en esquema cerrado (con sugerencia) |
 | K2006 | Hook desconocido |
 | K2007 | Hook repetido en el mismo objeto |
+| K2008 | `override` con `extends`, `with` o `abstract` |
+| K2009 | `override` fuera de un archivo de variante |
+| K2010 | `override` de un id que no existe en la base (con sugerencia) |
 | K2008 | Anotación desconocida (advertencia) |
 | K2009 | Ciclo entre módulos |
 

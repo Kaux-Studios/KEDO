@@ -78,6 +78,22 @@ function reinforce_cost(stage: int) -> int {           // pure function, callabl
 
 Statements end at newline or `;`. Statement forms: `let x = e`, `set x = e` (locals only; ctx is read-only), `wait <duration>`, `wait decision prompt:id { option a { ... } option b { ... } }`, `wait roll <stream>(args) as r`, `wait signal signal:id [(args)] [as s]`, `apply effect:id(args)`, `emit signal:id(args)`, `if (c) { } else if (c) { } else { }`, `stop` (hooks), `return e` (functions), and calls. Expressions: `+ - * / %`, comparisons, `and or not`, unary `-`, `ctx.field`, `receiver.query(args)` (host query), function calls. No floats, no strings concatenation at runtime, no lists/records as runtime values.
 
+## Variants
+
+A file with `variant <name>` on the line after `module` belongs to that variant (a campaign variant, a balance patch, a mod). Files without it are the base; each variant resolves as base + its files (ADR-0012).
+
+```kedo
+kedo 1
+module patriark
+variant test_1
+
+override campaign prototype_9 { version = "test-1"  test_points = 999 }   // layer over the base object
+override guild menders { roster =! [character:tester] }
+character tester extends mara { level = 20 }                              // exists only in this variant
+```
+
+`override type id { }` adds entries over the base object as a layer after its own; objects extending it see the result. It cannot change `extends`, `with` or `abstract` (K2008), only exists in variant files (K2009) and needs a base object (K2010, typos are caught). Redeclaring a base id without `override` is K2002. Inspect a variant with `kedo resolve <paths> --variant=<name>` or `kedo explain ... --variant=<name>`; `kedo check` validates all variants.
+
 ## Modules
 
 Each module directory has `module.kedo` with `manifest { version = 1  requires = [core] }`. All files under the directory belong to the module; no per-file imports. Cross-module references use `type:module/id`.

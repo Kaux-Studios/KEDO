@@ -1,0 +1,11 @@
+kedo 1
+module demo
+
+character mara { name = "Mara"  level = 1  training = { swim = 2 } }
+character ilan extends mara { name = "Ilan" }
+guild menders { roster = [character:mara, character:ilan]  resources = { water = 20 } }
+inventory guild { items = [{ id = rope  count = 2 }] }
+campaign main { version = "main"  guilds = [guild:menders] }
+
+// `override` belongs to variant files.
+override guild menders { resources = { water = 1 } }

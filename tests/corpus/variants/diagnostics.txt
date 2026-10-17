@@ -1,0 +1,4 @@
+error K2009 a-base.kedo:11:1 `override guild:menders` is only allowed in a variant file (`variant <name>` after `module`)
+error K2002 c-broken.kedo:7:1 duplicate id `character:mara`; to change the base object in variant `broken` write `override character mara { }`
+error K2010 c-broken.kedo:5:1 `override guild:mender`: there is no base `guild:mender` to override; did you mean `menders`?
+error K2008 c-broken.kedo:6:1 `override character:ilan` only adds entries; `abstract`, `extends` and `with` belong to the base declaration
