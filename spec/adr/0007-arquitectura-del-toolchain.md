@@ -22,7 +22,7 @@ Eventos `Open/Close/Advance` → arena `Node { kind:u16, mainToken:int, lhs:int,
 
 ### D4. Incrementalidad por archivo con corte temprano
 
-Modelo Salsa simplificado: tablas de memoización por `XxHash128(bytes del archivo)`; etapas como funciones puras sobre records pequeños con igualdad por valor (`Parse(file) → DeclIndex → grafo → Resolved(obj) → IR`); corte temprano cuando el resultado es igual (nada río abajo se recalcula); dos niveles de durabilidad (contenido base vs módulo de campaña); caché persistida en disco direccionada por contenido. Resolución en niveles de Kahn para paralelismo con orden determinista. No se construye un sistema de queries de grano fino en v1; las etapas puras permiten cambiarlo después.
+Modelo Salsa simplificado: tablas de memoización por `XxHash128(bytes del archivo)`; etapas como funciones puras sobre records pequeños con igualdad por valor (`Parse(file) → DeclIndex → grafo → Resolved(obj) → IR`); corte temprano cuando el resultado es igual (nada río abajo se recalcula); dos niveles de durabilidad (contenido base vs módulo de campaña); caché persistida en disco direccionada por contenido. Resolución en niveles de Kahn para paralelismo con orden determinista. No se construye un sistema de queries de grano fino en v1; las etapas puras permiten cambiarlo después. Implementado el 17/10/2026 como `IncrementalCatalog` (#15; detalle en KEDO-02 R29b): con 10k objetos en 100 archivos, actualizar sin cambios cuesta 29 ms y editar un archivo 40 ms, dentro de los 50 ms de D10; corte temprano por huella de declaración (texto y posición), sin paralelismo ni caché en disco todavía.
 
 ### D5. Catálogo en columnas
 

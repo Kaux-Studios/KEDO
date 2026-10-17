@@ -8,6 +8,12 @@ Kedo.Compiler.Editing.EditResult.Text.get -> string?
 Kedo.Compiler.Editing.EditResult.Text.init -> void
 Kedo.Compiler.Editing.ObjectDescriber
 Kedo.Compiler.Editing.SourceEditor
+Kedo.Compiler.Resolution.IncrementalCatalog
+Kedo.Compiler.Resolution.IncrementalCatalog.IncrementalCatalog(Kedo.Schema.SchemaRegistry! schema) -> void
+Kedo.Compiler.Resolution.IncrementalCatalog.LastParsedFiles.get -> int
+Kedo.Compiler.Resolution.IncrementalCatalog.LastResolvedObjects.get -> int
+Kedo.Compiler.Resolution.IncrementalCatalog.LastReusedObjects.get -> int
+Kedo.Compiler.Resolution.IncrementalCatalog.Update(System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Syntax.SourceText!>! sources, Kedo.Diagnostics.DiagnosticBag! diagnostics) -> Kedo.Compiler.Resolution.ResolvedCatalog!
 Kedo.Compiler.Syntax.SyntaxTree.OwnToken(int node, int index) -> int
 static Kedo.Compiler.Editing.ObjectDescriber.Write(System.Text.Json.Utf8JsonWriter! w, Kedo.Compiler.Resolution.ResolvedObject! obj, Kedo.Schema.SchemaRegistry! schema) -> void
 static Kedo.Compiler.Editing.SourceEditor.AddObject(string! source, string! type, string! id, string? parent = null) -> Kedo.Compiler.Editing.EditResult!

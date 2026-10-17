@@ -18,6 +18,13 @@ public static class CatalogHasher
         var lines = new StringBuilder();
         foreach (var obj in catalog.Objects)
         {
+            if (obj.Hash.Length > 0)
+            {
+                // Reused by an incremental run (#15): the object is unchanged, and so is its hash.
+                lines.Append(obj.IsAbstract ? "" : $"{obj.Key}={obj.Hash}\n");
+                continue;
+            }
+
             var hasher = new XxHash128();
             WriteString(hasher, obj.Type);
             WriteString(hasher, obj.Id);

@@ -40,4 +40,35 @@ public static class SyntheticCorpus
 
         return sb.ToString();
     }
+
+    /// <summary>The same module split into <paramref name="files"/> files of consecutive objects (the header in the first).</summary>
+    public static List<(string Name, string Text)> GenerateFiles(int objects, int files, int seed = 1)
+    {
+        var text = Generate(objects, seed);
+        var starts = new List<int>();
+        var at = text.IndexOf("/// Synthetic actor ", StringComparison.Ordinal);
+        while (at >= 0)
+        {
+            starts.Add(at);
+            at = text.IndexOf("/// Synthetic actor ", at + 1, StringComparison.Ordinal);
+        }
+
+        var result = new List<(string, string)>();
+        var perFile = (starts.Count + files - 1) / files;
+        for (var f = 0; f < files; f++)
+        {
+            var first = f * perFile;
+            if (first >= starts.Count)
+            {
+                break;
+            }
+
+            var from = f == 0 ? 0 : starts[first];
+            var to = first + perFile < starts.Count ? starts[first + perFile] : text.Length;
+            var body = text[from..to];
+            result.Add(($"f{f:D3}.kedo", f == 0 ? body : "kedo 1\nmodule bench\n\n" + body));
+        }
+
+        return result;
+    }
 }

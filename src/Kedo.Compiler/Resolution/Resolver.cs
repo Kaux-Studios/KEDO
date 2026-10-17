@@ -76,6 +76,12 @@ public sealed class Resolver
 
     // Stage B: path of the value being validated, built in place and turned into text only for a diagnostic (#16).
     private readonly System.Text.StringBuilder _path = new(128);
+
+    // Incremental resolution (#15): the objects resolved again in this run, the keys the object being validated
+    // references in stage B, and how many objects were reused.
+    private readonly HashSet<string> _dirty = new(StringComparer.Ordinal);
+    private HashSet<string>? _references;
+    private int _reused;
     private bool _objectFailed;
 
     private Resolver(SchemaRegistry schema, DiagnosticBag diagnostics, string? variant)
@@ -117,6 +123,143 @@ public sealed class Resolver
     }
 
     private static string DiagnosticKey(Diagnostic d) => $"{d.Code}|{d.File}|{d.Span.Start}|{d.Message}";
+
+    /// <summary>
+    /// Incremental resolution (#15): resolves again only the objects whose declaration print changed, whose parent or
+    /// mixins were resolved again, or that are new; the rest, with their diagnostics, come from <paramref name="previous"/>.
+    /// Stage B runs again for resolved objects and for objects that referenced a key that changed, appeared or vanished.
+    /// <paramref name="prints"/> maps <c>type:id</c> and <c>mixin:id</c> to a print of the declaration's text and position.
+    /// The result equals a full <see cref="Resolve"/> of the same files (without variants).
+    /// </summary>
+    internal static (ResolvedCatalog Catalog, IncrementalState State) ResolveIncremental(IReadOnlyList<FileDeclarations> files, SchemaRegistry schema,
+        DiagnosticBag diagnostics, IReadOnlyDictionary<string, string> prints, IncrementalState? previous)
+    {
+        var local = new DiagnosticBag();
+        var r = new Resolver(schema, local, null);
+        r.Index(files);
+        r.CheckReferencesToBases();
+        var state = new IncrementalState(prints);
+        var dirtyMixins = new Dictionary<string, bool>(StringComparer.Ordinal);
+        bool MixinDirty(string id, int depth)
+        {
+            if (dirtyMixins.TryGetValue(id, out var known))
+            {
+                return known;
+            }
+
+            var dirty = previous is null || !previous.Prints.TryGetValue("mixin:" + id, out var was) || !prints.TryGetValue("mixin:" + id, out var now) || was != now;
+            if (!dirty && depth < MaxMixins && r._mixins.TryGetValue(id, out var mixin))
+            {
+                dirty = mixin.Mixins.Any(m => MixinDirty(m, depth + 1));
+            }
+
+            dirtyMixins[id] = dirty;
+            return dirty;
+        }
+
+        foreach (var key in r.TopologicalOrder())
+        {
+            var decl = r._objects[key];
+            var reusable = previous is not null && !r._failed.Contains(key)
+                && previous.Catalog.ByKey.ContainsKey(key)
+                && previous.Prints.TryGetValue(key, out var was) && prints.TryGetValue(key, out var now) && was == now
+                && (decl.Parent is null || !r._dirty.Contains($"{decl.Type}:{decl.Parent}"))
+                && !decl.Mixins.Any(m => MixinDirty(m, 0))
+                && previous.Resolution.ContainsKey(key);
+            if (reusable)
+            {
+                var obj = previous!.Catalog.ByKey[key];
+                obj.Order = r._order[key];
+                r._resolved[key] = obj;
+                foreach (var d in previous.Resolution[key])
+                {
+                    local.Add(d);
+                }
+
+                foreach (var invalid in previous.Invalid.GetValueOrDefault(key) ?? new List<string>())
+                {
+                    r._invalid.Add(invalid);
+                }
+
+                state.Resolution[key] = previous.Resolution[key];
+                state.Invalid[key] = previous.Invalid.GetValueOrDefault(key) ?? new List<string>();
+                r._reused++;
+                continue;
+            }
+
+            r._dirty.Add(key);
+            // Each object records every diagnostic it would report; duplicates across objects merge at the end, so the
+            // set never depends on which objects were reused.
+            r._warned.Clear();
+            var start = local.Items.Count;
+            var invalidBefore = new HashSet<string>(r._invalid, StringComparer.Ordinal);
+            r.ResolveObject(key);
+            state.Resolution[key] = local.Items.Skip(start).ToList();
+            state.Invalid[key] = r._invalid.Where(i => !invalidBefore.Contains(i)).ToList();
+        }
+
+        var objects = r._resolved.Values.OrderBy(o => o.Type, StringComparer.Ordinal).ThenBy(o => o.Id, StringComparer.Ordinal).ToList();
+        var catalog = new ResolvedCatalog(objects, r._resolved, r._mixins, diagnostics);
+
+        // Keys that changed meaning for a reference: resolved again, new, or gone.
+        var changed = new HashSet<string>(r._dirty, StringComparer.Ordinal);
+        if (previous is not null)
+        {
+            changed.UnionWith(previous.Catalog.ByKey.Keys.Where(k => !r._resolved.ContainsKey(k)));
+        }
+
+        foreach (var obj in objects.Where(o => !o.IsAbstract))
+        {
+            if (previous is not null && !r._dirty.Contains(obj.Key) && previous.StageB.TryGetValue(obj.Key, out var kept)
+                && previous.References.TryGetValue(obj.Key, out var refs) && !refs.Overlaps(changed))
+            {
+                foreach (var d in kept)
+                {
+                    local.Add(d);
+                }
+
+                obj.HasErrors = previous.HasErrors.Contains(obj.Key);
+                state.StageB[obj.Key] = kept;
+                state.References[obj.Key] = refs;
+                if (obj.HasErrors)
+                {
+                    state.HasErrors.Add(obj.Key);
+                }
+
+                continue;
+            }
+
+            var start = local.Items.Count;
+            r._references = new HashSet<string>(StringComparer.Ordinal);
+            r._warned.Clear();
+            obj.HasErrors = false;
+            r.ValidateObject(obj, catalog);
+            state.StageB[obj.Key] = local.Items.Skip(start).ToList();
+            state.References[obj.Key] = r._references;
+            if (obj.HasErrors)
+            {
+                state.HasErrors.Add(obj.Key);
+            }
+        }
+
+        r._references = null;
+        CatalogHasher.Hash(catalog);
+        state.Catalog = catalog;
+        state.ResolvedCount = r._dirty.Count;
+        state.ReusedCount = r._reused;
+
+        // Index diagnostics first, then per object in resolution order; replayed and fresh ones never twice.
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var d in local.Items)
+        {
+            if (seen.Add($"{d.Code}|{d.File}|{d.Span.Start}|{d.Message}"))
+            {
+                diagnostics.Add(d);
+            }
+        }
+
+        return (catalog, state);
+    }
 
     private static ResolvedCatalog ResolveView(IReadOnlyList<FileDeclarations> files, SchemaRegistry schema, DiagnosticBag diagnostics, string? variant)
     {
@@ -1242,27 +1385,30 @@ public sealed class Resolver
     {
         foreach (var obj in catalog.Objects)
         {
-            if (obj.IsAbstract)
+            if (!obj.IsAbstract)
             {
-                continue;
+                ValidateObject(obj, catalog);
             }
+        }
+    }
 
-            var before = _d.Items.Count;
-            _objectFailed = false;
-            var typeSchema = _schema.FindType(obj.Type);
-            _path.Clear().Append(obj.Key);
-            ValidateRecord(obj.Body, typeSchema?.Body, obj, catalog);
-            foreach (var kv in obj.Components)
-            {
-                _path.Clear().Append(obj.Key).Append('.').Append(kv.Key);
-                ValidateRecord((RRecord)kv.Value, _schema.FindComponent(kv.Key), obj, catalog);
-            }
+    private void ValidateObject(ResolvedObject obj, ResolvedCatalog catalog)
+    {
+        var before = _d.Items.Count;
+        _objectFailed = false;
+        var typeSchema = _schema.FindType(obj.Type);
+        _path.Clear().Append(obj.Key);
+        ValidateRecord(obj.Body, typeSchema?.Body, obj, catalog);
+        foreach (var kv in obj.Components)
+        {
+            _path.Clear().Append(obj.Key).Append('.').Append(kv.Key);
+            ValidateRecord((RRecord)kv.Value, _schema.FindComponent(kv.Key), obj, catalog);
+        }
 
-            // An inherited error reported on the ancestor still makes this object not exportable.
-            if (_objectFailed || _d.Items.Skip(before).Any(d => d.IsError))
-            {
-                obj.HasErrors = true;
-            }
+        // An inherited error reported on the ancestor still makes this object not exportable.
+        if (_objectFailed || _d.Items.Skip(before).Any(d => d.IsError))
+        {
+            obj.HasErrors = true;
         }
     }
 
@@ -1349,7 +1495,9 @@ public sealed class Resolver
                 break;
             case RRef r:
             {
-                if (!catalog.ByKey.TryGetValue(r.Module is null ? r.CanonicalText : $"{r.Type}:{r.Id}", out var target))
+                var refKey = r.Module is null ? r.CanonicalText : $"{r.Type}:{r.Id}";
+                _references?.Add(refKey);
+                if (!catalog.ByKey.TryGetValue(refKey, out var target))
                 {
                     AddOnce(WithProvenance("K4005", $"`{path}` references `{r.CanonicalText}`, which does not exist", obj, value));
                 }
