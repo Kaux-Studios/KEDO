@@ -94,4 +94,43 @@ public class SchemaTests
         Assert.True(root.GetProperty("components").TryGetProperty("health", out _));
         Assert.True(root.GetProperty("hooks").TryGetProperty("arrive", out _));
     }
+
+    [Fact]
+    public void EmptyDefaultsFillListsAndMaps()
+    {
+        var bag = new DiagnosticBag();
+        var schemaText = """
+            kedo 1
+            module s
+            kedo_record step { fields = [{ name = amount  kind = int  default = 0  required = true }, { name = next  kind = record  record = step  default = { } }] }
+            kedo_type service { fields = [
+                { name = costs  kind = map  element = { kind = int }  default = { }  required = true }
+                { name = effects  kind = list  element = { kind = record  record = step }  default = []  required = true }
+                { name = bad  kind = list  element = { kind = int }  default = [1] }
+                { name = worse  kind = int  default = [] }
+            ] }
+            """;
+        var schema = Kedo.Compiler.Schema.SchemaLoader.Load(new[] { Kedo.Compiler.Model.DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(schemaText, "s.kedo"), bag), bag) }, bag);
+        Assert.Equal(3, bag.Items.Count(d => d.Message.Contains("a list default can only be `[]`")));
+        var field = schema.FindType("service")!.Body.Find("effects")!;
+        Assert.True(field.DefaultEmpty);
+
+        var content = new DiagnosticBag();
+        var source = """
+            kedo 1
+            module m
+            service s { }
+            service t { costs = { water = 2 }  effects = [{ amount = 1 }] }
+            """;
+        var decls = new[] { Kedo.Compiler.Model.DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(source, "c.kedo"), content), content) };
+        var catalog = Kedo.Compiler.Resolution.Resolver.Resolve(decls, schema, content);
+        Assert.False(content.HasErrors, string.Join("; ", content.Items.Select(d => d.Code + " " + d.Message)));
+        var s = catalog.ByKey["service:s"].Body.Fields;
+        Assert.Equal("{  }", s.First(f => f.Key == "costs").Value.CanonicalText);
+        Assert.Equal("[]", s.First(f => f.Key == "effects").Value.CanonicalText);
+        Assert.DoesNotContain(content.Items, d => d.Code is "K3011" or "K3014" or "K3015");
+        var effects = (RList)catalog.ByKey["service:t"].Body.Fields.First(f => f.Key == "effects").Value;
+        Assert.Equal("1", ((RRecord)Assert.Single(effects.Items)).Fields.First(f => f.Key == "amount").Value.CanonicalText);
+        Assert.Equal("{ water = 2 }", catalog.ByKey["service:t"].Body.Fields.First(f => f.Key == "costs").Value.CanonicalText);
+    }
 }

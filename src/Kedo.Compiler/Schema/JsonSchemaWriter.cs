@@ -193,6 +193,12 @@ public static class JsonSchemaWriter
                 break;
             case ValueKind.Map:
                 w.WriteString("type", "object");
+                if (f.DefaultEmpty)
+                {
+                    w.WriteStartObject("default");
+                    w.WriteEndObject();
+                }
+
                 if (f.KeysEnumId is not null)
                 {
                     w.WriteStartObject("propertyNames");
@@ -240,6 +246,12 @@ public static class JsonSchemaWriter
                 break;
             case ValueKind.List:
                 w.WriteString("type", "array");
+                if (f.DefaultEmpty)
+                {
+                    w.WriteStartArray("default");
+                    w.WriteEndArray();
+                }
+
                 if (f.MinItems is { } minItems) w.WriteNumber("minItems", minItems);
                 if (f.MaxItems is { } maxItems) w.WriteNumber("maxItems", maxItems);
                 if (f.Element is not null)

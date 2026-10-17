@@ -1,1 +1,3 @@
 #nullable enable
+Kedo.Schema.FieldSchema.DefaultEmpty.get -> bool
+Kedo.Schema.FieldSchema.DefaultEmpty.init -> void

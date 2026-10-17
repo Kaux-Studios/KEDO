@@ -79,6 +79,12 @@ public sealed class FieldSchema
     /// <summary>Default text or enum value (schema layer).</summary>
     public string? DefaultText { get; init; }
 
+    /// <summary>
+    /// <c>default = []</c> on a list or <c>default = { }</c> on a map: the field starts empty, so content may omit it
+    /// and a required field is still present.
+    /// </summary>
+    public bool DefaultEmpty { get; init; }
+
     /// <summary>Enum id for <see cref="ValueKind.Enum"/>.</summary>
     public string? EnumId { get; init; }
 

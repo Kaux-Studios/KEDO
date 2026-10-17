@@ -448,6 +448,8 @@ public sealed class Resolver
                 ValueKind.Bool when f.DefaultBool is not null => new RBool(prov, f.DefaultBool.Value),
                 ValueKind.Text when f.DefaultText is not null => new RText(prov, f.DefaultText),
                 ValueKind.Enum when f.DefaultText is not null => new REnum(prov, f.DefaultText),
+                ValueKind.List when f.DefaultEmpty => new RList(prov, Array.Empty<ResolvedValue>(), f.ListStrategy, f.KeyField),
+                ValueKind.Map when f.DefaultEmpty => RRecord.Empty(prov),
                 _ => null,
             };
             if (v is not null)

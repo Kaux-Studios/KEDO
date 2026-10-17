@@ -19,20 +19,22 @@ public static class SchemaLoader
             registry.AddEnum(new EnumSchema(obj.Id, Strings(obj.Body, "values")));
         }
 
+        void Problem(string owner, string message) => Report(diagnostics, catalog, owner, message);
+
         foreach (var obj in catalog.Concrete.Where(o => o.Type == "kedo_record"))
         {
-            registry.AddRecord(Record(obj.Id, obj.Body));
+            registry.AddRecord(Record(obj.Id, obj.Body, Problem));
         }
 
         foreach (var obj in catalog.Concrete.Where(o => o.Type == "kedo_component"))
         {
-            registry.AddComponent(Record(obj.Id, obj.Body));
+            registry.AddComponent(Record(obj.Id, obj.Body, Problem));
         }
 
         foreach (var obj in catalog.Concrete.Where(o => o.Type == "kedo_hook"))
         {
             var context = new RecordSchema(obj.Id + ".context");
-            foreach (var f in Fields(obj.Body, "context"))
+            foreach (var f in Fields(obj.Body, "context", obj.Id, Problem))
             {
                 context.Add(f);
             }
@@ -49,7 +51,7 @@ public static class SchemaLoader
         {
             var components = obj.Body.Fields.TryGetValue("components", out _) ? new HashSet<string>(Strings(obj.Body, "components"), StringComparer.Ordinal) : null;
             var hooks = obj.Body.Fields.TryGetValue("hooks", out _) ? new HashSet<string>(Strings(obj.Body, "hooks"), StringComparer.Ordinal) : null;
-            registry.AddType(new TypeSchema(obj.Id, Record(obj.Id, obj.Body)) { AllowedComponents = components, AllowedHooks = hooks, Doc = Text(obj.Body, "doc") });
+            registry.AddType(new TypeSchema(obj.Id, Record(obj.Id, obj.Body, Problem)) { AllowedComponents = components, AllowedHooks = hooks, Doc = Text(obj.Body, "doc") });
         }
 
         // Cross-checks the meta schema cannot express: enum/record/component/hook ids referenced by descriptors must exist.
@@ -157,10 +159,10 @@ public static class SchemaLoader
         }
     }
 
-    private static RecordSchema Record(string id, RRecord body)
+    private static RecordSchema Record(string id, RRecord body, Action<string, string> problem)
     {
         var rec = new RecordSchema(id) { Closed = Bool(body, "closed") ?? true, Doc = Text(body, "doc") };
-        foreach (var f in Fields(body, "fields"))
+        foreach (var f in Fields(body, "fields", id, problem))
         {
             rec.Add(f);
         }
@@ -168,7 +170,7 @@ public static class SchemaLoader
         return rec;
     }
 
-    private static IEnumerable<FieldSchema> Fields(RRecord body, string listName)
+    private static IEnumerable<FieldSchema> Fields(RRecord body, string listName, string owner, Action<string, string> problem)
     {
         if (!body.Fields.TryGetValue(listName, out var v) || v is not RList list)
         {
@@ -177,7 +179,7 @@ public static class SchemaLoader
 
         foreach (var item in list.Items.OfType<RRecord>())
         {
-            var f = Field(item);
+            var f = Field(item, owner, problem);
             if (f is not null)
             {
                 yield return f;
@@ -185,7 +187,7 @@ public static class SchemaLoader
         }
     }
 
-    private static FieldSchema? Field(RRecord item)
+    private static FieldSchema? Field(RRecord item, string owner, Action<string, string> problem)
     {
         var name = Text(item, "name") ?? "item";
         var kindText = Text(item, "kind") ?? "any";
@@ -215,7 +217,24 @@ public static class SchemaLoader
         FieldSchema? element = null;
         if (item.Fields.TryGetValue("element", out var el) && el is RRecord er)
         {
-            element = Field(er);
+            element = Field(er, owner, problem);
+        }
+
+        // Containers only take an empty default: `[]` for lists, `{ }` for maps. A record has no default (it would
+        // invent its required fields, and a record that contains itself would never end): leave it optional.
+        var defaultEmpty = false;
+        if (def is RList or RRecord)
+        {
+            var empty = def is RList { Items.Count: 0 } || def is RRecord { Fields.Count: 0 };
+            var fits = def is RList ? kind == ValueKind.List : kind == ValueKind.Map;
+            if (empty && fits)
+            {
+                defaultEmpty = true;
+            }
+            else
+            {
+                problem(owner, $"field `{name}` of `{owner}`: a list default can only be `[]` and a map default only `{{ }}`; records take no default");
+            }
         }
 
         return new FieldSchema(name, kind)
@@ -229,6 +248,7 @@ public static class SchemaLoader
             DefaultInt = def is RInt di ? di.Number : def is RDuration dd ? dd.Minutes : null,
             DefaultBool = def is RBool db ? db.Flag : null,
             DefaultText = def is RText dt ? dt.Text : def is REnum de ? de.Name : null,
+            DefaultEmpty = defaultEmpty,
             EnumId = Text(item, "enum"),
             TargetType = Text(item, "target"),
             AssetKind = Text(item, "asset_kind"),
