@@ -1,1 +1,524 @@
 #nullable enable
+Kedo.Compiler.Behaviors.BehaviorCompiler
+Kedo.Compiler.Formatting.Formatter
+Kedo.Compiler.Import.JsonImportOptions
+Kedo.Compiler.Import.JsonImportOptions.Collections.get -> System.Collections.Generic.Dictionary<string!, string!>!
+Kedo.Compiler.Import.JsonImportOptions.Collections.init -> void
+Kedo.Compiler.Import.JsonImportOptions.EnumFields.get -> System.Collections.Generic.HashSet<string!>!
+Kedo.Compiler.Import.JsonImportOptions.EnumFields.init -> void
+Kedo.Compiler.Import.JsonImportOptions.IdField.get -> string!
+Kedo.Compiler.Import.JsonImportOptions.IdField.init -> void
+Kedo.Compiler.Import.JsonImportOptions.JsonImportOptions() -> void
+Kedo.Compiler.Import.JsonImportOptions.Module.get -> string!
+Kedo.Compiler.Import.JsonImportOptions.Module.init -> void
+Kedo.Compiler.Import.JsonImportOptions.PackId.get -> string?
+Kedo.Compiler.Import.JsonImportOptions.PackId.init -> void
+Kedo.Compiler.Import.JsonImportOptions.PackType.get -> string!
+Kedo.Compiler.Import.JsonImportOptions.PackType.init -> void
+Kedo.Compiler.Import.JsonImporter
+Kedo.Compiler.Model.Annotation
+Kedo.Compiler.Model.Annotation.Annotation(Kedo.Compiler.Model.Origin Origin, string! Name, System.Collections.Generic.IReadOnlyList<(string? Name, Kedo.Compiler.Model.Value! Value)>! Arguments) -> void
+Kedo.Compiler.Model.Annotation.Arguments.get -> System.Collections.Generic.IReadOnlyList<(string? Name, Kedo.Compiler.Model.Value! Value)>!
+Kedo.Compiler.Model.Annotation.Arguments.init -> void
+Kedo.Compiler.Model.Annotation.Name.get -> string!
+Kedo.Compiler.Model.Annotation.Name.init -> void
+Kedo.Compiler.Model.Annotation.Origin.get -> Kedo.Compiler.Model.Origin
+Kedo.Compiler.Model.Annotation.Origin.init -> void
+Kedo.Compiler.Model.BoolValue
+Kedo.Compiler.Model.BoolValue.BoolValue(Kedo.Compiler.Model.Origin Origin, bool Flag) -> void
+Kedo.Compiler.Model.BoolValue.Flag.get -> bool
+Kedo.Compiler.Model.BoolValue.Flag.init -> void
+Kedo.Compiler.Model.ComponentEntry
+Kedo.Compiler.Model.ComponentEntry.Body.get -> Kedo.Compiler.Model.RecordValue!
+Kedo.Compiler.Model.ComponentEntry.Body.init -> void
+Kedo.Compiler.Model.ComponentEntry.ComponentEntry(Kedo.Compiler.Model.Origin Origin, string! ComponentType, Kedo.Compiler.Model.RecordValue! Body) -> void
+Kedo.Compiler.Model.ComponentEntry.ComponentType.get -> string!
+Kedo.Compiler.Model.ComponentEntry.ComponentType.init -> void
+Kedo.Compiler.Model.DecimalValue
+Kedo.Compiler.Model.DecimalValue.DecimalValue(Kedo.Compiler.Model.Origin Origin, long Units, int Scale) -> void
+Kedo.Compiler.Model.DecimalValue.Scale.get -> int
+Kedo.Compiler.Model.DecimalValue.Scale.init -> void
+Kedo.Compiler.Model.DecimalValue.Units.get -> long
+Kedo.Compiler.Model.DecimalValue.Units.init -> void
+Kedo.Compiler.Model.DeclarationBuilder
+Kedo.Compiler.Model.DurationValue
+Kedo.Compiler.Model.DurationValue.Amount.get -> long
+Kedo.Compiler.Model.DurationValue.Amount.init -> void
+Kedo.Compiler.Model.DurationValue.DurationValue(Kedo.Compiler.Model.Origin Origin, long Amount, string! Unit) -> void
+Kedo.Compiler.Model.DurationValue.Minutes.get -> long
+Kedo.Compiler.Model.DurationValue.Unit.get -> string!
+Kedo.Compiler.Model.DurationValue.Unit.init -> void
+Kedo.Compiler.Model.Entry
+Kedo.Compiler.Model.Entry.Entry(Kedo.Compiler.Model.Origin Origin) -> void
+Kedo.Compiler.Model.Entry.Origin.get -> Kedo.Compiler.Model.Origin
+Kedo.Compiler.Model.Entry.Origin.init -> void
+Kedo.Compiler.Model.EnumValue
+Kedo.Compiler.Model.EnumValue.EnumValue(Kedo.Compiler.Model.Origin Origin, string! Name) -> void
+Kedo.Compiler.Model.EnumValue.Name.get -> string!
+Kedo.Compiler.Model.EnumValue.Name.init -> void
+Kedo.Compiler.Model.ExprValue
+Kedo.Compiler.Model.ExprValue.ExprValue(Kedo.Compiler.Model.Origin Origin, Kedo.Compiler.Syntax.SyntaxTree! Tree, int Node) -> void
+Kedo.Compiler.Model.ExprValue.Node.get -> int
+Kedo.Compiler.Model.ExprValue.Node.init -> void
+Kedo.Compiler.Model.ExprValue.Tree.get -> Kedo.Compiler.Syntax.SyntaxTree!
+Kedo.Compiler.Model.ExprValue.Tree.init -> void
+Kedo.Compiler.Model.FieldEntry
+Kedo.Compiler.Model.FieldEntry.FieldEntry(Kedo.Compiler.Model.Origin Origin, string! Name, Kedo.Compiler.Model.FieldOp Op, Kedo.Compiler.Model.Value! Value) -> void
+Kedo.Compiler.Model.FieldEntry.Name.get -> string!
+Kedo.Compiler.Model.FieldEntry.Name.init -> void
+Kedo.Compiler.Model.FieldEntry.Op.get -> Kedo.Compiler.Model.FieldOp
+Kedo.Compiler.Model.FieldEntry.Op.init -> void
+Kedo.Compiler.Model.FieldEntry.Value.get -> Kedo.Compiler.Model.Value!
+Kedo.Compiler.Model.FieldEntry.Value.init -> void
+Kedo.Compiler.Model.FieldOp
+Kedo.Compiler.Model.FieldOp.Add = 2 -> Kedo.Compiler.Model.FieldOp
+Kedo.Compiler.Model.FieldOp.Assign = 0 -> Kedo.Compiler.Model.FieldOp
+Kedo.Compiler.Model.FieldOp.Remove = 3 -> Kedo.Compiler.Model.FieldOp
+Kedo.Compiler.Model.FieldOp.Replace = 1 -> Kedo.Compiler.Model.FieldOp
+Kedo.Compiler.Model.FileDeclarations
+Kedo.Compiler.Model.FileDeclarations.FileDeclarations(string? Path, string! Module, System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.ObjectDeclaration!>! Objects, System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.MixinDeclaration!>! Mixins, System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.FunctionEntry!>! Functions, Kedo.Compiler.Model.RecordValue? Manifest) -> void
+Kedo.Compiler.Model.FileDeclarations.Functions.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.FunctionEntry!>!
+Kedo.Compiler.Model.FileDeclarations.Functions.init -> void
+Kedo.Compiler.Model.FileDeclarations.Manifest.get -> Kedo.Compiler.Model.RecordValue?
+Kedo.Compiler.Model.FileDeclarations.Manifest.init -> void
+Kedo.Compiler.Model.FileDeclarations.Mixins.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.MixinDeclaration!>!
+Kedo.Compiler.Model.FileDeclarations.Mixins.init -> void
+Kedo.Compiler.Model.FileDeclarations.Module.get -> string!
+Kedo.Compiler.Model.FileDeclarations.Module.init -> void
+Kedo.Compiler.Model.FileDeclarations.Objects.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.ObjectDeclaration!>!
+Kedo.Compiler.Model.FileDeclarations.Objects.init -> void
+Kedo.Compiler.Model.FileDeclarations.Path.get -> string?
+Kedo.Compiler.Model.FileDeclarations.Path.init -> void
+Kedo.Compiler.Model.FunctionEntry
+Kedo.Compiler.Model.FunctionEntry.BlockNode.get -> int
+Kedo.Compiler.Model.FunctionEntry.BlockNode.init -> void
+Kedo.Compiler.Model.FunctionEntry.FunctionEntry(Kedo.Compiler.Model.Origin Origin, string! Name, System.Collections.Generic.IReadOnlyList<(string! Name, string! Type)>! Parameters, string? ReturnType, Kedo.Compiler.Syntax.SyntaxTree! Tree, int BlockNode) -> void
+Kedo.Compiler.Model.FunctionEntry.Name.get -> string!
+Kedo.Compiler.Model.FunctionEntry.Name.init -> void
+Kedo.Compiler.Model.FunctionEntry.Parameters.get -> System.Collections.Generic.IReadOnlyList<(string! Name, string! Type)>!
+Kedo.Compiler.Model.FunctionEntry.Parameters.init -> void
+Kedo.Compiler.Model.FunctionEntry.ReturnType.get -> string?
+Kedo.Compiler.Model.FunctionEntry.ReturnType.init -> void
+Kedo.Compiler.Model.FunctionEntry.Tree.get -> Kedo.Compiler.Syntax.SyntaxTree!
+Kedo.Compiler.Model.FunctionEntry.Tree.init -> void
+Kedo.Compiler.Model.HookEntry
+Kedo.Compiler.Model.HookEntry.BlockNode.get -> int
+Kedo.Compiler.Model.HookEntry.BlockNode.init -> void
+Kedo.Compiler.Model.HookEntry.ContextName.get -> string!
+Kedo.Compiler.Model.HookEntry.ContextName.init -> void
+Kedo.Compiler.Model.HookEntry.HookEntry(Kedo.Compiler.Model.Origin Origin, string! HookId, string! ContextName, Kedo.Compiler.Syntax.SyntaxTree! Tree, int BlockNode) -> void
+Kedo.Compiler.Model.HookEntry.HookId.get -> string!
+Kedo.Compiler.Model.HookEntry.HookId.init -> void
+Kedo.Compiler.Model.HookEntry.Tree.get -> Kedo.Compiler.Syntax.SyntaxTree!
+Kedo.Compiler.Model.HookEntry.Tree.init -> void
+Kedo.Compiler.Model.IntValue
+Kedo.Compiler.Model.IntValue.IntValue(Kedo.Compiler.Model.Origin Origin, long Number) -> void
+Kedo.Compiler.Model.IntValue.Number.get -> long
+Kedo.Compiler.Model.IntValue.Number.init -> void
+Kedo.Compiler.Model.KeyedEntry
+Kedo.Compiler.Model.KeyedEntry.Body.get -> Kedo.Compiler.Model.RecordValue!
+Kedo.Compiler.Model.KeyedEntry.Body.init -> void
+Kedo.Compiler.Model.KeyedEntry.Key.get -> string!
+Kedo.Compiler.Model.KeyedEntry.Key.init -> void
+Kedo.Compiler.Model.KeyedEntry.KeyedEntry(Kedo.Compiler.Model.Origin Origin, string! Name, string! Key, Kedo.Compiler.Model.RecordValue! Body) -> void
+Kedo.Compiler.Model.KeyedEntry.Name.get -> string!
+Kedo.Compiler.Model.KeyedEntry.Name.init -> void
+Kedo.Compiler.Model.ListValue
+Kedo.Compiler.Model.ListValue.Items.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.Value!>!
+Kedo.Compiler.Model.ListValue.Items.init -> void
+Kedo.Compiler.Model.ListValue.ListValue(Kedo.Compiler.Model.Origin Origin, System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.Value!>! Items) -> void
+Kedo.Compiler.Model.MixinDeclaration
+Kedo.Compiler.Model.MixinDeclaration.Annotations.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.Annotation!>!
+Kedo.Compiler.Model.MixinDeclaration.Annotations.init -> void
+Kedo.Compiler.Model.MixinDeclaration.Doc.get -> string?
+Kedo.Compiler.Model.MixinDeclaration.Doc.init -> void
+Kedo.Compiler.Model.MixinDeclaration.Entries.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.Entry!>!
+Kedo.Compiler.Model.MixinDeclaration.Entries.init -> void
+Kedo.Compiler.Model.MixinDeclaration.Id.get -> string!
+Kedo.Compiler.Model.MixinDeclaration.Id.init -> void
+Kedo.Compiler.Model.MixinDeclaration.MixinDeclaration(Kedo.Compiler.Model.Origin Origin, string! Module, string! Id, System.Collections.Generic.IReadOnlyList<string!>! Mixins, System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.Entry!>! Entries, System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.Annotation!>! Annotations, string? Doc) -> void
+Kedo.Compiler.Model.MixinDeclaration.Mixins.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Kedo.Compiler.Model.MixinDeclaration.Mixins.init -> void
+Kedo.Compiler.Model.MixinDeclaration.Module.get -> string!
+Kedo.Compiler.Model.MixinDeclaration.Module.init -> void
+Kedo.Compiler.Model.MixinDeclaration.Origin.get -> Kedo.Compiler.Model.Origin
+Kedo.Compiler.Model.MixinDeclaration.Origin.init -> void
+Kedo.Compiler.Model.ObjectDeclaration
+Kedo.Compiler.Model.ObjectDeclaration.Annotations.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.Annotation!>!
+Kedo.Compiler.Model.ObjectDeclaration.Annotations.init -> void
+Kedo.Compiler.Model.ObjectDeclaration.Doc.get -> string?
+Kedo.Compiler.Model.ObjectDeclaration.Doc.init -> void
+Kedo.Compiler.Model.ObjectDeclaration.Entries.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.Entry!>!
+Kedo.Compiler.Model.ObjectDeclaration.Entries.init -> void
+Kedo.Compiler.Model.ObjectDeclaration.Id.get -> string!
+Kedo.Compiler.Model.ObjectDeclaration.Id.init -> void
+Kedo.Compiler.Model.ObjectDeclaration.IsAbstract.get -> bool
+Kedo.Compiler.Model.ObjectDeclaration.IsAbstract.init -> void
+Kedo.Compiler.Model.ObjectDeclaration.Key.get -> string!
+Kedo.Compiler.Model.ObjectDeclaration.Mixins.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Kedo.Compiler.Model.ObjectDeclaration.Mixins.init -> void
+Kedo.Compiler.Model.ObjectDeclaration.Module.get -> string!
+Kedo.Compiler.Model.ObjectDeclaration.Module.init -> void
+Kedo.Compiler.Model.ObjectDeclaration.ObjectDeclaration(Kedo.Compiler.Model.Origin Origin, string! Module, string! Type, string! Id, bool IsAbstract, string? Parent, System.Collections.Generic.IReadOnlyList<string!>! Mixins, System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.Entry!>! Entries, System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.Annotation!>! Annotations, string? Doc) -> void
+Kedo.Compiler.Model.ObjectDeclaration.Origin.get -> Kedo.Compiler.Model.Origin
+Kedo.Compiler.Model.ObjectDeclaration.Origin.init -> void
+Kedo.Compiler.Model.ObjectDeclaration.Parent.get -> string?
+Kedo.Compiler.Model.ObjectDeclaration.Parent.init -> void
+Kedo.Compiler.Model.ObjectDeclaration.Type.get -> string!
+Kedo.Compiler.Model.ObjectDeclaration.Type.init -> void
+Kedo.Compiler.Model.Origin
+Kedo.Compiler.Model.Origin.Column.get -> int
+Kedo.Compiler.Model.Origin.Column.init -> void
+Kedo.Compiler.Model.Origin.File.get -> string?
+Kedo.Compiler.Model.Origin.File.init -> void
+Kedo.Compiler.Model.Origin.Line.get -> int
+Kedo.Compiler.Model.Origin.Line.init -> void
+Kedo.Compiler.Model.Origin.Origin() -> void
+Kedo.Compiler.Model.Origin.Origin(string? File, Kedo.Text.TextSpan Span, int Line, int Column) -> void
+Kedo.Compiler.Model.Origin.Span.get -> Kedo.Text.TextSpan
+Kedo.Compiler.Model.Origin.Span.init -> void
+Kedo.Compiler.Model.RecordValue
+Kedo.Compiler.Model.RecordValue.Entries.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.Entry!>!
+Kedo.Compiler.Model.RecordValue.Entries.init -> void
+Kedo.Compiler.Model.RecordValue.RecordValue(Kedo.Compiler.Model.Origin Origin, System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.Entry!>! Entries) -> void
+Kedo.Compiler.Model.RefValue
+Kedo.Compiler.Model.RefValue.Id.get -> string!
+Kedo.Compiler.Model.RefValue.Id.init -> void
+Kedo.Compiler.Model.RefValue.Module.get -> string?
+Kedo.Compiler.Model.RefValue.Module.init -> void
+Kedo.Compiler.Model.RefValue.RefValue(Kedo.Compiler.Model.Origin Origin, string! Type, string? Module, string! Id) -> void
+Kedo.Compiler.Model.RefValue.Type.get -> string!
+Kedo.Compiler.Model.RefValue.Type.init -> void
+Kedo.Compiler.Model.RemovalEntry
+Kedo.Compiler.Model.RemovalEntry.ComponentType.get -> string?
+Kedo.Compiler.Model.RemovalEntry.ComponentType.init -> void
+Kedo.Compiler.Model.RemovalEntry.Path.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Kedo.Compiler.Model.RemovalEntry.Path.init -> void
+Kedo.Compiler.Model.RemovalEntry.RemovalEntry(Kedo.Compiler.Model.Origin Origin, string? ComponentType, System.Collections.Generic.IReadOnlyList<string!>? Path) -> void
+Kedo.Compiler.Model.TextValue
+Kedo.Compiler.Model.TextValue.Text.get -> string!
+Kedo.Compiler.Model.TextValue.Text.init -> void
+Kedo.Compiler.Model.TextValue.TextValue(Kedo.Compiler.Model.Origin Origin, string! Text) -> void
+Kedo.Compiler.Model.Value
+Kedo.Compiler.Model.Value.Origin.get -> Kedo.Compiler.Model.Origin
+Kedo.Compiler.Model.Value.Origin.init -> void
+Kedo.Compiler.Model.Value.Value(Kedo.Compiler.Model.Origin Origin) -> void
+Kedo.Compiler.Pack.PackWriter
+Kedo.Compiler.Resolution.CatalogHasher
+Kedo.Compiler.Resolution.LayerKind
+Kedo.Compiler.Resolution.LayerKind.Default = 0 -> Kedo.Compiler.Resolution.LayerKind
+Kedo.Compiler.Resolution.LayerKind.Mixin = 2 -> Kedo.Compiler.Resolution.LayerKind
+Kedo.Compiler.Resolution.LayerKind.Own = 3 -> Kedo.Compiler.Resolution.LayerKind
+Kedo.Compiler.Resolution.LayerKind.Parent = 1 -> Kedo.Compiler.Resolution.LayerKind
+Kedo.Compiler.Resolution.OrderedFields
+Kedo.Compiler.Resolution.OrderedFields.Count.get -> int
+Kedo.Compiler.Resolution.OrderedFields.GetEnumerator() -> System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string!, Kedo.Compiler.Resolution.ResolvedValue!>>!
+Kedo.Compiler.Resolution.OrderedFields.Keys.get -> System.Collections.Generic.IEnumerable<string!>!
+Kedo.Compiler.Resolution.OrderedFields.TryGetValue(string! name, out Kedo.Compiler.Resolution.ResolvedValue! value) -> bool
+Kedo.Compiler.Resolution.OrderedFields.With(string! name, Kedo.Compiler.Resolution.ResolvedValue! value) -> Kedo.Compiler.Resolution.OrderedFields!
+Kedo.Compiler.Resolution.OrderedFields.Without(string! name) -> Kedo.Compiler.Resolution.OrderedFields!
+Kedo.Compiler.Resolution.Provenance
+Kedo.Compiler.Resolution.Provenance.Layer.get -> Kedo.Compiler.Resolution.LayerKind
+Kedo.Compiler.Resolution.Provenance.Layer.init -> void
+Kedo.Compiler.Resolution.Provenance.LayerName.get -> string!
+Kedo.Compiler.Resolution.Provenance.LayerName.init -> void
+Kedo.Compiler.Resolution.Provenance.Origin.get -> Kedo.Compiler.Model.Origin
+Kedo.Compiler.Resolution.Provenance.Origin.init -> void
+Kedo.Compiler.Resolution.Provenance.Provenance(Kedo.Compiler.Model.Origin Origin, Kedo.Compiler.Resolution.LayerKind Layer, string! LayerName) -> void
+Kedo.Compiler.Resolution.RBool
+Kedo.Compiler.Resolution.RBool.Flag.get -> bool
+Kedo.Compiler.Resolution.RBool.Flag.init -> void
+Kedo.Compiler.Resolution.RBool.RBool(Kedo.Compiler.Resolution.Provenance! Provenance, bool Flag) -> void
+Kedo.Compiler.Resolution.RDecimal
+Kedo.Compiler.Resolution.RDecimal.RDecimal(Kedo.Compiler.Resolution.Provenance! Provenance, long Units, int Scale) -> void
+Kedo.Compiler.Resolution.RDecimal.Scale.get -> int
+Kedo.Compiler.Resolution.RDecimal.Scale.init -> void
+Kedo.Compiler.Resolution.RDecimal.Units.get -> long
+Kedo.Compiler.Resolution.RDecimal.Units.init -> void
+Kedo.Compiler.Resolution.RDuration
+Kedo.Compiler.Resolution.RDuration.Minutes.get -> long
+Kedo.Compiler.Resolution.RDuration.Minutes.init -> void
+Kedo.Compiler.Resolution.RDuration.RDuration(Kedo.Compiler.Resolution.Provenance! Provenance, long Minutes) -> void
+Kedo.Compiler.Resolution.REnum
+Kedo.Compiler.Resolution.REnum.Name.get -> string!
+Kedo.Compiler.Resolution.REnum.Name.init -> void
+Kedo.Compiler.Resolution.REnum.REnum(Kedo.Compiler.Resolution.Provenance! Provenance, string! Name) -> void
+Kedo.Compiler.Resolution.RInt
+Kedo.Compiler.Resolution.RInt.Number.get -> long
+Kedo.Compiler.Resolution.RInt.Number.init -> void
+Kedo.Compiler.Resolution.RInt.RInt(Kedo.Compiler.Resolution.Provenance! Provenance, long Number) -> void
+Kedo.Compiler.Resolution.RList
+Kedo.Compiler.Resolution.RList.Items.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Resolution.ResolvedValue!>!
+Kedo.Compiler.Resolution.RList.Items.init -> void
+Kedo.Compiler.Resolution.RList.KeyField.get -> string!
+Kedo.Compiler.Resolution.RList.KeyField.init -> void
+Kedo.Compiler.Resolution.RList.RList(Kedo.Compiler.Resolution.Provenance! Provenance, System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Resolution.ResolvedValue!>! Items, Kedo.Schema.ListStrategy Strategy, string! KeyField) -> void
+Kedo.Compiler.Resolution.RList.Strategy.get -> Kedo.Schema.ListStrategy
+Kedo.Compiler.Resolution.RList.Strategy.init -> void
+Kedo.Compiler.Resolution.RRecord
+Kedo.Compiler.Resolution.RRecord.Fields.get -> Kedo.Compiler.Resolution.OrderedFields!
+Kedo.Compiler.Resolution.RRecord.Fields.init -> void
+Kedo.Compiler.Resolution.RRecord.RRecord(Kedo.Compiler.Resolution.Provenance! Provenance, Kedo.Compiler.Resolution.OrderedFields! Fields) -> void
+Kedo.Compiler.Resolution.RRef
+Kedo.Compiler.Resolution.RRef.Id.get -> string!
+Kedo.Compiler.Resolution.RRef.Id.init -> void
+Kedo.Compiler.Resolution.RRef.Module.get -> string?
+Kedo.Compiler.Resolution.RRef.Module.init -> void
+Kedo.Compiler.Resolution.RRef.RRef(Kedo.Compiler.Resolution.Provenance! Provenance, string! Type, string? Module, string! Id) -> void
+Kedo.Compiler.Resolution.RRef.Type.get -> string!
+Kedo.Compiler.Resolution.RRef.Type.init -> void
+Kedo.Compiler.Resolution.RText
+Kedo.Compiler.Resolution.RText.RText(Kedo.Compiler.Resolution.Provenance! Provenance, string! Text) -> void
+Kedo.Compiler.Resolution.RText.Text.get -> string!
+Kedo.Compiler.Resolution.RText.Text.init -> void
+Kedo.Compiler.Resolution.ResolvedCatalog
+Kedo.Compiler.Resolution.ResolvedCatalog.ByKey.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Compiler.Resolution.ResolvedObject!>!
+Kedo.Compiler.Resolution.ResolvedCatalog.Concrete.get -> System.Collections.Generic.IEnumerable<Kedo.Compiler.Resolution.ResolvedObject!>!
+Kedo.Compiler.Resolution.ResolvedCatalog.Diagnostics.get -> Kedo.Diagnostics.DiagnosticBag!
+Kedo.Compiler.Resolution.ResolvedCatalog.Hash.get -> string!
+Kedo.Compiler.Resolution.ResolvedCatalog.InDeclarationOrder.get -> System.Collections.Generic.IEnumerable<Kedo.Compiler.Resolution.ResolvedObject!>!
+Kedo.Compiler.Resolution.ResolvedCatalog.Mixins.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Compiler.Model.MixinDeclaration!>!
+Kedo.Compiler.Resolution.ResolvedCatalog.Objects.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Resolution.ResolvedObject!>!
+Kedo.Compiler.Resolution.ResolvedDump
+Kedo.Compiler.Resolution.ResolvedObject
+Kedo.Compiler.Resolution.ResolvedObject.Body.get -> Kedo.Compiler.Resolution.RRecord!
+Kedo.Compiler.Resolution.ResolvedObject.Chain.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Kedo.Compiler.Resolution.ResolvedObject.Components.get -> Kedo.Compiler.Resolution.OrderedFields!
+Kedo.Compiler.Resolution.ResolvedObject.Declaration.get -> Kedo.Compiler.Model.ObjectDeclaration!
+Kedo.Compiler.Resolution.ResolvedObject.Functions.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.FunctionEntry!>!
+Kedo.Compiler.Resolution.ResolvedObject.HasErrors.get -> bool
+Kedo.Compiler.Resolution.ResolvedObject.Hash.get -> string!
+Kedo.Compiler.Resolution.ResolvedObject.Hooks.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Model.HookEntry!>!
+Kedo.Compiler.Resolution.ResolvedObject.Id.get -> string!
+Kedo.Compiler.Resolution.ResolvedObject.IsAbstract.get -> bool
+Kedo.Compiler.Resolution.ResolvedObject.Key.get -> string!
+Kedo.Compiler.Resolution.ResolvedObject.Mixins.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Kedo.Compiler.Resolution.ResolvedObject.Order.get -> int
+Kedo.Compiler.Resolution.ResolvedObject.Type.get -> string!
+Kedo.Compiler.Resolution.ResolvedValue
+Kedo.Compiler.Resolution.ResolvedValue.Provenance.get -> Kedo.Compiler.Resolution.Provenance!
+Kedo.Compiler.Resolution.ResolvedValue.Provenance.init -> void
+Kedo.Compiler.Resolution.ResolvedValue.ResolvedValue(Kedo.Compiler.Resolution.Provenance! Provenance) -> void
+Kedo.Compiler.Resolution.ResolvedValue.Shadowed.get -> System.Collections.Generic.IReadOnlyList<Kedo.Compiler.Resolution.ResolvedValue!>!
+Kedo.Compiler.Resolution.ResolvedValue.Shadowed.init -> void
+Kedo.Compiler.Resolution.Resolver
+Kedo.Compiler.Schema.JsonSchemaWriter
+Kedo.Compiler.Schema.MetaSchema
+Kedo.Compiler.Schema.SchemaLoader
+Kedo.Compiler.Syntax.Lexer
+Kedo.Compiler.Syntax.Node
+Kedo.Compiler.Syntax.Node.ChildCount.get -> int
+Kedo.Compiler.Syntax.Node.ChildCount.init -> void
+Kedo.Compiler.Syntax.Node.FirstChild.get -> int
+Kedo.Compiler.Syntax.Node.FirstChild.init -> void
+Kedo.Compiler.Syntax.Node.FirstToken.get -> int
+Kedo.Compiler.Syntax.Node.FirstToken.init -> void
+Kedo.Compiler.Syntax.Node.IsLeaf.get -> bool
+Kedo.Compiler.Syntax.Node.Kind.get -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.Node.Kind.init -> void
+Kedo.Compiler.Syntax.Node.LastToken.get -> int
+Kedo.Compiler.Syntax.Node.LastToken.init -> void
+Kedo.Compiler.Syntax.Node.Node() -> void
+Kedo.Compiler.Syntax.Node.Node(Kedo.Compiler.Syntax.NodeKind Kind, int FirstToken, int LastToken, int FirstChild, int ChildCount) -> void
+Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.Annotation = 8 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.ApplyStmt = 30 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.ArgList = 41 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.AssetDecl = 5 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.BinaryExpr = 37 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.Block = 22 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.Body = 13 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.CallExpr = 39 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.Component = 16 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.ElseClause = 33 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.EmitStmt = 31 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.Error = 0 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.ExprStmt = 36 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.ExtendsClause = 11 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.Field = 14 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.File = 1 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.FunctionDecl = 7 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.Header = 2 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.Hook = 18 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.IfStmt = 32 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.KeyedEntry = 15 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.LetStmt = 23 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.ListExpr = 45 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.LiteralExpr = 42 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.ManifestDecl = 6 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.MemberExpr = 40 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.MixinDecl = 4 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.Name = 10 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.NameExpr = 43 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.ObjectDecl = 3 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.OptionClause = 27 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.Param = 19 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.ParamList = 20 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.ParenExpr = 46 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.RefExpr = 44 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.Removal = 17 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.ReturnStmt = 35 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.ReturnType = 21 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.SetStmt = 24 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.StopStmt = 34 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.TypeName = 9 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.UnaryExpr = 38 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.WaitDecisionStmt = 26 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.WaitRollStmt = 28 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.WaitSignalStmt = 29 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.WaitStmt = 25 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.NodeKind.WithClause = 12 -> Kedo.Compiler.Syntax.NodeKind
+Kedo.Compiler.Syntax.Parser
+Kedo.Compiler.Syntax.SourceText
+Kedo.Compiler.Syntax.SourceText.Bytes.get -> byte[]!
+Kedo.Compiler.Syntax.SourceText.GetLinePosition(int offset) -> Kedo.Text.LinePosition
+Kedo.Compiler.Syntax.SourceText.GetText(Kedo.Text.TextSpan span) -> string!
+Kedo.Compiler.Syntax.SourceText.Length.get -> int
+Kedo.Compiler.Syntax.SourceText.Path.get -> string?
+Kedo.Compiler.Syntax.SourceText.Slice(Kedo.Text.TextSpan span) -> System.ReadOnlySpan<byte>
+Kedo.Compiler.Syntax.SyntaxDump
+Kedo.Compiler.Syntax.SyntaxTree
+Kedo.Compiler.Syntax.SyntaxTree.Children(int node) -> System.ReadOnlySpan<int>
+Kedo.Compiler.Syntax.SyntaxTree.FirstChildOfKind(int node, Kedo.Compiler.Syntax.NodeKind kind) -> int
+Kedo.Compiler.Syntax.SyntaxTree.NodeCount.get -> int
+Kedo.Compiler.Syntax.SyntaxTree.OwnTokens(int node) -> System.Collections.Generic.List<int>!
+Kedo.Compiler.Syntax.SyntaxTree.Root.get -> int
+Kedo.Compiler.Syntax.SyntaxTree.Source.get -> Kedo.Compiler.Syntax.SourceText!
+Kedo.Compiler.Syntax.SyntaxTree.SpanOf(int node) -> Kedo.Text.TextSpan
+Kedo.Compiler.Syntax.SyntaxTree.TextOf(int token) -> string!
+Kedo.Compiler.Syntax.SyntaxTree.TextOfNode(int node) -> string!
+Kedo.Compiler.Syntax.SyntaxTree.Tokens.get -> Kedo.Compiler.Syntax.Token[]!
+Kedo.Compiler.Syntax.SyntaxTree.TokensOf(int node) -> System.ReadOnlySpan<Kedo.Compiler.Syntax.Token>
+Kedo.Compiler.Syntax.SyntaxTree.this[int index].get -> Kedo.Compiler.Syntax.Node
+Kedo.Compiler.Syntax.Token
+Kedo.Compiler.Syntax.Token.End.get -> int
+Kedo.Compiler.Syntax.Token.Flags.get -> Kedo.Compiler.Syntax.TokenFlags
+Kedo.Compiler.Syntax.Token.Flags.init -> void
+Kedo.Compiler.Syntax.Token.IsKeyword.get -> bool
+Kedo.Compiler.Syntax.Token.IsTrivia.get -> bool
+Kedo.Compiler.Syntax.Token.Kind.get -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.Token.Kind.init -> void
+Kedo.Compiler.Syntax.Token.Length.get -> int
+Kedo.Compiler.Syntax.Token.Length.init -> void
+Kedo.Compiler.Syntax.Token.Span.get -> Kedo.Text.TextSpan
+Kedo.Compiler.Syntax.Token.Start.get -> int
+Kedo.Compiler.Syntax.Token.Start.init -> void
+Kedo.Compiler.Syntax.Token.Token() -> void
+Kedo.Compiler.Syntax.Token.Token(Kedo.Compiler.Syntax.TokenKind Kind, Kedo.Compiler.Syntax.TokenFlags Flags, int Start, int Length) -> void
+Kedo.Compiler.Syntax.TokenFlags
+Kedo.Compiler.Syntax.TokenFlags.Malformed = 2 -> Kedo.Compiler.Syntax.TokenFlags
+Kedo.Compiler.Syntax.TokenFlags.NewlineBefore = 1 -> Kedo.Compiler.Syntax.TokenFlags
+Kedo.Compiler.Syntax.TokenFlags.None = 0 -> Kedo.Compiler.Syntax.TokenFlags
+Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Arrow = 39 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.At = 38 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.BangEquals = 24 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.BlockComment = 5 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Colon = 36 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Comma = 34 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Decimal = 10 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.DocComment = 6 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Dot = 37 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Duration = 9 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.EndOfFile = 0 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Equals = 19 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.EqualsBang = 20 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.EqualsEquals = 23 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Greater = 27 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.GreaterEquals = 28 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Identifier = 7 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Integer = 8 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwAbstract = 43 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwAnd = 65 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwApply = 56 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwAs = 64 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwComponent = 47 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwDecision = 60 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwElse = 54 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwEmit = 57 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwExtends = 45 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwFalse = 69 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwFunction = 50 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwIf = 53 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwKedo = 40 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwLet = 51 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwManifest = 42 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwMixin = 44 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwModule = 41 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwNot = 67 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwOn = 49 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwOption = 63 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwOr = 66 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwRemove = 48 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwReturn = 59 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwRoll = 61 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwSet = 52 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwSignal = 62 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwStop = 58 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwTrue = 68 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwWait = 55 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.KwWith = 46 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.LBrace = 13 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.LBracket = 15 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.LParen = 17 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Less = 25 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.LessEquals = 26 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.LineComment = 4 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Minus = 30 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.MinusEquals = 22 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Newline = 3 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Percent = 33 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Plus = 29 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.PlusEquals = 21 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.RBrace = 14 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.RBracket = 16 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.RParen = 18 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Reference = 12 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Semicolon = 35 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Slash = 32 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Star = 31 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.String = 11 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Unknown = 1 -> Kedo.Compiler.Syntax.TokenKind
+Kedo.Compiler.Syntax.TokenKind.Whitespace = 2 -> Kedo.Compiler.Syntax.TokenKind
+abstract Kedo.Compiler.Resolution.ResolvedValue.CanonicalText.get -> string!
+override Kedo.Compiler.Model.Origin.ToString() -> string!
+override Kedo.Compiler.Model.RefValue.ToString() -> string!
+override Kedo.Compiler.Resolution.Provenance.ToString() -> string!
+override Kedo.Compiler.Resolution.RBool.CanonicalText.get -> string!
+override Kedo.Compiler.Resolution.RDecimal.CanonicalText.get -> string!
+override Kedo.Compiler.Resolution.RDuration.CanonicalText.get -> string!
+override Kedo.Compiler.Resolution.REnum.CanonicalText.get -> string!
+override Kedo.Compiler.Resolution.RInt.CanonicalText.get -> string!
+override Kedo.Compiler.Resolution.RList.CanonicalText.get -> string!
+override Kedo.Compiler.Resolution.RRecord.CanonicalText.get -> string!
+override Kedo.Compiler.Resolution.RRef.CanonicalText.get -> string!
+override Kedo.Compiler.Resolution.RText.CanonicalText.get -> string!
+static Kedo.Compiler.Behaviors.BehaviorCompiler.Compile(Kedo.Compiler.Resolution.ResolvedObject! obj, System.Collections.Generic.IEnumerable<Kedo.Compiler.Model.FunctionEntry!>! moduleFunctions, Kedo.Schema.SchemaRegistry! schema, Kedo.Diagnostics.DiagnosticBag! diagnostics) -> Kedo.Runtime.BehaviorProgram?
+static Kedo.Compiler.Formatting.Formatter.Format(Kedo.Compiler.Syntax.SyntaxTree! tree) -> string!
+static Kedo.Compiler.Import.JsonImporter.Import(string! json, Kedo.Compiler.Import.JsonImportOptions! options) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+static Kedo.Compiler.Import.JsonImporter.Sanitize(string! s) -> string!
+static Kedo.Compiler.Model.DeclarationBuilder.Build(Kedo.Compiler.Syntax.SyntaxTree! tree, Kedo.Diagnostics.DiagnosticBag! diagnostics) -> Kedo.Compiler.Model.FileDeclarations!
+static Kedo.Compiler.Model.Origin.Of(Kedo.Compiler.Syntax.SyntaxTree! tree, int node) -> Kedo.Compiler.Model.Origin
+static Kedo.Compiler.Pack.PackWriter.Write(Kedo.Compiler.Resolution.ResolvedCatalog! catalog, System.Collections.Generic.IReadOnlyList<Kedo.Runtime.BehaviorProgram!>! programs) -> byte[]!
+static Kedo.Compiler.Resolution.CatalogHasher.Hash(Kedo.Compiler.Resolution.ResolvedCatalog! catalog) -> void
+static Kedo.Compiler.Resolution.OrderedFields.Empty.get -> Kedo.Compiler.Resolution.OrderedFields!
+static Kedo.Compiler.Resolution.RDecimal.Format(long units, int scale) -> string!
+static Kedo.Compiler.Resolution.RList.KeyOf(Kedo.Compiler.Resolution.ResolvedValue! item, string! keyField) -> string?
+static Kedo.Compiler.Resolution.RList.KeyText(Kedo.Compiler.Resolution.ResolvedValue! v) -> string!
+static Kedo.Compiler.Resolution.RRecord.Empty(Kedo.Compiler.Resolution.Provenance! p) -> Kedo.Compiler.Resolution.RRecord!
+static Kedo.Compiler.Resolution.RRecord.KeyText(string! key) -> string!
+static Kedo.Compiler.Resolution.ResolvedDump.Dump(Kedo.Compiler.Resolution.ResolvedCatalog! catalog, bool withProvenance = false) -> string!
+static Kedo.Compiler.Resolution.ResolvedDump.DumpObject(Kedo.Compiler.Resolution.ResolvedObject! obj, bool withProvenance = false) -> string!
+static Kedo.Compiler.Resolution.Resolver.Explain(Kedo.Compiler.Resolution.ResolvedCatalog! catalog, string! key, string! path) -> string!
+static Kedo.Compiler.Resolution.Resolver.Resolve(System.Collections.Generic.IEnumerable<Kedo.Compiler.Model.FileDeclarations!>! files, Kedo.Schema.SchemaRegistry! schema, Kedo.Diagnostics.DiagnosticBag! diagnostics) -> Kedo.Compiler.Resolution.ResolvedCatalog!
+static Kedo.Compiler.Schema.JsonSchemaWriter.Write(Kedo.Schema.SchemaRegistry! registry, System.Text.Json.Utf8JsonWriter! w) -> void
+static Kedo.Compiler.Schema.MetaSchema.Build() -> Kedo.Schema.SchemaRegistry!
+static Kedo.Compiler.Schema.SchemaLoader.Load(System.Collections.Generic.IEnumerable<Kedo.Compiler.Model.FileDeclarations!>! files, Kedo.Diagnostics.DiagnosticBag! diagnostics) -> Kedo.Schema.SchemaRegistry!
+static Kedo.Compiler.Syntax.Lexer.Lex(Kedo.Compiler.Syntax.SourceText! source, Kedo.Diagnostics.DiagnosticBag! diagnostics) -> Kedo.Compiler.Syntax.Token[]!
+static Kedo.Compiler.Syntax.Parser.Parse(Kedo.Compiler.Syntax.SourceText! source, Kedo.Diagnostics.DiagnosticBag! diagnostics) -> Kedo.Compiler.Syntax.SyntaxTree!
+static Kedo.Compiler.Syntax.SourceText.FromBytes(byte[]! bytes, string? path = null) -> Kedo.Compiler.Syntax.SourceText!
+static Kedo.Compiler.Syntax.SourceText.FromFile(string! path) -> Kedo.Compiler.Syntax.SourceText!
+static Kedo.Compiler.Syntax.SourceText.FromString(string! text, string? path = null) -> Kedo.Compiler.Syntax.SourceText!
+static Kedo.Compiler.Syntax.SyntaxDump.Dump(Kedo.Compiler.Syntax.SyntaxTree! tree) -> string!
+static readonly Kedo.Compiler.Schema.MetaSchema.Kinds -> string![]!
+static readonly Kedo.Compiler.Schema.MetaSchema.Strategies -> string![]!

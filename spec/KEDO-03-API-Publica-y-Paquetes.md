@@ -1,6 +1,6 @@
 # KEDO-03 — API pública, paquetes y versiones
 
-Revisado: 15/10/2026 · Estado: vigente (issue [#12](https://github.com/Kaux-Studios/KEDO/issues/12)). Mecanismos que hacen cumplir [ADR-0001](adr/0001-versionado-semver.md) y [ADR-0002](adr/0002-repositorio-aislado.md).
+Revisado: 16/10/2026 · Estado: vigente (issue [#12](https://github.com/Kaux-Studios/KEDO/issues/12)). Mecanismos que hacen cumplir [ADR-0001](adr/0001-versionado-semver.md) y [ADR-0002](adr/0002-repositorio-aislado.md).
 
 ## Paquetes
 
@@ -26,7 +26,7 @@ Prerelease durante la inicialización: `1.0.0-alpha.N`. Sin garantía entre alph
 
 ## Mecanismos en el repositorio
 
-1. **`Microsoft.CodeAnalysis.PublicApiAnalyzers`** (3.3.4, compatible con el compilador del SDK 8) en todo proyecto empaquetable: cada miembro público se declara en `PublicAPI.Shipped.txt` (publicado) o `PublicAPI.Unshipped.txt` (pendiente de publicar). RS0016 (miembro no declarado) y RS0017 (miembro eliminado) son errores por `TreatWarningsAsErrors`. Un cambio de API es un diff revisable en esos archivos. Al publicar una versión, lo de `Unshipped` pasa a `Shipped`. **Durante alpha** RS0016/RS0017 son advertencias (`WarningsNotAsErrors`) porque la superficie cambia a diario y el arreglo automático de `dotnet format` no se aplica con el SDK 8; antes de `1.0.0` se completan los archivos y vuelven a ser errores.
+1. **`Microsoft.CodeAnalysis.PublicApiAnalyzers`** (3.3.4, compatible con el compilador del SDK 8) en todo proyecto empaquetable: cada miembro público se declara en `PublicAPI.Shipped.txt` (publicado) o `PublicAPI.Unshipped.txt` (pendiente de publicar). RS0016 (miembro no declarado) y RS0017 (miembro eliminado) son errores por `TreatWarningsAsErrors`. Un cambio de API es un diff revisable en esos archivos. Al publicar una versión, lo de `Unshipped` pasa a `Shipped` (`tools/public-api.ps1 -Ship`). El arreglo automático de `dotnet format` no se aplica con el SDK 8: `tools/public-api.ps1` compila con un registro SARIF y copia el nombre que calcula el analizador (RS0016) o quita la línea que ya no existe (RS0017; si estaba en `Shipped`, la marca `*REMOVED*`). Entre alphas una línea `*REMOVED*` es aceptable; desde `1.0.0` sólo en un nuevo major. `KedoVersion.Current` es `static readonly` y no `const`: el número de versión no entra en la API declarada ni se copia en los binarios que lo usan.
 2. **Package validation** (`EnablePackageValidation`) en `dotnet pack`: compara con `PackageValidationBaselineVersion` (se fija al publicar `1.0.0`); en ramas de servicio, `EnableStrictModeForBaselineValidation`. Rupturas intencionales (solo en un nuevo major) se registran con `ApiCompatGenerateSuppressionFile`.
 3. **Reglas de cambio** (dotnet/runtime `breaking-change-rules.md`): permitido añadir miembros, implementaciones de interfaz, ampliar visibilidad; prohibido quitar o renombrar, cambiar parámetros, añadir miembros abstractos a tipos extensibles, cambiar struct↔class, cambiar valores de enum, añadir `virtual`/`static`.
 4. **Golden corpus**: los casos de `tests/corpus` nunca se borran dentro de un major; un cambio de salida en minor es error.

@@ -24,4 +24,4 @@ Al tocar parser, resolver o VM: correr los benchmarks (cuando existan en `tests/
 
 ## Registrar
 
-Describir en el commit qué cambió y qué se verificó. Actualizar spec, docs y `PublicAPI.Shipped.txt` en el mismo cambio. La historia queda en Git; no agregar bitácoras fechadas en los documentos.
+Describir en el commit qué cambió y qué se verificó. Actualizar spec, docs y `PublicAPI.Unshipped.txt` en el mismo cambio: un miembro público nuevo o quitado es error de build (RS0016/RS0017) y `powershell -File tools/public-api.ps1` escribe las líneas que calcula el analizador. Al publicar una versión, `tools/public-api.ps1 -Ship` pasa `Unshipped` a `Shipped`. La historia queda en Git; no agregar bitácoras fechadas en los documentos.
