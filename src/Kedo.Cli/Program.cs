@@ -97,7 +97,7 @@ static void PrintUsage()
     Console.WriteLine("  fmt <paths>        Rewrite files in canonical form; with --check only report files that would change.");
     Console.WriteLine("  describe <paths> <type:id>   Fields of an object for forms: schema, resolved value as a literal and its layer (--json).");
     Console.WriteLine("  edit <file> set <type:id> <path> <value>|--value-file=<file> [--op==!|+=|-=] | unset <type:id> <path> | new <type> <id> [--extends=<parent>] | duplicate <type:id> <new id>");
-    Console.WriteLine("                     Structural edit of one declaration, reprinted in canonical form; the file is rewritten only when the edit is valid.");
+    Console.WriteLine("                     Structural edit of one declaration, reprinted in canonical form; the file is rewritten only when the edit is valid. A path segment name[key] edits one item of a keyed list (options[risk].cost).");
     Console.WriteLine("  eval <suite.json> --reference | --agent=\"<command with {prompt_file} {workspace}>\"   Run the agent evaluation suite (eval/tasks.json) and verify each task.");
     Console.WriteLine("  --text=<file>=<copy>   Read <copy> in place of <file> (unsaved editor text).");
     Console.WriteLine("Without a registered schema the resolver runs in permissive mode (any type and field; list strategies inferred).");

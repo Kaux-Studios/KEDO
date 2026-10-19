@@ -26,7 +26,8 @@ public static class SourceEditor
     /// <param name="source">Text of the .kedo file.</param>
     /// <param name="type">Object type.</param>
     /// <param name="id">Object id.</param>
-    /// <param name="path">Field path, dot separated (`stats.hp`); map keys that are not identifiers are quoted.</param>
+    /// <param name="path">Field path, dot separated (`stats.hp`); map keys that are not identifiers are quoted. A segment
+    /// `name[key]` enters one item of a keyed list (`options[risk].cost`), written as a `name[key] { }` patch.</param>
     /// <param name="value">Value literal.</param>
     /// <param name="op">`=`, `=!`, `+=` or `-=`.</param>
     public static EditResult SetField(string source, string type, string id, string path, string value, string op = "=")
@@ -53,11 +54,16 @@ public static class SourceEditor
             return EditResult.Fail(error!);
         }
 
+        if (Item(segments[^1]) is not null)
+        {
+            return EditResult.Fail($"`{segments[^1]}` is a list item; edit its fields (`{segments[^1]}.field`)");
+        }
+
         var bytes = tree.Source.Bytes;
         var body = tree.FirstChildOfKind(obj, NodeKind.Body);
         for (var i = 0; i < segments.Count; i++)
         {
-            var field = FieldNode(tree, body, segments[i]);
+            var field = Entry(tree, body, segments[i]);
             if (i == segments.Count - 1)
             {
                 var entry = $"{Key(segments[i])} {op} {value}";
@@ -67,14 +73,8 @@ public static class SourceEditor
             var nested = field >= 0 ? tree.FirstChildOfKind(field, NodeKind.Body) : -1;
             if (nested < 0)
             {
-                // Missing or not a record: write the rest of the path as nested records in one entry.
-                var text = $"{Key(segments[^1])} {op} {value}";
-                for (var j = segments.Count - 2; j > i; j--)
-                {
-                    text = $"{Key(segments[j])} = {{ {text} }}";
-                }
-
-                var entry = $"{Key(segments[i])} = {{ {text} }}";
+                // Missing or not a record: write the rest of the path as nested records (or item patches) in one entry.
+                var entry = Nest(segments, i, $"{Key(segments[^1])} {op} {value}");
                 return field >= 0 ? Finish(Splice(bytes, tree.SpanOf(field), entry), source) : Finish(Insert(tree, body, entry), source);
             }
 
@@ -96,9 +96,10 @@ public static class SourceEditor
 
         var body = tree.FirstChildOfKind(obj, NodeKind.Body);
         var field = -1;
+        var item = -1;
         for (var i = 0; i < segments.Count; i++)
         {
-            field = FieldNode(tree, body, segments[i]);
+            field = Entry(tree, body, segments[i]);
             if (field < 0)
             {
                 return EditResult.Fail($"`{type}:{id}` does not write `{path}` itself; nothing to remove");
@@ -106,12 +107,19 @@ public static class SourceEditor
 
             if (i < segments.Count - 1)
             {
+                // An item patch whose only entry goes away goes away with it.
+                item = tree[field].Kind == NodeKind.KeyedEntry ? field : -1;
                 body = tree.FirstChildOfKind(field, NodeKind.Body);
                 if (body < 0)
                 {
                     return EditResult.Fail($"`{string.Join(".", segments.Take(i + 1))}` is not a record");
                 }
             }
+        }
+
+        if (item >= 0 && tree.Children(body).Length == 1)
+        {
+            field = item;
         }
 
         var span = tree.SpanOf(field);
@@ -309,13 +317,24 @@ public static class SourceEditor
         var result = new List<string>();
         var current = new StringBuilder();
         var quoted = false;
+        var bracket = false;
         foreach (var ch in path)
         {
             if (ch == '"')
             {
                 quoted = !quoted;
             }
-            else if (ch == '.' && !quoted)
+            else if (ch == '[' && !quoted)
+            {
+                bracket = true;
+                current.Append(ch);
+            }
+            else if (ch == ']' && !quoted)
+            {
+                bracket = false;
+                current.Append(ch);
+            }
+            else if (ch == '.' && !quoted && !bracket)
             {
                 result.Add(current.ToString());
                 current.Clear();
@@ -333,6 +352,57 @@ public static class SourceEditor
 
         return result.Where(s => s.Length > 0).ToList();
     }
+
+    /// <summary>`(name, key)` of an item segment `name[key]`, or null for a plain field.</summary>
+    private static (string Name, string Key)? Item(string segment)
+    {
+        var open = segment.IndexOf('[');
+        return open > 0 && segment.EndsWith(']') ? (segment[..open], segment[(open + 1)..^1].Trim('"')) : null;
+    }
+
+    /// <summary>The entry of a body for one segment: a Field, or the KeyedEntry `name[key]` of an item segment; -1 if absent.</summary>
+    private static int Entry(SyntaxTree tree, int body, string segment)
+    {
+        if (Item(segment) is not { } item)
+        {
+            return FieldNode(tree, body, segment);
+        }
+
+        foreach (var child in tree.Children(body))
+        {
+            if (tree[child].Kind != NodeKind.KeyedEntry)
+            {
+                continue;
+            }
+
+            var own = tree.OwnTokens(child);
+            var keyNode = tree.FirstChildOfKind(child, NodeKind.Name) is var n and >= 0 ? n : tree.FirstChildOfKind(child, NodeKind.LiteralExpr);
+            if (own.Count > 0 && tree.TextOf(own[0]) == item.Name && keyNode >= 0 && Significant(tree, keyNode).Trim('"') == item.Key)
+            {
+                return child;
+            }
+        }
+
+        return -1;
+    }
+
+    /// <summary>Segments after <paramref name="from"/> wrapped around <paramref name="innermost"/>: records as `name = { }`, items as `name[key] { }`.</summary>
+    private static string Nest(List<string> segments, int from, string innermost)
+    {
+        var text = innermost;
+        for (var j = segments.Count - 2; j >= from; j--)
+        {
+            text = Item(segments[j]) is { } item ? $"{item.Name}[{ItemKey(item.Key)}] {{ {text} }}" : $"{Key(segments[j])} = {{ {text} }}";
+        }
+
+        return text;
+    }
+
+    /// <summary>An item key as written: a (dotted) identifier or an integer bare, anything else quoted.</summary>
+    private static string ItemKey(string key)
+        => key.Length > 0 && (key.All(char.IsAsciiDigit) || key.Split('.').All(part => part.Length > 0 && (char.IsAsciiLetter(part[0]) || part[0] == '_') && part.All(c => char.IsAsciiLetterOrDigit(c) || c == '_')))
+            ? key
+            : "\"" + key.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
 
     /// <summary>A field or map key as written: identifiers bare, anything else quoted.</summary>
     private static string Key(string key)

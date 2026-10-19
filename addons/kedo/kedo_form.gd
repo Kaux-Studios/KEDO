@@ -4,7 +4,9 @@ extends VBoxContainer
 ## Form of one object, generated from `kedo describe` (#14): a row per schema field with a control for its kind,
 ## the layer the value comes from and a reset button for values the object writes itself. Edits are requested as
 ## structural edits (`kedo edit ... set|unset`), which the panel applies to the open document as one undoable step,
-## so Ctrl+Z works the same for typing and for the form. A type can replace the generic form with its own sheet:
+## so Ctrl+Z works the same for typing and for the form. Each item of a keyed list of records gets its own foldable
+## group whose rows edit `list[key].field` (written as a `list[key] { }` patch, so inherited items stay inherited).
+## A type can replace the generic form with its own sheet:
 ## KedoForm.register_sheet("room", func(desc: Dictionary, form: KedoForm) -> void: ...).
 
 ## Emitted with ["set", key, path, literal] or ["unset", key, path].
@@ -71,7 +73,7 @@ func add_field_row(field: Dictionary, path: String, parent: Control) -> void:
 			add_field_row(nested, path + "." + str(nested.get("name", "")), box)
 		return
 	var row := HBoxContainer.new()
-	row.name = "field_" + path.replace(".", "_")
+	row.name = KedoForm.row_name(path)
 	parent.add_child(row)
 	var label := Label.new()
 	label.text = str(field.get("name", "")) + (" *" if field.get("required", false) else "")
@@ -93,6 +95,47 @@ func add_field_row(field: Dictionary, path: String, parent: Control) -> void:
 		reset.tooltip_text = "Remove the value written here and inherit it again"
 		reset.pressed.connect(func() -> void: edit_requested.emit(PackedStringArray(["unset", str(description.get("key", "")), path])))
 		row.add_child(reset)
+	if kind == "list" and field.has("items") and field.has("key_field"):
+		add_item_groups(field, path, parent)
+
+
+## One foldable group per item of a keyed list of records, with a row per field of the item.
+func add_item_groups(field: Dictionary, path: String, parent: Control) -> void:
+	for item in field.get("items", []):
+		if not item.has("key"):
+			continue
+		var item_path := "%s[%s]" % [path, KedoForm.item_key(str(item["key"]))]
+		var fold := Button.new()
+		fold.name = "item_" + KedoForm.row_name(item_path).trim_prefix("field_")
+		fold.text = "▾ " + item_path
+		fold.toggle_mode = true
+		fold.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		fold.flat = true
+		parent.add_child(fold)
+		var box := VBoxContainer.new()
+		var margin := MarginContainer.new()
+		margin.add_theme_constant_override("margin_left", 16)
+		margin.add_child(box)
+		parent.add_child(margin)
+		fold.toggled.connect(func(folded: bool) -> void:
+			margin.visible = not folded
+			fold.text = ("▸ " if folded else "▾ ") + item_path)
+		for nested in item.get("fields", []):
+			add_field_row(nested, item_path + "." + str(nested.get("name", "")), box)
+
+
+## Node name of the row that edits `path` (node names cannot hold `.`, `:`, `@`, `/`, `"` or `%`).
+static func row_name(path: String) -> String:
+	var name := "field_" + path
+	for ch in [".", ":", "@", "/", "\"", "%"]:
+		name = name.replace(ch, "_")
+	return name
+
+
+## An item key as a path segment writes it: a (dotted) identifier or an integer bare, anything else quoted.
+static func item_key(key: String) -> String:
+	var bare := RegEx.create_from_string("^([A-Za-z_][A-Za-z0-9_]*([.][A-Za-z_][A-Za-z0-9_]*)*|[0-9]+)$")
+	return key if bare.search(key) != null else KedoForm.quote(key)
 
 
 func _editor_for(field: Dictionary, path: String) -> Control:

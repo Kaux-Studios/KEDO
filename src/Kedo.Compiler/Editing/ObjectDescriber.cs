@@ -7,7 +7,9 @@ namespace Kedo.Compiler.Editing;
 /// <summary>
 /// What a form needs to edit one object (#14): its header and every field of its type's schema, in schema order, with
 /// the resolved value as a KEDO literal and the layer it came from (`own`, `parent`, `mixin`, `default`, `variant` or
-/// `absent`). Records nest their fields; lists and maps travel as literals. Written as JSON by `kedo describe`.
+/// `absent`). Records nest their fields; lists and maps travel as literals. A list of records also lists its `items`,
+/// each with its fields (and, in a keyed list, its `key`), so a form can edit one item through a `name[key].field` path.
+/// Written as JSON by `kedo describe`.
 /// </summary>
 public static class ObjectDescriber
 {
@@ -155,6 +157,30 @@ public static class ObjectDescriber
             if (value is RRecord nested && f is { Kind: ValueKind.Record, RecordId: { } rid })
             {
                 WriteFields(w, nested, schema.FindRecord(rid), schema, key);
+            }
+
+            if (value is RList list && f is { Kind: ValueKind.List, Element: { Kind: ValueKind.Record, RecordId: { } eid } })
+            {
+                var keyed = list.Strategy == ListStrategy.Keyed;
+                if (keyed)
+                {
+                    w.WriteString("key_field", list.KeyField);
+                }
+
+                w.WriteStartArray("items");
+                foreach (var item in list.Items.OfType<RRecord>())
+                {
+                    w.WriteStartObject();
+                    if (keyed && RList.KeyOf(item, list.KeyField) is { } itemKey)
+                    {
+                        w.WriteString("key", itemKey);
+                    }
+
+                    WriteFields(w, item, schema.FindRecord(eid), schema, key);
+                    w.WriteEndObject();
+                }
+
+                w.WriteEndArray();
             }
         }
 

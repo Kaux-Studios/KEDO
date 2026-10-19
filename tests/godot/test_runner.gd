@@ -121,6 +121,29 @@ func _form_tests(base_cli: KedoCli, content: String, schema: String) -> void:
 	check(panel.current_key == "room:reactor_copy", "duplicate selects the copy")
 	check(panel.apply_edit(PackedStringArray(["new", "room", "spare", "--extends=base_room"])), "new object applied")
 	check(panel.current.text.find("room spare extends base_room { }") >= 0, "new object declared")
+	# Keyed lists of records: one foldable group per item, whose rows edit `list[key].field` as a patch.
+	var crises := dir.path_join("crises.kedo")
+	panel.open_file(crises, 1)
+	panel.select_object("crisis:coolant_leak")
+	var leak := panel.describe("crisis:coolant_leak")
+	var keys: Array = []
+	for f in leak.get("fields", []):
+		if f.get("name") == "choices":
+			for item in f.get("items", []):
+				keys.append(item.get("key"))
+	check(keys == ["patch", "vent", "wait"], "describe lists the items of a keyed list: " + str(keys))
+	check(panel._form.find_child("item_choices[patch]", true, false) != null, "form has a group per item")
+	check(panel._form.find_child(KedoForm.row_name("choices[patch].duration"), true, false) != null, "item rows edit list[key].field")
+	check(panel._form.find_child(KedoForm.row_name("choices[patch].costs[parts].amount"), true, false) != null, "nested keyed lists get their own groups")
+	var crises_before := panel.current.text
+	check(panel.apply_edit(PackedStringArray(["set", "crisis:coolant_leak", "choices[patch].duration", "45min"])), "item edit applied")
+	check(panel.current.text.find("choices[patch] { duration = 45min }") >= 0, "the edit is a patch of the item")
+	check(panel.current.text.find("choices += last [{ id = wait") >= 0, "the inherited item is untouched")
+	panel._editor.undo()
+	panel.sync_from_editor()
+	check(panel.current.text == crises_before, "undo reverts the item edit")
+	check(KedoForm.item_key("effort.bonus") == "effort.bonus" and KedoForm.item_key("two words") == "\"two words\"", "item keys quote only when needed")
+	panel.open_file(rooms, 1)
 	var registered := [false]
 	KedoForm.register_sheet("room", func(d: Dictionary, form: KedoForm) -> void:
 		registered[0] = true

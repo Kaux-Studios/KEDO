@@ -127,4 +127,92 @@ public class EditingTests
         Assert.Equal("own", stats["hp"].GetProperty("layer").GetString());
         Assert.Equal("default", stats["armor"].GetProperty("layer").GetString());
     }
+
+    private const string Listed = """
+        kedo 1
+        module m
+
+        event bridge {
+            options = [{ id = repair  cost = 4 }, { id = leave  cost = 0 }]
+        }
+
+        event ford extends bridge {
+            options[repair] { cost = 2 }
+        }
+        """;
+
+    [Fact]
+    public void SetEntersAKeyedListItem()
+    {
+        var added = SourceEditor.SetField(Listed, "event", "bridge", "options[leave].check.difficulty", "8");
+        Assert.True(added.Ok, added.Error);
+        Assert.Contains("options[leave] { check = { difficulty = 8 } }", added.Text);
+
+        var existing = SourceEditor.SetField(Listed, "event", "ford", "options[repair].cost", "3");
+        Assert.True(existing.Ok, existing.Error);
+        Assert.Contains("options[repair] { cost = 3 }", existing.Text);
+
+        // Dots inside the brackets belong to the key.
+        var dotted = SourceEditor.SetField(Listed, "event", "ford", "options[effort.supply].cost", "1");
+        Assert.True(dotted.Ok, dotted.Error);
+        Assert.Contains("options[effort.supply] { cost = 1 }", dotted.Text);
+
+        var quoted = SourceEditor.SetField(Listed, "event", "ford", "options[\"two words\"].cost", "1");
+        Assert.True(quoted.Ok, quoted.Error);
+        Assert.Contains("options[\"two words\"] { cost = 1 }", quoted.Text);
+
+        Assert.False(SourceEditor.SetField(Listed, "event", "ford", "options[repair]", "{ cost = 1 }").Ok);
+    }
+
+    [Fact]
+    public void UnsetRemovesAnItemPatchWithItsLastEntry()
+    {
+        var removed = SourceEditor.RemoveField(Listed, "event", "ford", "options[repair].cost");
+        Assert.True(removed.Ok, removed.Error);
+        Assert.DoesNotContain("options[repair]", removed.Text);
+
+        var two = SourceEditor.SetField(Listed, "event", "ford", "options[repair].label", "\"Fix\"").Text!;
+        var one = SourceEditor.RemoveField(two, "event", "ford", "options[repair].cost");
+        Assert.True(one.Ok, one.Error);
+        Assert.Contains("options[repair] { label = \"Fix\" }", one.Text);
+        Assert.False(SourceEditor.RemoveField(Listed, "event", "ford", "options[leave].cost").Ok);
+    }
+
+    [Fact]
+    public void DescribeListsTheItemsOfAListOfRecords()
+    {
+        var bag = new DiagnosticBag();
+        var schemaText = """
+            kedo 1
+            module s
+            kedo_record choice { fields = [{ name = id  kind = enum  required = true }, { name = cost  kind = int  default = 1 }] }
+            kedo_type event { fields = [{ name = options  kind = list  strategy = keyed  element = { kind = record  record = choice } }, { name = tags  kind = list  element = { kind = text } }] }
+            """;
+        var schema = Kedo.Compiler.Schema.SchemaLoader.Load(new[] { DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(schemaText, "s.kedo"), bag), bag) }, bag);
+        var content = """
+            kedo 1
+            module m
+            event bridge { options = [{ id = repair  cost = 4 }, { id = leave }]  tags = ["old"] }
+            event ford extends bridge { options[repair] { cost = 2 } }
+            """;
+        var catalog = Resolver.Resolve(new[] { DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(content, "c.kedo"), bag), bag) }, schema, bag);
+        Assert.False(bag.HasErrors, string.Join("; ", bag.Items.Select(d => d.Message)));
+
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            ObjectDescriber.Write(writer, catalog.ByKey["event:ford"], schema);
+        }
+
+        using var json = JsonDocument.Parse(stream.ToArray());
+        var fields = json.RootElement.GetProperty("fields").EnumerateArray().ToDictionary(f => f.GetProperty("name").GetString()!);
+        Assert.Equal("id", fields["options"].GetProperty("key_field").GetString());
+        var items = fields["options"].GetProperty("items").EnumerateArray().ToArray();
+        Assert.Equal(new[] { "repair", "leave" }, items.Select(i => i.GetProperty("key").GetString()));
+        var repair = items[0].GetProperty("fields").EnumerateArray().ToDictionary(f => f.GetProperty("name").GetString()!);
+        Assert.Equal(("2", "own"), (repair["cost"].GetProperty("value").GetString(), repair["cost"].GetProperty("layer").GetString()));
+        var leave = items[1].GetProperty("fields").EnumerateArray().ToDictionary(f => f.GetProperty("name").GetString()!);
+        Assert.Equal("default", leave["cost"].GetProperty("layer").GetString());
+        Assert.False(fields["tags"].TryGetProperty("items", out _));   // a list of plain values stays a literal
+    }
 }
