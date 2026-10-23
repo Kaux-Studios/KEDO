@@ -30,6 +30,8 @@ La ficha recibe la descripción del objeto y el formulario; puede construir su p
 
 `kedo/command` (por defecto `kedo`; también `dotnet kedo`, `dotnet <ruta>/kedo.dll` o `dotnet run --project ... -c Release --no-build --`), `kedo/content_paths` (por defecto `res://content`) y `kedo/schema_paths`. El proyecto los fija en Project Settings (`project.godot`, sección `[kedo]`); un Editor Setting no vacío con el mismo nombre los reemplaza en una máquina. El directorio de trabajo de los comandos es el del proyecto, así que una ruta relativa como `../KEDO/...` funciona.
 
+`kedo/prepare_command` (opcional) es el comando que instala o compila la CLI en ese proyecto, por ejemplo un script que clona KEDO en el commit fijado y compila `Kedo.Cli`. Si la CLI no devuelve JSON y la opción existe, la pantalla muestra «KEDO is not prepared» y un botón **Prepare KEDO** que corre el comando en un hilo y vuelve a cargar el catálogo al terminar; si falla, la barra de estado muestra el final de su salida.
+
 ## Archivos
 
 `kedo_plugin.gd` (EditorPlugin), `kedo_panel.gd` (pantalla: biblioteca, formulario, fuente, diagnósticos), `kedo_form.gd` (formulario y registro de fichas), `kedo_cli.gd` (subproceso y JSON), `kedo_document.gd` (texto, sucio, guardado atómico, borradores), `kedo_highlighter.gd`. Pruebas headless: `tools/godot-test.ps1`.

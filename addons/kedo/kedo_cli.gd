@@ -9,14 +9,18 @@ extends RefCounted
 ##                        "dotnet run --project C:/dev/KEDO/src/Kedo.Cli -c Release --no-build --"
 ##   kedo/content_paths  paths passed to every command (default: ["res://content"])
 ##   kedo/schema_paths   paths of the KEDO-written schema (default: [])
+##   kedo/prepare_command optional command that installs or builds the CLI, e.g. a project script that clones and
+##                        compiles KEDO; the screen offers it when the CLI does not answer (default: none)
 
 const SETTING_COMMAND := "kedo/command"
 const SETTING_CONTENT := "kedo/content_paths"
 const SETTING_SCHEMA := "kedo/schema_paths"
+const SETTING_PREPARE := "kedo/prepare_command"
 
 var command: PackedStringArray = PackedStringArray(["kedo"])
 var content_paths: PackedStringArray = PackedStringArray(["res://content"])
 var schema_paths: PackedStringArray = PackedStringArray()
+var prepare_command: PackedStringArray = PackedStringArray()
 var last_error: String = ""
 
 
@@ -27,11 +31,12 @@ static func from_editor_settings() -> KedoCli:
 	var command := str(ProjectSettings.get_setting(SETTING_COMMAND, "kedo"))
 	var content: Variant = ProjectSettings.get_setting(SETTING_CONTENT, PackedStringArray(["res://content"]))
 	var schema: Variant = ProjectSettings.get_setting(SETTING_SCHEMA, PackedStringArray())
+	var prepare := str(ProjectSettings.get_setting(SETTING_PREPARE, ""))
 	if Engine.is_editor_hint():
 		var settings := EditorInterface.get_editor_settings()
-		for key in [SETTING_COMMAND, SETTING_CONTENT, SETTING_SCHEMA]:
+		for key in [SETTING_COMMAND, SETTING_CONTENT, SETTING_SCHEMA, SETTING_PREPARE]:
 			if not settings.has_setting(key):
-				settings.set_setting(key, "" if key == SETTING_COMMAND else PackedStringArray())
+				settings.set_setting(key, "" if key in [SETTING_COMMAND, SETTING_PREPARE] else PackedStringArray())
 		# Empty or the built-in default ("kedo", res://content) means "not set here": earlier versions wrote those defaults.
 		var editor_command := str(settings.get_setting(SETTING_COMMAND))
 		if editor_command != "" and editor_command != "kedo":
@@ -41,9 +46,12 @@ static func from_editor_settings() -> KedoCli:
 			content = editor_content
 		if (settings.get_setting(SETTING_SCHEMA) as PackedStringArray).size() > 0:
 			schema = settings.get_setting(SETTING_SCHEMA)
+		if str(settings.get_setting(SETTING_PREPARE)) != "":
+			prepare = str(settings.get_setting(SETTING_PREPARE))
 	cli.command = KedoCli.split_command(command)
 	cli.content_paths = PackedStringArray(content)
 	cli.schema_paths = PackedStringArray(schema)
+	cli.prepare_command = KedoCli.split_command(prepare)
 	return cli
 
 
@@ -97,6 +105,24 @@ func run_json(subcommand: String, extra: PackedStringArray = PackedStringArray()
 		return null
 	last_error = ""
 	return json.data
+
+
+## Runs kedo/prepare_command (blocking: call it from a thread). Returns true on exit code 0; otherwise last_error
+## holds the end of its output.
+func prepare() -> bool:
+	if prepare_command.is_empty():
+		last_error = "kedo/prepare_command is not set"
+		return false
+	var output: Array = []
+	var code := OS.execute(prepare_command[0], prepare_command.slice(1), output, true, false)
+	if code == 0:
+		last_error = ""
+		return true
+	var text := ""
+	for chunk in output:
+		text += str(chunk)
+	last_error = "prepare command failed (exit %d): %s" % [code, text.strip_edges().right(400)]
+	return false
 
 
 ## Catalog of objects: [{type, id, key, abstract, file, line, parent, mixins, hooks, hash, errors}].

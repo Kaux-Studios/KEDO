@@ -17,6 +17,8 @@ var _tree: Tree
 var _editor: CodeEdit
 var _diagnostics: Tree
 var _status: Label
+var _prepare: Button
+var _prepare_thread: Thread
 var _suppress_text_signal := false
 var _form: KedoForm
 var _tabs: TabContainer
@@ -48,6 +50,12 @@ func _build_ui() -> void:
 	_add_button(toolbar, "Save all", save_all)
 	_add_button(toolbar, "New object", _show_new_dialog)
 	_add_button(toolbar, "Duplicate", _show_duplicate_dialog)
+	_prepare = Button.new()
+	_prepare.text = "Prepare KEDO"
+	_prepare.tooltip_text = "Runs kedo/prepare_command to install or build the CLI."
+	_prepare.visible = false
+	_prepare.pressed.connect(_start_prepare)
+	toolbar.add_child(_prepare)
 	_status = Label.new()
 	_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	toolbar.add_child(_status)
@@ -121,15 +129,45 @@ func _add_button(parent: Node, label: String, callback: Callable) -> void:
 	parent.add_child(b)
 
 
+func _exit_tree() -> void:
+	# A prepare command still running (closing the editor) is waited for: a Thread must be joined.
+	if _prepare_thread != null:
+		_prepare_thread.wait_to_finish()
+		_prepare_thread = null
+
+
 # ----- catalog -----
+
+func _start_prepare() -> void:
+	if _prepare_thread != null:
+		return
+	_prepare.disabled = true
+	_status.text = "Preparing KEDO..."
+	_prepare_thread = Thread.new()
+	_prepare_thread.start(func() -> void: _finish_prepare.call_deferred(cli.prepare()))
+
+
+func _finish_prepare(ok: bool) -> void:
+	if _prepare_thread != null:
+		_prepare_thread.wait_to_finish()
+		_prepare_thread = null
+	_prepare.disabled = false
+	if ok:
+		refresh_catalog()
+	else:
+		_status.text = cli.last_error
+
 
 func refresh_catalog() -> void:
 	var data: Dictionary = {}
 	var raw: Variant = cli.run_json("catalog", _override_args())
 	if raw is Dictionary:
 		data = raw
+	# Without JSON the CLI is missing or broken; a project that knows how to build it offers that instead.
+	_prepare.visible = data.is_empty() and not cli.prepare_command.is_empty()
 	if data.is_empty():
-		_status.text = cli.last_error if cli.last_error != "" else "no catalog"
+		var reason := cli.last_error if cli.last_error != "" else "no catalog"
+		_status.text = "KEDO is not prepared: " + reason if _prepare.visible else reason
 		catalog_objects = []
 	else:
 		catalog_objects = data.get("objects", [])

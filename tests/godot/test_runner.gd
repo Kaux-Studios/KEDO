@@ -46,6 +46,12 @@ func _initialize() -> void:
 	check(not FileAccess.file_exists(doc.draft_path()), "draft removed after save")
 	var h := KedoHighlighter.new()
 	check(h.has_keyword_color("extends"), "highlighter knows keywords")
+	var preparer := KedoCli.new()
+	check(not preparer.prepare() and preparer.last_error.contains(KedoCli.SETTING_PREPARE), "prepare without a command says so")
+	preparer.prepare_command = KedoCli.split_command(user_args[0] + " version")
+	check(preparer.prepare(), "prepare runs its command: " + preparer.last_error)
+	preparer.prepare_command = KedoCli.split_command(user_args[0] + " no-such-command")
+	check(not preparer.prepare() and preparer.last_error.begins_with("prepare command failed"), "a failing prepare command reports it: " + preparer.last_error)
 
 	if user_args.size() > 2:
 		# The form needs a running tree (nodes get _ready): finish on the first frame.

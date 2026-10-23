@@ -51,7 +51,7 @@ dotnet run --project src/Kedo.Cli -- schema spec/ejemplos/schema --json         
 
 ## Addon de Godot
 
-`addons/kedo` es un plugin de pantalla principal escrito en GDScript que habla con la CLI (`Editor Settings > kedo/command`, `kedo/content_paths`, `kedo/schema_paths`): lista los objetos del catálogo por tipo con filtro, abre el archivo en un `CodeEdit` con resaltado KEDO, ejecuta Check y Format, muestra diagnósticos con salto a línea, integra los cambios pendientes en el diálogo de cierre del editor, guarda borradores en `user://` y bloquea Play si el contenido tiene errores. Los formularios generados desde el esquema quedan para una entrega posterior. Tests headless: `tools/godot-test.ps1 -GodotPath <godot 4.6>`.
+`addons/kedo` es un plugin de pantalla principal escrito en GDScript que habla con la CLI (`Editor Settings > kedo/command`, `kedo/content_paths`, `kedo/schema_paths` y, opcional, `kedo/prepare_command` para preparar la CLI desde la pantalla): lista los objetos del catálogo por tipo con filtro, abre el archivo en un `CodeEdit` con resaltado KEDO, ejecuta Check y Format, muestra diagnósticos con salto a línea, integra los cambios pendientes en el diálogo de cierre del editor, guarda borradores en `user://` y bloquea Play si el contenido tiene errores. Los formularios generados desde el esquema quedan para una entrega posterior. Tests headless: `tools/godot-test.ps1 -GodotPath <godot 4.6>`.
 
 ## Herramientas para agentes de IA
 
