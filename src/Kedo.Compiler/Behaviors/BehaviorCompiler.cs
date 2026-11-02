@@ -40,6 +40,7 @@ public sealed class BehaviorCompiler
     private int _awaitOrdinal;
     private bool _inHook;
     private DurationUnit _unit = DurationUnit.Minute;
+    private bool _silent;
 
     private BehaviorCompiler(SchemaRegistry schema, DiagnosticBag diagnostics)
     {
@@ -56,7 +57,7 @@ public sealed class BehaviorCompiler
             return null;
         }
 
-        var c = new BehaviorCompiler(schema, diagnostics) { _unit = obj.TimeUnit };
+        var c = new BehaviorCompiler(schema, diagnostics) { _unit = obj.TimeUnit, _silent = obj.SilentDurations };
         foreach (var f in functions)
         {
             c._declaredFunctions[f.Name] = f;
@@ -539,7 +540,7 @@ public sealed class BehaviorCompiler
                         var i = 0;
                         while (i < text.Length && (char.IsDigit(text[i]) || text[i] == '_')) i++;
                         var amount = long.Parse(text[..i].Replace("_", ""), System.Globalization.CultureInfo.InvariantCulture);
-                        var lowered = DurationLowering.ToUnit(amount, text[i..], _unit, _file, tk.Span, _d);
+                        var lowered = DurationLowering.ToUnit(amount, text[i..], _unit, _file, tk.Span, _silent ? null : _d);
                         Emit(Instr.AImm(OpCode.LoadConst, target, Const(lowered ?? 0)), node);
                         return target;
                     }

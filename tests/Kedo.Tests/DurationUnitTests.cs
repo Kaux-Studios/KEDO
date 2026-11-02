@@ -171,6 +171,23 @@ public class DurationUnitTests
     }
 
     [Fact]
+    public void AUnitConflictSuppressesK4014InHooks()
+    {
+        var bag = new DiagnosticBag();
+        var files = new[]
+        {
+            "kedo 1\nmodule m\nmanifest { base_unit = ms }\nactor z { on go(ctx) { wait 30s } }\n",
+            "kedo 1\nmodule m\nmanifest { base_unit = s }\nthing u { a = 1s }\n",
+        }.Select((text, i) => DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(text, $"k{i}.kedo"), bag), bag)).ToList();
+        var schema = new SchemaRegistry { Permissive = true };
+        var catalog = Resolver.Resolve(files, schema, bag);
+        var program = BehaviorCompiler.Compile(catalog.ByKey["actor:z"], files.SelectMany(f => f.Functions), schema, bag);
+        Assert.Contains(bag.Items, d => d.Code == "K2012");
+        Assert.DoesNotContain(bag.Items, d => d.Code == "K4014");
+        Assert.Equal(DurationUnit.Minute, program!.TimeUnit);
+    }
+
+    [Fact]
     public void ANonWholeWaitIsK4014()
     {
         var bag = new DiagnosticBag();

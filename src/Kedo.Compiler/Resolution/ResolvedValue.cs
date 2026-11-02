@@ -325,4 +325,7 @@ public sealed class ResolvedObject
 
     /// <summary>Base unit of the durations of this object (ADR-0014).</summary>
     public DurationUnit TimeUnit { get; internal set; } = DurationUnit.Minute;
+
+    /// <summary>True when the module's units conflict (K2012): duration literals are lowered without further K4014 reports.</summary>
+    internal bool SilentDurations { get; set; }
 }

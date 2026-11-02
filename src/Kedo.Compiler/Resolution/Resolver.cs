@@ -607,7 +607,7 @@ public sealed class Resolver
             hooks.AddRange(parent.Hooks.Where(ph => hooks.All(h => h.HookId != ph.HookId)));
         }
 
-        _resolved[key] = new ResolvedObject(decl, body, components, hooks, functions, chain, mixins) { Order = _order[key], TimeUnit = _unit };
+        _resolved[key] = new ResolvedObject(decl, body, components, hooks, functions, chain, mixins) { Order = _order[key], TimeUnit = _unit, SilentDurations = _silentDurations };
     }
 
     // The default of a duration field in the content's unit; null when an exact schema default is not a whole count of it
