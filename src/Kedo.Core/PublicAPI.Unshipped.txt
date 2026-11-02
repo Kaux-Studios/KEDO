@@ -1,6 +1,11 @@
 #nullable enable
+Kedo.Runtime.AwaitRequest.Unit.get -> Kedo.Schema.DurationUnit
+Kedo.Runtime.AwaitRequest.Unit.init -> void
+Kedo.Runtime.BehaviorJsonContext.DurationUnit.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<Kedo.Schema.DurationUnit>!
 Kedo.Runtime.BehaviorProgram.TimeUnit.get -> Kedo.Schema.DurationUnit
 Kedo.Runtime.BehaviorProgram.TimeUnit.init -> void
+Kedo.Runtime.IBehaviorClock
+Kedo.Runtime.IBehaviorClock.Now(Kedo.Schema.DurationUnit unit) -> long
 Kedo.Schema.DurationUnit
 Kedo.Schema.DurationUnit.Day = 4 -> Kedo.Schema.DurationUnit
 Kedo.Schema.DurationUnit.Hour = 3 -> Kedo.Schema.DurationUnit

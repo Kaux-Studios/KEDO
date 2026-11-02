@@ -1,9 +1,12 @@
+using System.Text.Json.Serialization;
+using Kedo.Schema;
+
 namespace Kedo.Runtime;
 
 /// <summary>A value crossing the host boundary: an integer, or a symbol handle (enum value, reference, text).</summary>
 public readonly record struct HostValue(long Number, bool IsSymbol)
 {
-    /// <summary>Integer, boolean (0/1) or duration in minutes.</summary>
+    /// <summary>Integer, boolean (0/1) or duration in the program's time unit (minutes by default).</summary>
     public static HostValue Int(long n) => new(n, false);
 
     /// <summary>Symbol interned in the session table.</summary>
@@ -52,6 +55,13 @@ public interface IBehaviorHost
     void Trace(string message);
 }
 
+/// <summary>Optional companion of <see cref="IBehaviorHost"/>: simulated time at activation in the requested unit.</summary>
+public interface IBehaviorClock
+{
+    /// <summary>Simulated time at activation, in <paramref name="unit"/>.</summary>
+    long Now(DurationUnit unit);
+}
+
 /// <summary>Execution limits (anexo E §4).</summary>
 public sealed record Budget(int MaxSteps = 10_000, int MaxCallDepth = 32, int MaxRegisters = 4096)
 {
@@ -62,7 +72,7 @@ public sealed record Budget(int MaxSteps = 10_000, int MaxCallDepth = 32, int Ma
 /// <summary>Why a behaviour suspended.</summary>
 public enum AwaitKind
 {
-    /// <summary>Waiting for simulated minutes.</summary>
+    /// <summary>Waiting for simulated time in the program's time unit (minutes by default).</summary>
     Minutes,
     /// <summary>Waiting for a player decision.</summary>
     Decision,
@@ -73,7 +83,12 @@ public enum AwaitKind
 }
 
 /// <summary>Pending suspension stored in a frame.</summary>
-public sealed record AwaitRequest(AwaitKind Kind, string Label, long DueAtMinutes, string? Id, IReadOnlyList<string> Options, int ResultRegister);
+public sealed record AwaitRequest(AwaitKind Kind, string Label, long DueAtMinutes, string? Id, IReadOnlyList<string> Options, int ResultRegister)
+{
+    /// <summary>Unit of <see cref="DueAtMinutes"/>: the due time is in this unit (minutes by default, omitted from the JSON then).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public DurationUnit Unit { get; init; }
+}
 
 /// <summary>Input that resumes a suspended frame.</summary>
 public sealed record Resumption(AwaitKind Kind, long Value);

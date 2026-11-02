@@ -182,7 +182,7 @@ terminator = newline | ";" ;
 
 - `on nombre(ctx)`: el nombre del hook lo fija el catálogo del juego (K2006 si no existe) y determina el tipo de `ctx`. Un objeto puede declarar varios hooks; dos para el mismo nombre es error (K2007).
 - Las sentencias terminan en salto de línea o `;`. Es el **único** lugar donde el salto de línea es significativo. Una expresión no puede partirse en dos líneas salvo dentro de paréntesis o corchetes.
-- `wait`: suspende el comportamiento. Sus formas se corresponden con `AwaitRequest` del runtime (tiempo, decisión del jugador, tirada, señal). La VM guarda el frame en ese punto; la etiqueta de reanudación es estable por hook y posición declarada (anexo E).
+- `wait`: suspende el comportamiento. Sus formas se corresponden con `AwaitRequest` del runtime (tiempo, decisión del jugador, tirada, señal). La VM guarda el frame en ese punto; la etiqueta de reanudación es estable por hook y posición declarada (anexo E). `wait <duración>` espera tiempo simulado en la unidad base del programa; el host da la hora con `IBehaviorClock.Now(unidad)` o, si no lo implementa, se convierte `NowMinutes` (ADR-0014).
 - `apply effect:x(args)`: la única vía de mutación; pasa por el host con clave idempotente. `emit signal:x(args)`: encola una señal, nunca ejecuta de forma reentrante.
 - `function`: funciones puras o con sentencias, llamables desde hooks del mismo módulo o de módulos que lo requieren. Sin recursión en v0.1 (K5002 al compilar).
 - Lo que no existe en v0.1: bucles (`for`, `while`), cadenas de formato, flotantes, acceso a estado fuera de `ctx` y de consultas del host (`query`), definición de tipos por el autor.

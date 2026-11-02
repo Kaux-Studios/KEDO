@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Kedo.Compiler.Behaviors;
+using Kedo.Compiler.Evaluation;
 using Kedo.Compiler.Model;
 using Kedo.Compiler.Resolution;
 using Kedo.Compiler.Schema;
@@ -397,5 +398,71 @@ public class DurationUnitTests
         Assert.Equal("400ms", fields.GetProperty("windup").GetProperty("default").GetString());
         Assert.Equal("3min", fields.GetProperty("cooldown").GetProperty("default").GetString());
         Assert.Contains("ms|", fields.GetProperty("windup").GetProperty("pattern").GetString());
+    }
+
+    private sealed class ClockHost : IBehaviorHost, IBehaviorClock
+    {
+        public long Ms { get; set; } = 10_000;
+        public SymbolTable Symbols { get; } = new();
+        public List<string> Applied { get; } = new();
+        public long NowMinutes => Ms / 60_000;
+        public long Now(DurationUnit unit) => DurationUnits.ConvertTruncating(Ms, DurationUnit.Millisecond, unit);
+        public HostValue Context(string field) => HostValue.None;
+        public HostValue Query(string queryId, ReadOnlySpan<HostValue> args) => HostValue.Int(0);
+        public bool Apply(EffectKey key, string effectId, ReadOnlySpan<HostValue> args) { Applied.Add(effectId); return true; }
+        public long Roll(EffectKey key, string streamId, ReadOnlySpan<HostValue> args) => 1;
+        public void Raise(string signalId, ReadOnlySpan<HostValue> args) { }
+        public void Trace(string message) { }
+    }
+
+    private const string Telegraph = "actor boss { on slam(ctx) { wait 350ms\n apply effect:shockwave(3) } }";
+
+    [Fact]
+    public void WaitIsDueInTheProgramUnitFromTheClock()
+    {
+        var program = Program(Telegraph, baseUnit: "ms", "actor:boss");
+        var first = new BehaviorVm(program, new ClockHost()).Activate("slam", "i");
+        Assert.Equal(AwaitKind.Minutes, first.Frame!.Pending!.Kind);
+        Assert.Equal((10_350L, DurationUnit.Millisecond), (first.Frame.Pending.DueAtMinutes, first.Frame.Pending.Unit));
+        var json = BehaviorVm.Save(first.Frame);
+        Assert.Contains("\"unit\":1", json);
+        var host = new ClockHost { Ms = 10_350 };
+        Assert.Equal(RunStatus.Completed, new BehaviorVm(program, host).Resume(BehaviorVm.Load(json)!, new Resumption(AwaitKind.Minutes, 0)).Status);
+        Assert.Equal(new[] { "effect:shockwave" }, host.Applied);
+    }
+
+    [Fact]
+    public void AHostWithoutClockConvertsNowMinutes()
+    {
+        var program = Program(Telegraph, baseUnit: "ms", "actor:boss");
+        var frame = new BehaviorVm(program, new FakeHost()).Activate("slam", "i").Frame!;
+        Assert.Equal(60_000_350L, frame.Pending!.DueAtMinutes);
+    }
+
+    [Fact]
+    public void AFrameSavedBy10ResumesAsMinutes()
+    {
+        var program = Program("actor s { on arrive(ctx) { wait 30min\n apply effect:alarm(1) } }", baseUnit: null, "actor:s");
+        var frame = new BehaviorVm(program, new FakeHost()).Activate("arrive", "i").Frame!;
+        var json = BehaviorVm.Save(frame);
+        Assert.DoesNotContain("\"unit\"", json);
+        Assert.Equal(DurationUnit.Minute, BehaviorVm.Load(json)!.Pending!.Unit);
+        var msProgram = Program(Telegraph, baseUnit: "ms", "actor:boss");
+        var sameDefinition = frame with { DefinitionHash = msProgram.DefinitionHash, DefinitionVersion = msProgram.DefinitionVersion };
+        var stale = new BehaviorVm(msProgram, new FakeHost()).Resume(sameDefinition, new Resumption(AwaitKind.Minutes, 0));
+        Assert.Equal(RunStatus.Failed, stale.Status);
+        Assert.Contains("stale frame", stale.Error);
+    }
+
+    [Fact]
+    public void TheTraceHostRunsAMillisecondHook()
+    {
+        var host = new TraceHost();
+        var status = host.Run(Program(Telegraph, baseUnit: "ms", "actor:boss"), "slam");
+        Assert.Equal("Completed", status);
+        Assert.Equal(new[] { "effect:shockwave(3)" }, host.Applied);
+        Assert.Contains("suspended: Minutes slam/1", host.Lines);
+        Assert.Equal(350, host.NowMilliseconds);
+        Assert.Equal(0, host.NowMinutes);
     }
 }
