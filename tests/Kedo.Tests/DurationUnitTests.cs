@@ -1,0 +1,72 @@
+using Kedo.Compiler.Behaviors;
+using Kedo.Compiler.Model;
+using Kedo.Compiler.Resolution;
+using Kedo.Compiler.Syntax;
+using Kedo.Diagnostics;
+using Kedo.Runtime;
+using Kedo.Schema;
+
+/// <summary>Duration base unit (ADR-0014).</summary>
+public class DurationUnitTests
+{
+    private static (ResolvedCatalog Catalog, DiagnosticBag Bag) Resolve(string content, string? baseUnit, SchemaRegistry? schema = null)
+    {
+        var bag = new DiagnosticBag();
+        var decls = Build(content, baseUnit, bag);
+        return (Resolver.Resolve(new[] { decls }, schema ?? new SchemaRegistry { Permissive = true }, bag), bag);
+    }
+
+    private static FileDeclarations Build(string content, string? baseUnit, DiagnosticBag bag)
+    {
+        var text = "kedo 1\nmodule m\n" + (baseUnit is null ? "" : $"manifest {{ base_unit = {baseUnit} }}\n") + content;
+        return DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(text, "c.kedo"), bag), bag);
+    }
+
+    private static ResolvedValue Field(ResolvedCatalog catalog, string key, string field) => catalog.ByKey[key].Body.Fields.TryGetValue(field, out var v) ? v : throw new KeyNotFoundException(field);
+
+    private static BehaviorProgram Program(string content, string? baseUnit, string key)
+    {
+        var bag = new DiagnosticBag();
+        var schema = new SchemaRegistry { Permissive = true };
+        var decls = Build(content, baseUnit, bag);
+        var catalog = Resolver.Resolve(new[] { decls }, schema, bag);
+        var program = BehaviorCompiler.Compile(catalog.ByKey[key], decls.Functions, schema, bag);
+        Assert.False(bag.HasErrors, string.Join("\n", bag.Items.Select(d => d.Message)));
+        return program!;
+    }
+
+    [Fact]
+    public void LegacyMinuteContentKeepsItsValues()
+    {
+        var (catalog, bag) = Resolve("thing t { a = 30s  b = 90s  c = (90s + 30s)  d = 1h  e = 2d  f = -30s  g = 15 }", baseUnit: null);
+        Assert.False(bag.HasErrors);
+        Assert.Equal("0min", Field(catalog, "thing:t", "a").CanonicalText);
+        Assert.Equal("1min", Field(catalog, "thing:t", "b").CanonicalText);
+        Assert.Equal("1min", Field(catalog, "thing:t", "c").CanonicalText);
+        Assert.Equal("60min", Field(catalog, "thing:t", "d").CanonicalText);
+        Assert.Equal("2880min", Field(catalog, "thing:t", "e").CanonicalText);
+        Assert.Equal("0min", Field(catalog, "thing:t", "f").CanonicalText);
+    }
+
+    [Fact]
+    public void LegacyWaitInSecondsLoadsWholeMinutes()
+    {
+        var program = Program("actor z { on go(ctx) { wait 90s } }", baseUnit: null, "actor:z");
+        Assert.Contains(1L, program.Constants);
+        Assert.DoesNotContain(90L, program.Constants);
+    }
+
+    [Fact]
+    public void ExamplePackAndFramesArePinned()
+    {
+        var (bytes, catalog, bag) = PackTests.BuildExamples();
+        Assert.False(bag.HasErrors);
+        Assert.Equal("6BA542D72CE9F06CC01B9C9BE4AA7F011266A779F2DF03497DBA6143774365ED", Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)));
+        Assert.Equal("79c0b6b66ad0d605f9ef70e823668efe", catalog.Hash);
+        var program = Program("actor s { on arrive(ctx) { wait 30min\n apply effect:alarm(ctx.place) } }", baseUnit: null, "actor:s");
+        var host = new FakeHost();
+        host.ContextValues["place"] = host.Sym("place:depot");
+        var frame = new BehaviorVm(program, host).Activate("arrive", "inst-1").Frame!;
+        Assert.Equal("""{"format_version":1,"instance_id":"inst-1","behavior_id":"actor:s","definition_version":1,"definition_hash":"d56816832e5b3548b74e93aa7ec50015","hook_id":"arrive","stack":[{"function_index":0,"function_name":"on arrive","register_base":0,"register_count":1,"return_register":-1,"resume_label":"arrive/1","pc":1}],"registers":[30],"symbol_names":[null],"pending":{"kind":0,"label":"arrive/1","due_at_minutes":1030,"id":null,"options":[],"result_register":-1},"applied_effects":[],"steps_used":2,"effect_sequence":0}""", BehaviorVm.Save(frame));
+    }
+}
