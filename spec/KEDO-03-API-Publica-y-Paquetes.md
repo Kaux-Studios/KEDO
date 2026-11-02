@@ -20,7 +20,7 @@ Razón de la división (anexo F §6.2): lo que el juego embarca en el dispositiv
 |---|---|---|
 | Paquete NuGet (SemVer) | `Directory.Build.props`, tags `vX.Y.Z` | Major = incompatibilidad; minor y patch aditivos |
 | Lenguaje | `kedo N` en cada archivo, `KedoVersion.LanguageMajor` | El compilador N acepta lenguaje N; `kedo migrate` entre majors |
-| Formato del pack compilado | Cabecera del pack (`formatVersion`) | El runtime N carga formatos ≤ N; un artefacto de otro major se rechaza y se recompila desde fuente (la fuente es la verdad, el pack es caché) |
+| Formato del pack compilado | Cabecera del pack (`formatVersion`) | El runtime carga formatos 1 a 3; el escritor usa el formato más bajo que expresa el contenido: 2 para duraciones en minutos, 3 (sección de unidad, ADR-0014) para las demás; un artefacto de otro major se rechaza y se recompila desde fuente (la fuente es la verdad, el pack es caché) |
 
 Prerelease durante la inicialización: `1.0.0-alpha.N`. Sin garantía entre alphas. La garantía empieza en `1.0.0`.
 

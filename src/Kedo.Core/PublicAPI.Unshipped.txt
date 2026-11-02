@@ -1,4 +1,5 @@
 #nullable enable
+Kedo.Pack.KedoPack.TimeUnit.get -> Kedo.Schema.DurationUnit
 Kedo.Runtime.AwaitRequest.Unit.get -> Kedo.Schema.DurationUnit
 Kedo.Runtime.AwaitRequest.Unit.init -> void
 Kedo.Runtime.BehaviorJsonContext.DurationUnit.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<Kedo.Schema.DurationUnit>!
@@ -19,6 +20,8 @@ Kedo.Schema.FieldSchema.MaxDurationMs.get -> long?
 Kedo.Schema.FieldSchema.MaxDurationMs.init -> void
 Kedo.Schema.FieldSchema.MinDurationMs.get -> long?
 Kedo.Schema.FieldSchema.MinDurationMs.init -> void
+const Kedo.Pack.KedoPack.LatestFormatVersion = 3 -> int
+const Kedo.Pack.KedoPack.SectionTimeUnit = 4 -> int
 static Kedo.Schema.DurationUnits.ConvertTruncating(long amount, Kedo.Schema.DurationUnit from, Kedo.Schema.DurationUnit to) -> long
 static Kedo.Schema.DurationUnits.Format(long amount, Kedo.Schema.DurationUnit unit) -> string!
 static Kedo.Schema.DurationUnits.MillisecondsPer(Kedo.Schema.DurationUnit unit) -> long

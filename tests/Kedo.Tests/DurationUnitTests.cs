@@ -2,10 +2,12 @@ using System.Text.Json;
 using Kedo.Compiler.Behaviors;
 using Kedo.Compiler.Evaluation;
 using Kedo.Compiler.Model;
+using Kedo.Compiler.Pack;
 using Kedo.Compiler.Resolution;
 using Kedo.Compiler.Schema;
 using Kedo.Compiler.Syntax;
 using Kedo.Diagnostics;
+using Kedo.Pack;
 using Kedo.Runtime;
 using Kedo.Schema;
 
@@ -464,5 +466,57 @@ public class DurationUnitTests
         Assert.Contains("suspended: Minutes slam/1", host.Lines);
         Assert.Equal(350, host.NowMilliseconds);
         Assert.Equal(0, host.NowMinutes);
+    }
+
+    [Fact]
+    public void APackInAnotherUnitIsFormat3AndKeepsIt()
+    {
+        var (catalog, bag) = Resolve("attack a { windup = 350ms }\n" + Telegraph, baseUnit: "ms");
+        Assert.False(bag.HasErrors);
+        var program = BehaviorCompiler.Compile(catalog.ByKey["actor:boss"], Array.Empty<FunctionEntry>(), new SchemaRegistry { Permissive = true }, bag)!;
+        var bytes = PackWriter.Write(catalog, new[] { program });
+        Assert.Equal(3, BitConverter.ToInt32(bytes, 4));
+        Assert.Equal(3, PackWriter.FormatFor(DurationUnit.Millisecond));
+        Assert.Equal(2, PackWriter.FormatFor(DurationUnit.Minute));
+        var pack = KedoPack.Load(bytes);
+        Assert.Equal(DurationUnit.Millisecond, pack.TimeUnit);
+        Assert.Equal(new PackInt(350, true), pack.Find("attack:a")!.Body.Fields["windup"]);
+        Assert.Equal(DurationUnit.Millisecond, pack.ProgramOf(pack.Find("actor:boss")!)!.TimeUnit);
+    }
+
+    [Fact]
+    public void AMinutePackStaysFormat2()
+    {
+        var (bytes, _, _) = PackTests.BuildExamples();
+        Assert.Equal(2, BitConverter.ToInt32(bytes, 4));
+        Assert.Equal(DurationUnit.Minute, KedoPack.Load(bytes).TimeUnit);
+    }
+
+    [Fact]
+    public void AnUnknownUnitByteIsRejected()
+    {
+        var (catalog, _) = Resolve("attack a { windup = 350ms }", baseUnit: "ms");
+        var bytes = PackWriter.Write(catalog, Array.Empty<BehaviorProgram>());
+        bytes[^17] = 9;
+        System.IO.Hashing.XxHash128.Hash(bytes.AsSpan(0, bytes.Length - 16), bytes.AsSpan(bytes.Length - 16));
+        Assert.Throws<InvalidDataException>(() => KedoPack.Load(bytes));
+    }
+
+    [Fact]
+    public void AFormat3PackWithoutTheUnitSectionIsRejected()
+    {
+        var (catalog, _) = Resolve("attack a { windup = 1min }", baseUnit: null);
+        var bytes = PackWriter.Write(catalog, Array.Empty<BehaviorProgram>());
+        BitConverter.GetBytes(3).CopyTo(bytes, 4);
+        System.IO.Hashing.XxHash128.Hash(bytes.AsSpan(0, bytes.Length - 16), bytes.AsSpan(bytes.Length - 16));
+        Assert.Throws<InvalidDataException>(() => KedoPack.Load(bytes));
+    }
+
+    [Fact]
+    public void AProgramWithAnotherUnitThanTheCatalogIsApiMisuse()
+    {
+        var (catalog, _) = Resolve("attack a { windup = 350ms }", baseUnit: "ms");
+        var program = new BehaviorProgram("actor:boss", 1, "h", Array.Empty<uint>(), Array.Empty<long>(), Array.Empty<string>(), new List<FunctionInfo>(), new Dictionary<string, int>(), new List<AwaitSite>(), Array.Empty<string>());
+        Assert.Throws<ArgumentException>(() => PackWriter.Write(catalog, new[] { program }));
     }
 }

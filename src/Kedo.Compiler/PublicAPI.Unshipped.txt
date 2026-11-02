@@ -7,3 +7,4 @@ Kedo.Compiler.Resolution.RDuration.Unit.get -> Kedo.Schema.DurationUnit
 Kedo.Compiler.Resolution.RDuration.Unit.init -> void
 Kedo.Compiler.Resolution.ResolvedCatalog.TimeUnit.get -> Kedo.Schema.DurationUnit
 Kedo.Compiler.Resolution.ResolvedObject.TimeUnit.get -> Kedo.Schema.DurationUnit
+static Kedo.Compiler.Pack.PackWriter.FormatFor(Kedo.Schema.DurationUnit timeUnit) -> int
