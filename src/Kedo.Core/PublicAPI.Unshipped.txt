@@ -1,1 +1,14 @@
 #nullable enable
+Kedo.Schema.DurationUnit
+Kedo.Schema.DurationUnit.Day = 4 -> Kedo.Schema.DurationUnit
+Kedo.Schema.DurationUnit.Hour = 3 -> Kedo.Schema.DurationUnit
+Kedo.Schema.DurationUnit.Millisecond = 1 -> Kedo.Schema.DurationUnit
+Kedo.Schema.DurationUnit.Minute = 0 -> Kedo.Schema.DurationUnit
+Kedo.Schema.DurationUnit.Second = 2 -> Kedo.Schema.DurationUnit
+Kedo.Schema.DurationUnits
+static Kedo.Schema.DurationUnits.ConvertTruncating(long amount, Kedo.Schema.DurationUnit from, Kedo.Schema.DurationUnit to) -> long
+static Kedo.Schema.DurationUnits.Format(long amount, Kedo.Schema.DurationUnit unit) -> string!
+static Kedo.Schema.DurationUnits.MillisecondsPer(Kedo.Schema.DurationUnit unit) -> long
+static Kedo.Schema.DurationUnits.Suffix(Kedo.Schema.DurationUnit unit) -> string!
+static Kedo.Schema.DurationUnits.TryConvert(long amount, Kedo.Schema.DurationUnit from, Kedo.Schema.DurationUnit to, out long result) -> bool
+static Kedo.Schema.DurationUnits.TryParseSuffix(string? suffix, out Kedo.Schema.DurationUnit unit) -> bool

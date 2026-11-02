@@ -69,4 +69,24 @@ public class DurationUnitTests
         var frame = new BehaviorVm(program, host).Activate("arrive", "inst-1").Frame!;
         Assert.Equal("""{"format_version":1,"instance_id":"inst-1","behavior_id":"actor:s","definition_version":1,"definition_hash":"d56816832e5b3548b74e93aa7ec50015","hook_id":"arrive","stack":[{"function_index":0,"function_name":"on arrive","register_base":0,"register_count":1,"return_register":-1,"resume_label":"arrive/1","pc":1}],"registers":[30],"symbol_names":[null],"pending":{"kind":0,"label":"arrive/1","due_at_minutes":1030,"id":null,"options":[],"result_register":-1},"applied_effects":[],"steps_used":2,"effect_sequence":0}""", BehaviorVm.Save(frame));
     }
+
+    [Fact]
+    public void UnitsConvertExactlyOrSayWhy()
+    {
+        Assert.True(DurationUnits.TryConvert(2, DurationUnit.Second, DurationUnit.Millisecond, out var ms));
+        Assert.Equal(2000, ms);
+        Assert.False(DurationUnits.TryConvert(90, DurationUnit.Minute, DurationUnit.Hour, out _));
+        Assert.True(DurationUnits.TryConvert(120, DurationUnit.Minute, DurationUnit.Hour, out var h));
+        Assert.Equal(2, h);
+        Assert.False(DurationUnits.TryConvert(250, DurationUnit.Millisecond, DurationUnit.Second, out _));
+        Assert.False(DurationUnits.TryConvert(106_751_991_167_301, DurationUnit.Day, DurationUnit.Millisecond, out _));
+        Assert.Equal(0, DurationUnits.ConvertTruncating(30, DurationUnit.Second, DurationUnit.Minute));
+        Assert.Equal(1, DurationUnits.ConvertTruncating(90, DurationUnit.Second, DurationUnit.Minute));
+        Assert.Equal(0, DurationUnits.ConvertTruncating(-30, DurationUnit.Second, DurationUnit.Minute));
+        Assert.Equal(long.MaxValue, DurationUnits.ConvertTruncating(long.MaxValue / 2, DurationUnit.Day, DurationUnit.Millisecond));
+        Assert.True(DurationUnits.TryParseSuffix("ms", out var u) && u == DurationUnit.Millisecond);
+        Assert.False(DurationUnits.TryParseSuffix("minutes", out _));
+        Assert.Equal("350ms", DurationUnits.Format(350, DurationUnit.Millisecond));
+        Assert.Equal(DurationUnit.Minute, default(DurationUnit));
+    }
 }
