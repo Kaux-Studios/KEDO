@@ -1,0 +1,3 @@
+kedo 1
+module game
+manifest { base_unit = seconds }

@@ -36,6 +36,41 @@ public class DurationUnitTests
     }
 
     [Fact]
+    public void TheManifestSetsTheUnitAndMinutesAreTheDefault()
+    {
+        Assert.Equal(DurationUnit.Minute, Resolve("thing t { a = 1min }", baseUnit: null).Catalog.TimeUnit);
+        var (catalog, bag) = Resolve("thing t { a = 2s }", baseUnit: "ms");
+        Assert.False(bag.HasErrors);
+        Assert.Equal(DurationUnit.Millisecond, catalog.TimeUnit);
+        Assert.Equal(DurationUnit.Millisecond, catalog.ByKey["thing:t"].TimeUnit);
+    }
+
+    [Fact]
+    public void AnUnknownUnitWarnsAndKeepsMinutes()
+    {
+        var (catalog, bag) = Resolve("thing t { a = 1min }", baseUnit: "minutes");
+        Assert.Equal(DurationUnit.Minute, catalog.TimeUnit);
+        Assert.Contains(bag.Items, d => d.Code == "K2011" && d.Severity == Severity.Warning && d.Message.Contains("`base_unit = minutes`"));
+        Assert.False(bag.HasErrors);
+    }
+
+    [Fact]
+    public void AVariantCannotChangeTheUnit()
+    {
+        var bag = new DiagnosticBag();
+        var files = new[]
+        {
+            "kedo 1\nmodule m\nmanifest { base_unit = ms }\nthing t { a = 2s }\n",
+            "kedo 1\nmodule m\nvariant fast\nmanifest { base_unit = s }\noverride thing t { a = 1s }\n",
+        }.Select((text, i) => DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(text, $"f{i}.kedo"), bag), bag)).ToList();
+        var catalog = Resolver.Resolve(files, new SchemaRegistry { Permissive = true }, bag);
+        Assert.Contains(bag.Items, d => d.Code == "K2012" && d.IsError && d.File == "f1.kedo");
+        Assert.Equal(DurationUnit.Minute, catalog.TimeUnit);
+        Assert.Equal(DurationUnit.Minute, catalog.Variants["fast"].TimeUnit);
+        Assert.DoesNotContain(bag.Items, d => d.Code == "K4014");
+    }
+
+    [Fact]
     public void LegacyMinuteContentKeepsItsValues()
     {
         var (catalog, bag) = Resolve("thing t { a = 30s  b = 90s  c = (90s + 30s)  d = 1h  e = 2d  f = -30s  g = 15 }", baseUnit: null);

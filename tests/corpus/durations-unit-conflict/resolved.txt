@@ -1,0 +1,7 @@
+thing a
+    t = 1min
+    hash da07f7afb2fa68b747c57af53cd9ef83
+thing b
+    t = 0min
+    hash 69c66150b2c9399a0fcd1020938a7298
+catalog 46d39b1f762550c640d0e979a4d48ce3

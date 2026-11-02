@@ -78,6 +78,22 @@ public class IncrementalTests
     }
 
     [Fact]
+    public void EditingTheManifestResolvesEverythingAgain()
+    {
+        var schema = new SchemaRegistry { Permissive = true };
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["module.kedo"] = "kedo 1\nmodule m\nmanifest { base_unit = s }\n",
+            ["a.kedo"] = "kedo 1\nmodule m\nthing t { a = 2min }\n",
+        };
+        var session = new IncrementalCatalog(schema);
+        AssertSame(session, files, schema);
+        files["module.kedo"] = files["module.kedo"].Replace("base_unit = s", "base_unit = ms");
+        AssertSame(session, files, schema);
+        Assert.Equal(0, session.LastReusedObjects);
+    }
+
+    [Fact]
     public void EveryEditMatchesAFullResolution()
     {
         var schema = Schema();

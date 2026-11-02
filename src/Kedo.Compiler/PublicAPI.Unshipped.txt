@@ -1,1 +1,3 @@
 #nullable enable
+Kedo.Compiler.Resolution.ResolvedCatalog.TimeUnit.get -> Kedo.Schema.DurationUnit
+Kedo.Compiler.Resolution.ResolvedObject.TimeUnit.get -> Kedo.Schema.DurationUnit

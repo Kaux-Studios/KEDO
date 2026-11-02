@@ -40,6 +40,9 @@ public sealed class ResolvedCatalog
     /// <summary>Variant this catalog resolves (ADR-0012), or null for the base content.</summary>
     public string? Variant { get; internal set; }
 
+    /// <summary>Base unit of the durations of this content (<c>base_unit</c> of the manifest, ADR-0014); minutes by default.</summary>
+    public DurationUnit TimeUnit { get; internal set; } = DurationUnit.Minute;
+
     /// <summary>
     /// Catalogs of the variants declared in the input (files with <c>variant name</c>), by name, in order of first
     /// appearance. Each one is the base content plus that variant's new objects and overrides. Empty on a variant catalog.
@@ -84,11 +87,16 @@ public sealed class Resolver
     private int _reused;
     private bool _objectFailed;
 
-    private Resolver(SchemaRegistry schema, DiagnosticBag diagnostics, string? variant)
+    private readonly DurationUnit _unit;
+    private readonly bool _silentDurations;
+
+    private Resolver(SchemaRegistry schema, DiagnosticBag diagnostics, string? variant, DurationUnit unit, bool silentDurations)
     {
         _schema = schema;
         _d = diagnostics;
         _variant = variant;
+        _unit = unit;
+        _silentDurations = silentDurations;
     }
 
     /// <summary>
@@ -97,9 +105,13 @@ public sealed class Resolver
     /// and its diagnostics that the base did not already report are added to <paramref name="diagnostics"/> (ADR-0012).
     /// </summary>
     public static ResolvedCatalog Resolve(IEnumerable<FileDeclarations> files, SchemaRegistry schema, DiagnosticBag diagnostics)
+        => Resolve(files, schema, diagnostics, null);
+
+    /// <summary>As <see cref="Resolve(IEnumerable{FileDeclarations}, SchemaRegistry, DiagnosticBag)"/>; with <paramref name="forcedUnit"/> the manifests are not read.</summary>
+    internal static ResolvedCatalog Resolve(IEnumerable<FileDeclarations> files, SchemaRegistry schema, DiagnosticBag diagnostics, DurationUnit? forcedUnit)
     {
         var all = files as IReadOnlyList<FileDeclarations> ?? files.ToList();
-        var catalog = ResolveView(all, schema, diagnostics, null);
+        var catalog = ResolveView(all, schema, diagnostics, null, forcedUnit);
         var names = all.Where(f => f.Variant is not null).Select(f => f.Variant!).Distinct(StringComparer.Ordinal).ToList();
         if (names.Count == 0)
         {
@@ -111,7 +123,7 @@ public sealed class Resolver
         foreach (var name in names)
         {
             var bag = new DiagnosticBag();
-            variants[name] = ResolveView(all, schema, bag, name);
+            variants[name] = ResolveView(all, schema, bag, name, forcedUnit);
             foreach (var d in bag.Items.Where(d => seen.Add(DiagnosticKey(d))))
             {
                 diagnostics.Add(d);
@@ -129,13 +141,19 @@ public sealed class Resolver
     /// mixins were resolved again, or that are new; the rest, with their diagnostics, come from <paramref name="previous"/>.
     /// Stage B runs again for resolved objects and for objects that referenced a key that changed, appeared or vanished.
     /// <paramref name="prints"/> maps <c>type:id</c> and <c>mixin:id</c> to a print of the declaration's text and position.
-    /// The result equals a full <see cref="Resolve"/> of the same files (without variants).
+    /// The result equals a full <see cref="Resolve(IEnumerable{FileDeclarations}, SchemaRegistry, DiagnosticBag)"/> of the same files (without variants).
     /// </summary>
     internal static (ResolvedCatalog Catalog, IncrementalState State) ResolveIncremental(IReadOnlyList<FileDeclarations> files, SchemaRegistry schema,
         DiagnosticBag diagnostics, IReadOnlyDictionary<string, string> prints, IncrementalState? previous)
     {
         var local = new DiagnosticBag();
-        var r = new Resolver(schema, local, null);
+        var unit = ModuleTimeUnit.Determine(files, local, out var conflict);
+        if (previous is not null && previous.Catalog.TimeUnit != unit)
+        {
+            previous = null;
+        }
+
+        var r = new Resolver(schema, local, null, unit, conflict);
         r.Index(files);
         r.CheckReferencesToBases();
         var state = new IncrementalState(prints);
@@ -199,7 +217,7 @@ public sealed class Resolver
         }
 
         var objects = r._resolved.Values.OrderBy(o => o.Type, StringComparer.Ordinal).ThenBy(o => o.Id, StringComparer.Ordinal).ToList();
-        var catalog = new ResolvedCatalog(objects, r._resolved, r._mixins, diagnostics);
+        var catalog = new ResolvedCatalog(objects, r._resolved, r._mixins, diagnostics) { TimeUnit = unit };
 
         // Keys that changed meaning for a reference: resolved again, new, or gone.
         var changed = new HashSet<string>(r._dirty, StringComparer.Ordinal);
@@ -261,9 +279,11 @@ public sealed class Resolver
         return (catalog, state);
     }
 
-    private static ResolvedCatalog ResolveView(IReadOnlyList<FileDeclarations> files, SchemaRegistry schema, DiagnosticBag diagnostics, string? variant)
+    private static ResolvedCatalog ResolveView(IReadOnlyList<FileDeclarations> files, SchemaRegistry schema, DiagnosticBag diagnostics, string? variant, DurationUnit? forcedUnit)
     {
-        var r = new Resolver(schema, diagnostics, variant);
+        var conflict = false;
+        var unit = forcedUnit ?? ModuleTimeUnit.Determine(files, diagnostics, out conflict);
+        var r = new Resolver(schema, diagnostics, variant, unit, conflict);
         r.Index(files);
         r.CheckReferencesToBases();
         foreach (var key in r.TopologicalOrder())
@@ -272,7 +292,7 @@ public sealed class Resolver
         }
 
         var objects = r._resolved.Values.OrderBy(o => o.Type, StringComparer.Ordinal).ThenBy(o => o.Id, StringComparer.Ordinal).ToList();
-        var catalog = new ResolvedCatalog(objects, r._resolved, r._mixins, diagnostics) { Variant = variant };
+        var catalog = new ResolvedCatalog(objects, r._resolved, r._mixins, diagnostics) { Variant = variant, TimeUnit = unit };
         r.ValidateStageB(catalog);
         CatalogHasher.Hash(catalog);
         return catalog;
@@ -578,7 +598,7 @@ public sealed class Resolver
             hooks.AddRange(parent.Hooks.Where(ph => hooks.All(h => h.HookId != ph.HookId)));
         }
 
-        _resolved[key] = new ResolvedObject(decl, body, components, hooks, functions, chain, mixins) { Order = _order[key] };
+        _resolved[key] = new ResolvedObject(decl, body, components, hooks, functions, chain, mixins) { Order = _order[key], TimeUnit = _unit };
     }
 
     private static RRecord Defaults(RecordSchema schema, Origin origin)

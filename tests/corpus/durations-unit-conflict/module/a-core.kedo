@@ -1,0 +1,4 @@
+kedo 1
+module core
+manifest { base_unit = min }
+thing a { t = 1min }

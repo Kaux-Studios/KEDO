@@ -316,4 +316,7 @@ public sealed class ResolvedObject
 
     /// <summary>Position of the declaration in the resolver input: files in the order given, declarations in file order (ADR-0010).</summary>
     public int Order { get; internal set; }
+
+    /// <summary>Base unit of the durations of this object (ADR-0014).</summary>
+    public DurationUnit TimeUnit { get; internal set; } = DurationUnit.Minute;
 }
