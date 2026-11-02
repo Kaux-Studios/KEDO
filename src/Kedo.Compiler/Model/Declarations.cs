@@ -51,9 +51,6 @@ public sealed record IntValue(Origin Origin, long Number) : Value(Origin);
 /// <summary>Duration literal in its written unit.</summary>
 public sealed record DurationValue(Origin Origin, long Amount, string Unit) : Value(Origin)
 {
-    /// <summary>The literal as written (`1_500ms`), when it came from source; used to quote it in diagnostics.</summary>
-    public string? SourceText { get; init; }
-
     /// <summary>Amount expressed in minutes (the default base unit).</summary>
     public long Minutes => Unit switch { "ms" => Amount / 60_000, "s" => Amount / 60, "h" => Amount * 60, "d" => Amount * 1440, _ => Amount };
 }

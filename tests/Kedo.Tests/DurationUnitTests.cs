@@ -440,6 +440,18 @@ public class DurationUnitTests
     }
 
     [Fact]
+    public void DurationValueEqualityIgnoresTheLiteralText()
+    {
+        var bag = new DiagnosticBag();
+        var decls = Build("thing t { a = 1_500ms }", baseUnit: null, bag);
+        var parsed = decls.Objects.Single().Entries.OfType<FieldEntry>().Single().Value;
+        var origin = parsed.Origin;
+        Assert.Equal(new DurationValue(origin, 1500, "ms"), parsed);
+        Assert.Equal(new DurationValue(origin, 1500, "ms").GetHashCode(), parsed.GetHashCode());
+        Assert.NotEqual(new DurationValue(origin, 1500, "ms"), new DurationValue(origin, 1501, "ms"));
+    }
+
+    [Fact]
     public void K4014QuotesTheLiteralAsWritten()
     {
         var (_, bag) = Resolve("thing t { a = 1_500ms }", baseUnit: "s");

@@ -117,7 +117,6 @@ public sealed class KedoPack
             {
                 throw new InvalidDataException($"pack repeats section {id}");
             }
-
         }
 
         var timeUnit = DurationUnit.Minute;

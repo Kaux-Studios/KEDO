@@ -103,7 +103,7 @@ public sealed class Resolver
     }
 
     private long? ToUnit(DurationValue dv)
-        => DurationLowering.ToUnit(dv.Amount, dv.Unit, _unit, dv.Origin.File, dv.Origin.Span, _silentDurations ? null : _d, _durationSites, dv.SourceText);
+        => DurationLowering.ToUnit(dv.Amount, dv.Unit, _unit, dv.Origin.File, dv.Origin.Span, _silentDurations ? null : _d, _durationSites, DurationSources.TextOf(dv));
 
     /// <summary>
     /// Resolves the declarations of several files against a schema. Files of a variant (<c>variant name</c> in the header)
