@@ -45,6 +45,9 @@ Códigos nuevos: **K2011** (advertencia), **K2012** (error), **K4014** (adverten
 - Patriark no cambia: su manifiesto declara `min`, su contenido produce el mismo catálogo, los mismos hashes y el mismo pack byte a byte, y no recibe diagnósticos nuevos.
 - Un juego de acción declara `base_unit = ms` y escribe `350ms`, `1s`, `2d` con valores exactos; un literal más fino que su unidad es error en vez de truncarse en silencio.
 - En 2.0, K4014 pasa a error también en `min`.
-- Un contenido 1.0 que ya declaraba `base_unit = s` y escribía `30s` pasa de 0 a 30 segundos. Es el comportamiento documentado en KEDO-01 §10 y el único caso en que el significado cambia; se acepta porque el 1.0 real nunca honró el manifiesto y no se conoce ningún consumidor que dependa de ello.
+- Hay dos cambios conscientes de significado respecto del comportamiento real de 1.0; ambos corrigen un defecto en el que 1.0 no cumplía lo documentado, y ningún consumidor conocido depende de ellos:
+  - Un contenido 1.0 que declaraba una unidad distinta de `min` (`s`, `h` o `d`) cambia de valor, porque 1.0 ignoraba el manifiesto y guardaba todo en minutos. Por ejemplo, con `base_unit = s`, `30s` pasa de 0 a 30 segundos. Es lo que ya documentaba KEDO-01 §10.
+  - Los bornes de duración del esquema (`min = 10min`) ahora se validan; 1.0 los ignoraba en silencio (D7).
+- K2012 convierte en error un contenido que 1.0 aceptaba: dos manifiestos con unidades válidas distintas. Es aceptable en 1.x porque 1.0 ignoraba las unidades, así que ese contenido nunca tuvo el significado que declaraba, y no se conoce ningún consumidor que lo tenga (Patriark declara `min` en un solo módulo). La decisión D3 no cambia.
 - Packs en otra unidad exigen un runtime que lea el formato 3; los runtimes 1.0 los rechazan en vez de interpretarlos mal.
 - Mezclar unidades entre módulos de una misma resolución es error (K2012) hasta que un minor lo habilite con conversión explícita.
