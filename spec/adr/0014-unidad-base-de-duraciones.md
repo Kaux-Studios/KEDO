@@ -1,6 +1,6 @@
 # ADR-0014 — Unidad base de las duraciones
 
-Fecha: 01/11/2026 · Estado: propuesto · Origen: issue #19 y Plan-07 (extensión K1 pedida por survivors-like).
+Fecha: 01/11/2026 · Estado: aceptado 01/11/2026 · Origen: issue #19 y Plan-07 (extensión K1 pedida por survivors-like).
 
 ## Contexto
 
