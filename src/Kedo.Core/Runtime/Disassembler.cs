@@ -1,4 +1,5 @@
 using System.Text;
+using Kedo.Schema;
 
 namespace Kedo.Runtime;
 
@@ -10,9 +11,9 @@ public static class Disassembler
     {
         var sb = new StringBuilder();
         sb.Append("program ").Append(p.BehaviorId).Append(" v").Append(p.DefinitionVersion);
-        if (p.TimeUnit != Kedo.Schema.DurationUnit.Minute)
+        if (p.TimeUnit != DurationUnit.Minute)
         {
-            sb.Append(" time_unit=").Append(Kedo.Schema.DurationUnits.Suffix(p.TimeUnit));
+            sb.Append(" time_unit=").Append(DurationUnits.Suffix(p.TimeUnit));
         }
 
         sb.Append('\n');

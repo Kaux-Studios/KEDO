@@ -187,6 +187,44 @@ public class DurationUnitTests
         Assert.Equal(DurationUnit.Minute, program!.TimeUnit);
     }
 
+    private static (IReadOnlyList<BehaviorProgram?> Programs, DiagnosticBag Bag) CompileAll(string content, string baseUnit)
+    {
+        var bag = new DiagnosticBag();
+        var schema = new SchemaRegistry { Permissive = true };
+        var decls = Build(content, baseUnit, bag);
+        var catalog = Resolver.Resolve(new[] { decls }, schema, bag);
+        var programs = catalog.Objects.Select(o => BehaviorCompiler.Compile(o, decls.Functions, schema, bag)).ToList();
+        return (programs, bag);
+    }
+
+    [Fact]
+    public void ASubMinuteHookLiteralInMinutesWarnsOnce()
+    {
+        var (_, bag) = CompileAll("actor z { on go(ctx) { wait 30s } }", "min");
+        Assert.Single(bag.Items, d => d.Code == "K4014" && d.Severity == Severity.Warning);
+    }
+
+    [Fact]
+    public void ASharedHookOrFunctionLiteralIsReportedOncePerSite()
+    {
+        var (_, bag) = CompileAll("function pause(x: int) -> int { return 30s }\nmixin slow { on go(ctx) { wait 45s } }\nactor a with slow { on tick(ctx) { apply effect:e(pause(1)) } }\nactor b with slow { on tick(ctx) { apply effect:e(pause(2)) } }", "min");
+        Assert.False(bag.HasErrors, string.Join("\n", bag.Items.Select(d => d.Message)));
+        Assert.Single(bag.Items, d => d.Code == "K4014" && d.Message.Contains("`30s`"));
+        Assert.Single(bag.Items, d => d.Code == "K4014" && d.Message.Contains("`45s`"));
+    }
+
+    [Fact]
+    public void AnOverflowingHookLiteralIsAnErrorAndLoadsZero()
+    {
+        var bag = new DiagnosticBag();
+        var schema = new SchemaRegistry { Permissive = true };
+        var decls = Build("actor z { on go(ctx) { wait 9000000000000000d } }", "ms", bag);
+        var catalog = Resolver.Resolve(new[] { decls }, schema, bag);
+        var program = BehaviorCompiler.Compile(catalog.ByKey["actor:z"], decls.Functions, schema, bag);
+        Assert.Contains(bag.Items, d => d.Code == "K4014" && d.IsError);
+        Assert.Contains(0L, program!.Constants);
+    }
+
     [Fact]
     public void ANonWholeWaitIsK4014()
     {

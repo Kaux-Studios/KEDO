@@ -41,6 +41,28 @@ public sealed class BehaviorCompiler
     private bool _inHook;
     private DurationUnit _unit = DurationUnit.Minute;
     private bool _silent;
+    private HashSet<string>? _durationSites;
+
+    /// <summary>
+    /// K4014 sites already in the bag, so a literal shared by several programs (mixin or inherited hooks, module functions) is
+    /// reported once per build and not once per compiled object (ADR-0014 D4). Built on first use: only an inexact literal gets here.
+    /// </summary>
+    private HashSet<string> ReportedDurationSites()
+    {
+        if (_durationSites is null)
+        {
+            _durationSites = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var d in _d.Items)
+            {
+                if (d.Code == "K4014")
+                {
+                    _durationSites.Add($"{d.File}|{d.Span.Start}");
+                }
+            }
+        }
+
+        return _durationSites;
+    }
 
     private BehaviorCompiler(SchemaRegistry schema, DiagnosticBag diagnostics)
     {
@@ -540,7 +562,10 @@ public sealed class BehaviorCompiler
                         var i = 0;
                         while (i < text.Length && (char.IsDigit(text[i]) || text[i] == '_')) i++;
                         var amount = long.Parse(text[..i].Replace("_", ""), System.Globalization.CultureInfo.InvariantCulture);
-                        var lowered = DurationLowering.ToUnit(amount, text[i..], _unit, _file, tk.Span, _silent ? null : _d);
+                        var suffix = text[i..];
+                        var lowered = DurationUnits.TryParseSuffix(suffix, out var from) && DurationUnits.TryConvert(amount, from, _unit, out var exact)
+                            ? exact
+                            : DurationLowering.ToUnit(amount, suffix, _unit, _file, tk.Span, _silent ? null : _d, _silent ? null : ReportedDurationSites());
                         Emit(Instr.AImm(OpCode.LoadConst, target, Const(lowered ?? 0)), node);
                         return target;
                     }
