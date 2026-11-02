@@ -39,6 +39,30 @@ public sealed class BehaviorCompiler
     private string _currentFunction = "";
     private int _awaitOrdinal;
     private bool _inHook;
+    private DurationUnit _unit = DurationUnit.Minute;
+    private bool _silent;
+    private HashSet<string>? _durationSites;
+
+    /// <summary>
+    /// K4014 sites already in the bag, so a literal shared by several programs (mixin or inherited hooks, module functions) is
+    /// reported once per build and not once per compiled object (ADR-0014 D4). Built on first use: only an inexact literal gets here.
+    /// </summary>
+    private HashSet<string> ReportedDurationSites()
+    {
+        if (_durationSites is null)
+        {
+            _durationSites = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var d in _d.Items)
+            {
+                if (d.Code == "K4014")
+                {
+                    _durationSites.Add($"{d.File}|{d.Span.Start}");
+                }
+            }
+        }
+
+        return _durationSites;
+    }
 
     private BehaviorCompiler(SchemaRegistry schema, DiagnosticBag diagnostics)
     {
@@ -55,7 +79,7 @@ public sealed class BehaviorCompiler
             return null;
         }
 
-        var c = new BehaviorCompiler(schema, diagnostics);
+        var c = new BehaviorCompiler(schema, diagnostics) { _unit = obj.TimeUnit, _silent = obj.SilentDurations };
         foreach (var f in functions)
         {
             c._declaredFunctions[f.Name] = f;
@@ -87,7 +111,7 @@ public sealed class BehaviorCompiler
 
         c.CheckRecursion();
         var version = obj.Body.Fields.TryGetValue("version", out var v) && v is RInt vi ? (int)vi.Number : 1;
-        return new BehaviorProgram(obj.Key, version, obj.Hash, c._code.ToArray(), c._constants.ToArray(), c._strings.ToArray(), c._functions, c._hooks, c._awaits, c._sourceMap);
+        return new BehaviorProgram(obj.Key, version, obj.Hash, c._code.ToArray(), c._constants.ToArray(), c._strings.ToArray(), c._functions, c._hooks, c._awaits, c._sourceMap) { TimeUnit = obj.TimeUnit };
     }
 
     // ----- functions and hooks -----
@@ -538,8 +562,11 @@ public sealed class BehaviorCompiler
                         var i = 0;
                         while (i < text.Length && (char.IsDigit(text[i]) || text[i] == '_')) i++;
                         var amount = long.Parse(text[..i].Replace("_", ""), System.Globalization.CultureInfo.InvariantCulture);
-                        var minutes = text[i..] switch { "s" => amount / 60, "h" => amount * 60, "d" => amount * 1440, _ => amount };
-                        Emit(Instr.AImm(OpCode.LoadConst, target, Const(minutes)), node);
+                        var suffix = text[i..];
+                        var lowered = DurationUnits.TryParseSuffix(suffix, out var from) && DurationUnits.TryConvert(amount, from, _unit, out var exact)
+                            ? exact
+                            : DurationLowering.ToUnit(amount, suffix, _unit, _file, tk.Span, _silent ? null : _d, _silent ? null : ReportedDurationSites(), text);
+                        Emit(Instr.AImm(OpCode.LoadConst, target, Const(lowered ?? 0)), node);
                         return target;
                     }
 

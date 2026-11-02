@@ -220,7 +220,7 @@ public static class Lexer
                         if (pos > unitStart)
                         {
                             var unit = text[unitStart..pos];
-                            var isUnit = unit.SequenceEqual("s"u8) || unit.SequenceEqual("min"u8) || unit.SequenceEqual("h"u8) || unit.SequenceEqual("d"u8);
+                            var isUnit = unit.SequenceEqual("ms"u8) || unit.SequenceEqual("s"u8) || unit.SequenceEqual("min"u8) || unit.SequenceEqual("h"u8) || unit.SequenceEqual("d"u8);
                             if (isUnit && kind == TokenKind.Decimal)
                             {
                                 kind = TokenKind.Unknown;

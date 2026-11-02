@@ -1,0 +1,5 @@
+warning K4014 6:13 `30s` is not a whole number of `min` (the module's `base_unit`) and counts as `0min`; write it in `min`, or set a smaller `base_unit` in the manifest
+warning K4014 7:14 `90s` is not a whole number of `min` (the module's `base_unit`) and counts as `1min`; write it in `min`, or set a smaller `base_unit` in the manifest
+warning K4014 8:12 `90s` is not a whole number of `min` (the module's `base_unit`) and counts as `1min`; write it in `min`, or set a smaller `base_unit` in the manifest
+warning K4014 8:18 `30s` is not a whole number of `min` (the module's `base_unit`) and counts as `0min`; write it in `min`, or set a smaller `base_unit` in the manifest
+warning K4014 9:13 `1500ms` is not a whole number of `min` (the module's `base_unit`) and counts as `0min`; write it in `min`, or set a smaller `base_unit` in the manifest

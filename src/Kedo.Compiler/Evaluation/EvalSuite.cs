@@ -7,6 +7,7 @@ using Kedo.Compiler.Schema;
 using Kedo.Compiler.Syntax;
 using Kedo.Diagnostics;
 using Kedo.Runtime;
+using Kedo.Schema;
 
 namespace Kedo.Compiler.Evaluation;
 
@@ -336,13 +337,24 @@ public static class EvalSuite
 /// A scripted host for tools and tests (#17): context values and query answers come from tables, effects and signals
 /// are recorded as text, rolls return 10, and waits resume at once, so a hook runs to its end.
 /// </summary>
-public sealed class TraceHost : IBehaviorHost
+public sealed class TraceHost : IBehaviorHost, IBehaviorClock
 {
     /// <inheritdoc />
     public SymbolTable Symbols { get; } = new();
 
     /// <inheritdoc />
-    public long NowMinutes { get; set; } = 0;
+    /// <remarks>The setter saturates at the range of <see cref="NowMilliseconds"/>.</remarks>
+    public long NowMinutes
+    {
+        get => NowMilliseconds / 60_000;
+        set => NowMilliseconds = value > long.MaxValue / 60_000 ? long.MaxValue : value < long.MinValue / 60_000 ? long.MinValue : value * 60_000;
+    }
+
+    /// <summary>Simulated time in milliseconds (what <see cref="NowMinutes"/> truncates).</summary>
+    public long NowMilliseconds { get; set; }
+
+    /// <inheritdoc />
+    public long Now(DurationUnit unit) => DurationUnits.ConvertTruncating(NowMilliseconds, DurationUnit.Millisecond, unit);
 
     /// <summary>Context fields of the activation.</summary>
     public Dictionary<string, HostValue> Context { get; } = new(StringComparer.Ordinal);
@@ -392,7 +404,7 @@ public sealed class TraceHost : IBehaviorHost
         {
             Lines.AddRange(result.Trace);
             Lines.Add($"suspended: {pending.Kind} {pending.Label}");
-            NowMinutes = Math.Max(NowMinutes, pending.DueAtMinutes);
+            NowMilliseconds = Math.Max(NowMilliseconds, DurationUnits.ConvertTruncating(pending.DueAtMinutes, pending.Unit, DurationUnit.Millisecond));
             result = new BehaviorVm(program, this).Resume(result.Frame, new Resumption(pending.Kind, 0));
         }
 

@@ -217,8 +217,16 @@ public static class JsonSchemaWriter
                 break;
             case ValueKind.Duration:
                 w.WriteString("type", "string");
-                w.WriteString("pattern", "^[0-9][0-9_]*(s|min|h|d)$");
-                if (f.DefaultInt is { } dd) w.WriteString("default", dd + "min");
+                w.WriteString("pattern", "^[0-9][0-9_]*(ms|s|min|h|d)$");
+                if (f.DefaultDurationMs is { } dms)
+                {
+                    w.WriteString("default", Resolution.DurationLowering.FormatMs(dms));
+                }
+                else if (f.DefaultInt is { } dd)
+                {
+                    w.WriteString("default", dd + "min");
+                }
+
                 break;
             case ValueKind.Enum:
                 if (f.EnumId is not null)

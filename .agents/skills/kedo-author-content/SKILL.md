@@ -18,7 +18,7 @@ Rules of thumb:
 
 - To change one item of a list of records, use `options[risk] { ... }`; to add items, `+=`; to remove, `-=`; to replace everything, `=!`. Plain `=` on a keyed list merges by key, on a set unions, on an atomic list replaces; over inherited items all three warn, so write the explicit form.
 - Deleting is explicit: `remove component x`, `remove field.sub`, `-= [key]`. Removing something that no earlier layer provides is an error, not a no-op.
-- Durations are literals with units (`30min`); plain integers are accepted for duration fields and mean the base unit (minutes).
+- Durations are literals with units (`30min`); plain integers are accepted for duration fields and mean base units (the module's `base_unit`, minutes by default); the unit of each duration field is in `kedo describe` (`unit`).
 - Enum values are bare in bodies (`context = travel`) and qualified in expressions (`outcome.success`).
 - Keep hooks small and declarative; only `apply` changes the game; `wait` suspends the hook and the game saves its state.
 

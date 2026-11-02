@@ -1,0 +1,676 @@
+using System.Text.Json;
+using Kedo.Compiler.Behaviors;
+using Kedo.Compiler.Evaluation;
+using Kedo.Compiler.Model;
+using Kedo.Compiler.Pack;
+using Kedo.Compiler.Resolution;
+using Kedo.Compiler.Schema;
+using Kedo.Compiler.Syntax;
+using Kedo.Diagnostics;
+using Kedo.Pack;
+using Kedo.Runtime;
+using Kedo.Schema;
+
+/// <summary>Duration base unit (ADR-0014).</summary>
+public class DurationUnitTests
+{
+    private static (ResolvedCatalog Catalog, DiagnosticBag Bag) Resolve(string content, string? baseUnit, SchemaRegistry? schema = null)
+    {
+        var bag = new DiagnosticBag();
+        var decls = Build(content, baseUnit, bag);
+        return (Resolver.Resolve(new[] { decls }, schema ?? new SchemaRegistry { Permissive = true }, bag), bag);
+    }
+
+    private static FileDeclarations Build(string content, string? baseUnit, DiagnosticBag bag)
+    {
+        var text = "kedo 1\nmodule m\n" + (baseUnit is null ? "" : $"manifest {{ base_unit = {baseUnit} }}\n") + content;
+        return DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(text, "c.kedo"), bag), bag);
+    }
+
+    private static ResolvedValue Field(ResolvedCatalog catalog, string key, string field) => catalog.ByKey[key].Body.Fields.TryGetValue(field, out var v) ? v : throw new KeyNotFoundException(field);
+
+    private static BehaviorProgram Program(string content, string? baseUnit, string key)
+    {
+        var bag = new DiagnosticBag();
+        var schema = new SchemaRegistry { Permissive = true };
+        var decls = Build(content, baseUnit, bag);
+        var catalog = Resolver.Resolve(new[] { decls }, schema, bag);
+        var program = BehaviorCompiler.Compile(catalog.ByKey[key], decls.Functions, schema, bag);
+        Assert.False(bag.HasErrors, string.Join("\n", bag.Items.Select(d => d.Message)));
+        return program!;
+    }
+
+    [Fact]
+    public void TheManifestSetsTheUnitAndMinutesAreTheDefault()
+    {
+        Assert.Equal(DurationUnit.Minute, Resolve("thing t { a = 1min }", baseUnit: null).Catalog.TimeUnit);
+        var (catalog, bag) = Resolve("thing t { a = 2s }", baseUnit: "ms");
+        Assert.False(bag.HasErrors);
+        Assert.Equal(DurationUnit.Millisecond, catalog.TimeUnit);
+        Assert.Equal(DurationUnit.Millisecond, catalog.ByKey["thing:t"].TimeUnit);
+    }
+
+    [Fact]
+    public void AnUnknownUnitWarnsAndKeepsMinutes()
+    {
+        var (catalog, bag) = Resolve("thing t { a = 1min }", baseUnit: "minutes");
+        Assert.Equal(DurationUnit.Minute, catalog.TimeUnit);
+        Assert.Contains(bag.Items, d => d.Code == "K2011" && d.Severity == Severity.Warning && d.Message.Contains("`base_unit = minutes`"));
+        Assert.False(bag.HasErrors);
+    }
+
+    [Fact]
+    public void AnInvalidUnitNamesTheUnitThatApplies()
+    {
+        var bag = new DiagnosticBag();
+        var files = new[]
+        {
+            "kedo 1\nmodule m\nmanifest { base_unit = s }\nthing t { a = 2s }\n",
+            "kedo 1\nmodule m\nmanifest { base_unit = secs }\n",
+        }.Select((text, i) => DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(text, $"f{i}.kedo"), bag), bag)).ToList();
+        var catalog = Resolver.Resolve(files, new SchemaRegistry { Permissive = true }, bag);
+        Assert.Equal(DurationUnit.Second, catalog.TimeUnit);
+        var k2011 = Assert.Single(bag.Items, d => d.Code == "K2011");
+        Assert.EndsWith("durations stay in `s`", k2011.Message);
+        Assert.False(bag.HasErrors);
+    }
+
+    [Fact]
+    public void AVariantCannotChangeTheUnit()
+    {
+        var bag = new DiagnosticBag();
+        var files = new[]
+        {
+            "kedo 1\nmodule m\nmanifest { base_unit = ms }\nthing t { a = 2s }\n",
+            "kedo 1\nmodule m\nvariant fast\nmanifest { base_unit = s }\noverride thing t { a = 1s  b = 250ms }\n",
+        }.Select((text, i) => DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(text, $"f{i}.kedo"), bag), bag)).ToList();
+        var catalog = Resolver.Resolve(files, new SchemaRegistry { Permissive = true }, bag);
+        Assert.Contains(bag.Items, d => d.Code == "K2012" && d.IsError && d.File == "f1.kedo");
+        var k2012 = bag.Items.First(d => d.Code == "K2012");
+        Assert.Equal("f0.kedo", k2012.Labels[0].File);
+        Assert.Equal("first declared here", k2012.Labels[0].Message);
+        Assert.EndsWith("; declare the same `base_unit` in every manifest", k2012.Message);
+        Assert.Empty(k2012.Notes);
+        Assert.Equal(DurationUnit.Minute, catalog.TimeUnit);
+        Assert.Equal(DurationUnit.Minute, catalog.Variants["fast"].TimeUnit);
+        Assert.DoesNotContain(bag.Items, d => d.Code == "K4014");
+    }
+
+    [Fact]
+    public void LegacyMinuteContentKeepsItsValues()
+    {
+        var (catalog, bag) = Resolve("thing t { a = 30s  b = 90s  c = (90s + 30s)  d = 1h  e = 2d  f = -30s  g = 15 }", baseUnit: null);
+        Assert.False(bag.HasErrors);
+        Assert.Equal("0min", Field(catalog, "thing:t", "a").CanonicalText);
+        Assert.Equal("1min", Field(catalog, "thing:t", "b").CanonicalText);
+        Assert.Equal("1min", Field(catalog, "thing:t", "c").CanonicalText);
+        Assert.Equal("60min", Field(catalog, "thing:t", "d").CanonicalText);
+        Assert.Equal("2880min", Field(catalog, "thing:t", "e").CanonicalText);
+        Assert.Equal("0min", Field(catalog, "thing:t", "f").CanonicalText);
+    }
+
+    [Fact]
+    public void LegacyWaitInSecondsLoadsWholeMinutes()
+    {
+        var program = Program("actor z { on go(ctx) { wait 90s } }", baseUnit: null, "actor:z");
+        Assert.Contains(1L, program.Constants);
+        Assert.DoesNotContain(90L, program.Constants);
+    }
+
+    [Fact]
+    public void ExamplePackAndFramesArePinned()
+    {
+        var (bytes, catalog, bag) = PackTests.BuildExamples();
+        Assert.False(bag.HasErrors);
+        Assert.Equal("6BA542D72CE9F06CC01B9C9BE4AA7F011266A779F2DF03497DBA6143774365ED", Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)));
+        Assert.Equal("79c0b6b66ad0d605f9ef70e823668efe", catalog.Hash);
+        var program = Program("actor s { on arrive(ctx) { wait 30min\n apply effect:alarm(ctx.place) } }", baseUnit: null, "actor:s");
+        var host = new FakeHost();
+        host.ContextValues["place"] = host.Sym("place:depot");
+        var frame = new BehaviorVm(program, host).Activate("arrive", "inst-1").Frame!;
+        Assert.Equal("""{"format_version":1,"instance_id":"inst-1","behavior_id":"actor:s","definition_version":1,"definition_hash":"d56816832e5b3548b74e93aa7ec50015","hook_id":"arrive","stack":[{"function_index":0,"function_name":"on arrive","register_base":0,"register_count":1,"return_register":-1,"resume_label":"arrive/1","pc":1}],"registers":[30],"symbol_names":[null],"pending":{"kind":0,"label":"arrive/1","due_at_minutes":1030,"id":null,"options":[],"result_register":-1},"applied_effects":[],"steps_used":2,"effect_sequence":0}""", BehaviorVm.Save(frame));
+    }
+
+    [Fact]
+    public void UnitsConvertExactlyOrSayWhy()
+    {
+        Assert.True(DurationUnits.TryConvert(2, DurationUnit.Second, DurationUnit.Millisecond, out var ms));
+        Assert.Equal(2000, ms);
+        Assert.False(DurationUnits.TryConvert(90, DurationUnit.Minute, DurationUnit.Hour, out _));
+        Assert.True(DurationUnits.TryConvert(120, DurationUnit.Minute, DurationUnit.Hour, out var h));
+        Assert.Equal(2, h);
+        Assert.False(DurationUnits.TryConvert(250, DurationUnit.Millisecond, DurationUnit.Second, out _));
+        Assert.False(DurationUnits.TryConvert(106_751_991_167_301, DurationUnit.Day, DurationUnit.Millisecond, out _));
+        Assert.Equal(0, DurationUnits.ConvertTruncating(30, DurationUnit.Second, DurationUnit.Minute));
+        Assert.Equal(1, DurationUnits.ConvertTruncating(90, DurationUnit.Second, DurationUnit.Minute));
+        Assert.Equal(0, DurationUnits.ConvertTruncating(-30, DurationUnit.Second, DurationUnit.Minute));
+        Assert.Equal(long.MaxValue, DurationUnits.ConvertTruncating(long.MaxValue / 2, DurationUnit.Day, DurationUnit.Millisecond));
+        Assert.True(DurationUnits.TryParseSuffix("ms", out var u) && u == DurationUnit.Millisecond);
+        Assert.False(DurationUnits.TryParseSuffix("minutes", out _));
+        Assert.Equal("350ms", DurationUnits.Format(350, DurationUnit.Millisecond));
+        Assert.Equal(DurationUnit.Minute, default(DurationUnit));
+    }
+
+    [Fact]
+    public void MillisecondLiteralsAreOneTokenAndDecimalsStayRejected()
+    {
+        var bag = new DiagnosticBag();
+        var tokens = Lexer.Lex(SourceText.FromString("a = 350ms\nb = 1.5ms\nc = 5mss\n", "l.kedo"), bag);
+        Assert.Equal(1, tokens.Count(t => t.Kind == TokenKind.Duration));
+        Assert.Contains(bag.Items, d => d.Code == "K1002" && d.Message.Contains("whole numbers"));
+        Assert.Contains(bag.Items, d => d.Code == "K1002" && d.Message == "invalid number suffix `mss`; durations use `s`, `min`, `h` or `d`");
+        Assert.Equal(0, new DurationValue(default, 1500, "ms").Minutes);
+    }
+
+    [Fact]
+    public void HookLiteralsCompileInTheProgramUnit()
+    {
+        var program = Program("actor z { on go(ctx) { wait 350ms\n wait 2s } }", baseUnit: "ms", "actor:z");
+        Assert.Equal(DurationUnit.Millisecond, program.TimeUnit);
+        Assert.Contains(350L, program.Constants);
+        Assert.Contains(2000L, program.Constants);
+        Assert.StartsWith("program actor:z v1 time_unit=ms\n", Disassembler.Dump(program));
+        Assert.StartsWith("program actor:z v1\n", Disassembler.Dump(Program("actor z { on go(ctx) { wait 1min } }", baseUnit: null, "actor:z")));
+    }
+
+    [Fact]
+    public void AUnitConflictSuppressesK4014InHooks()
+    {
+        var bag = new DiagnosticBag();
+        var files = new[]
+        {
+            "kedo 1\nmodule m\nmanifest { base_unit = ms }\nactor z { on go(ctx) { wait 30s } }\n",
+            "kedo 1\nmodule m\nmanifest { base_unit = s }\nthing u { a = 1s }\n",
+        }.Select((text, i) => DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(text, $"k{i}.kedo"), bag), bag)).ToList();
+        var schema = new SchemaRegistry { Permissive = true };
+        var catalog = Resolver.Resolve(files, schema, bag);
+        var program = BehaviorCompiler.Compile(catalog.ByKey["actor:z"], files.SelectMany(f => f.Functions), schema, bag);
+        Assert.Contains(bag.Items, d => d.Code == "K2012");
+        Assert.DoesNotContain(bag.Items, d => d.Code == "K4014");
+        Assert.Equal(DurationUnit.Minute, program!.TimeUnit);
+    }
+
+    private static (IReadOnlyList<BehaviorProgram?> Programs, DiagnosticBag Bag) CompileAll(string content, string baseUnit)
+    {
+        var bag = new DiagnosticBag();
+        var schema = new SchemaRegistry { Permissive = true };
+        var decls = Build(content, baseUnit, bag);
+        var catalog = Resolver.Resolve(new[] { decls }, schema, bag);
+        var programs = catalog.Objects.Select(o => BehaviorCompiler.Compile(o, decls.Functions, schema, bag)).ToList();
+        return (programs, bag);
+    }
+
+    [Fact]
+    public void ASubMinuteHookLiteralInMinutesWarnsOnce()
+    {
+        var (_, bag) = CompileAll("actor z { on go(ctx) { wait 30s } }", "min");
+        Assert.Single(bag.Items, d => d.Code == "K4014" && d.Severity == Severity.Warning);
+    }
+
+    [Fact]
+    public void ASharedHookOrFunctionLiteralIsReportedOncePerSite()
+    {
+        var (_, bag) = CompileAll("function pause(x: int) -> int { return 30s }\nmixin slow { on go(ctx) { wait 45s } }\nactor a with slow { on tick(ctx) { apply effect:e(pause(1)) } }\nactor b with slow { on tick(ctx) { apply effect:e(pause(2)) } }", "min");
+        Assert.False(bag.HasErrors, string.Join("\n", bag.Items.Select(d => d.Message)));
+        Assert.Single(bag.Items, d => d.Code == "K4014" && d.Message.Contains("`30s`"));
+        Assert.Single(bag.Items, d => d.Code == "K4014" && d.Message.Contains("`45s`"));
+    }
+
+    [Fact]
+    public void AnOverflowingHookLiteralIsAnErrorAndLoadsZero()
+    {
+        var bag = new DiagnosticBag();
+        var schema = new SchemaRegistry { Permissive = true };
+        var decls = Build("actor z { on go(ctx) { wait 9000000000000000d } }", "ms", bag);
+        var catalog = Resolver.Resolve(new[] { decls }, schema, bag);
+        var program = BehaviorCompiler.Compile(catalog.ByKey["actor:z"], decls.Functions, schema, bag);
+        Assert.Contains(bag.Items, d => d.Code == "K4014" && d.IsError);
+        Assert.Contains(0L, program!.Constants);
+    }
+
+    [Fact]
+    public void ANonWholeWaitIsK4014()
+    {
+        var bag = new DiagnosticBag();
+        var decls = DeclarationBuilder.Build(Parser.Parse(SourceText.FromString("kedo 1\nmodule m\nmanifest { base_unit = s }\nactor z { on go(ctx) { wait 250ms } }", "h.kedo"), bag), bag);
+        var schema = new SchemaRegistry { Permissive = true };
+        var catalog = Resolver.Resolve(new[] { decls }, schema, bag);
+        BehaviorCompiler.Compile(catalog.ByKey["actor:z"], decls.Functions, schema, bag);
+        Assert.Contains(bag.Items, d => d.Code == "K4014" && d.IsError && d.File == "h.kedo");
+    }
+
+    [Fact]
+    public void MillisecondLiteralsInHooksCompileToTruncatedMinutes()
+    {
+        var program = Program("actor z { on go(ctx) { wait 350ms; wait 120000ms } }", baseUnit: null, "actor:z");
+        Assert.Contains(0L, program.Constants);
+        Assert.Contains(2L, program.Constants);
+        Assert.DoesNotContain(350L, program.Constants);
+        Assert.DoesNotContain(120000L, program.Constants);
+        Assert.Equal(DurationUnit.Minute, program.TimeUnit);
+    }
+
+    [Fact]
+    public void FormatterPreservesMillisecondLiterals()
+    {
+        const string text = "kedo 1\nmodule m\n\nthing t {\n    a = 350ms\n    b = 1_500ms\n}\n";
+        var bag = new DiagnosticBag();
+        var formatted = Kedo.Compiler.Formatting.Formatter.Format(Parser.Parse(SourceText.FromString(text, "f.kedo"), bag));
+        Assert.False(bag.HasErrors);
+        Assert.Contains("350ms", formatted);
+        Assert.Contains("1_500ms", formatted);
+        var again = Kedo.Compiler.Formatting.Formatter.Format(Parser.Parse(SourceText.FromString(formatted, "f.kedo"), new DiagnosticBag()));
+        Assert.Equal(formatted, again);
+    }
+
+    [Fact]
+    public void DurationsResolveInTheBaseUnit()
+    {
+        var (catalog, bag) = Resolve("thing t { windup = 350ms  cooldown = 2s  combo = (1s + 250ms)  long = 2min  raw = 40  neg = -250ms }", baseUnit: "ms");
+        Assert.False(bag.HasErrors);
+        var cooldown = Assert.IsType<RDuration>(Field(catalog, "thing:t", "cooldown"));
+        Assert.Equal((2000L, DurationUnit.Millisecond), (cooldown.Amount, cooldown.Unit));
+        Assert.Equal("350ms", Field(catalog, "thing:t", "windup").CanonicalText);
+        Assert.Equal("1250ms", Field(catalog, "thing:t", "combo").CanonicalText);
+        Assert.Equal("120000ms", Field(catalog, "thing:t", "long").CanonicalText);
+        Assert.Equal("-250ms", Field(catalog, "thing:t", "neg").CanonicalText);
+        Assert.DoesNotContain(bag.Items, d => d.Code == "K4014");
+    }
+
+    [Fact]
+    public void ANonWholeLiteralWarnsInMinutesAndFailsElsewhere()
+    {
+        var (legacy, lbag) = Resolve("thing t { a = 30s  b = (90s + 30s) }", baseUnit: null);
+        Assert.False(lbag.HasErrors);
+        Assert.Equal(3, lbag.Items.Count(d => d.Code == "K4014" && d.Severity == Severity.Warning));
+        Assert.Equal("0min", Field(legacy, "thing:t", "a").CanonicalText);
+        Assert.Equal("1min", Field(legacy, "thing:t", "b").CanonicalText);
+
+        var (strict, sbag) = Resolve("thing t { a = 250ms  b = (500ms * 2)  c = 3s }", baseUnit: "s");
+        Assert.Equal(2, sbag.Items.Count(d => d.Code == "K4014" && d.IsError));
+        Assert.Contains(sbag.Items, d => d.Message.StartsWith("`250ms` is not a whole number of `s`"));
+        Assert.False(strict.ByKey["thing:t"].Body.Fields.TryGetValue("a", out _));
+        Assert.Equal("3s", Field(strict, "thing:t", "c").CanonicalText);
+    }
+
+    [Fact]
+    public void AMixinLiteralIsReportedOnce()
+    {
+        var (_, bag) = Resolve("mixin quick { a = 30s }\nthing t1 with quick { }\nthing t2 with quick { }\nthing t3 with quick { }", baseUnit: null);
+        Assert.Single(bag.Items, d => d.Code == "K4014");
+    }
+
+    [Fact]
+    public void AHugeLiteralIsAnErrorNotAWrap()
+    {
+        var (_, ms) = Resolve("thing t { a = 106751991167301d }", baseUnit: "ms");
+        Assert.Contains(ms.Items, d => d.Code == "K4014" && d.IsError && d.Message.Contains("64-bit"));
+        var (_, min) = Resolve("thing t { a = 9223372036854775807d }", baseUnit: null);
+        Assert.Contains(min.Items, d => d.Code == "K4014" && d.IsError);
+    }
+
+    [Fact]
+    public void TheUnitIsPartOfTheHashButMinutesHashAsBefore()
+    {
+        var a = Resolve("thing t { a = 30min }", baseUnit: null).Catalog.ByKey["thing:t"].Hash;
+        var b = Resolve("thing t { a = 30min }", baseUnit: "min").Catalog.ByKey["thing:t"].Hash;
+        var c = Resolve("thing t { a = 30s }", baseUnit: "s").Catalog.ByKey["thing:t"].Hash;
+        Assert.Equal(a, b);
+        Assert.NotEqual(a, c);
+    }
+
+    [Fact]
+    public void AUnitConflictSuppressesK4014()
+    {
+        var bag = new DiagnosticBag();
+        var files = new[]
+        {
+            "kedo 1\nmodule m\nmanifest { base_unit = ms }\nthing t { a = 30s }\n",
+            "kedo 1\nmodule m\nmanifest { base_unit = s }\nthing u { a = 250ms }\n",
+        }.Select((text, i) => DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(text, $"g{i}.kedo"), bag), bag)).ToList();
+        Resolver.Resolve(files, new SchemaRegistry { Permissive = true }, bag);
+        Assert.Contains(bag.Items, d => d.Code == "K2012");
+        Assert.DoesNotContain(bag.Items, d => d.Code == "K4014");
+    }
+    private const string ActionSchema = """
+        kedo 1
+        module s
+        kedo_type attack { fields = [
+            { name = windup  kind = duration  min = 100ms  max = 2s  default = 400ms }
+            { name = cooldown  kind = duration  min = 0  default = 3 }
+        ] }
+        """;
+
+    private static SchemaRegistry LoadActionSchema(string text = ActionSchema)
+    {
+        var bag = new DiagnosticBag();
+        var schema = SchemaLoader.Load(new[] { DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(text, "s.kedo"), bag), bag) }, bag);
+        Assert.False(bag.HasErrors, string.Join("\n", bag.Items.Select(d => d.Message)));
+        return schema;
+    }
+
+    [Fact]
+    public void SchemaDurationsAreExactInMilliseconds()
+    {
+        var schema = LoadActionSchema();
+        var windup = schema.FindType("attack")!.Body.Find("windup")!;
+        Assert.Equal((100L, 2000L, 400L), (windup.MinDurationMs, windup.MaxDurationMs, windup.DefaultDurationMs));
+        Assert.Equal(0, windup.DefaultInt);
+        Assert.Null(windup.Min);
+
+        var (catalog, cbag) = Resolve("attack a { }\nattack b { windup = 50ms }\nattack c { windup = 3s }", baseUnit: "ms", schema);
+        Assert.Equal("400ms", Field(catalog, "attack:a", "windup").CanonicalText);
+        Assert.Equal("3ms", Field(catalog, "attack:a", "cooldown").CanonicalText);
+        Assert.Equal(2, cbag.Items.Count(d => d.Code == "K4004"));
+        Assert.Contains(cbag.Items, d => d.Message.Contains("[100ms, 2s]"));
+    }
+
+    [Fact]
+    public void ASchemaMinuteDefaultKeepsItsValueInAMillisecondModule()
+    {
+        var schema = LoadActionSchema(ActionSchema.Replace("default = 400ms", "default = 2min").Replace("max = 2s", "max = 5min"));
+        Assert.Equal(120000L, schema.FindType("attack")!.Body.Find("windup")!.DefaultDurationMs);
+        var (catalog, bag) = Resolve("attack a { }", baseUnit: "ms", schema);
+        Assert.Equal("120000ms", Field(catalog, "attack:a", "windup").CanonicalText);
+        Assert.DoesNotContain(bag.Items, d => d.IsError);
+        var (minutes, _) = Resolve("attack a { }", baseUnit: null, schema);
+        Assert.Equal("2min", Field(minutes, "attack:a", "windup").CanonicalText);
+    }
+
+    [Fact]
+    public void ASchemaDefaultThatIsNotWholeInTheContentUnitIsReportedOnce()
+    {
+        var schema = LoadActionSchema();
+        var (catalog, cbag) = Resolve("attack a { }\nattack b { }", baseUnit: "s", schema);
+        Assert.Single(cbag.Items, d => d.Code == "K4014" && d.IsError && d.Message.Contains("attack.windup"));
+        Assert.False(catalog.ByKey["attack:a"].Body.Fields.TryGetValue("windup", out _));
+    }
+
+    [Fact]
+    public void JsonSchemaWritesDurationDefaults()
+    {
+        var registry = LoadActionSchema();
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            JsonSchemaWriter.Write(registry, writer);
+        }
+
+        var fields = JsonDocument.Parse(stream.ToArray()).RootElement.GetProperty("types").GetProperty("attack").GetProperty("properties");
+        Assert.Equal("400ms", fields.GetProperty("windup").GetProperty("default").GetString());
+        Assert.Equal("3min", fields.GetProperty("cooldown").GetProperty("default").GetString());
+        Assert.Contains("ms|", fields.GetProperty("windup").GetProperty("pattern").GetString());
+    }
+
+    [Fact]
+    public void MixedIntAndDurationBoundsCompareExactlyInMilliseconds()
+    {
+        var schema = LoadActionSchema(ActionSchema.Replace("{ name = cooldown  kind = duration  min = 0  default = 3 }", "{ name = cooldown  kind = duration  min = 0  max = 2s }"));
+        var (_, bag) = Resolve("attack a { cooldown = 2000ms }\nattack b { cooldown = 2001ms }", baseUnit: "ms", schema);
+        Assert.Single(bag.Items, d => d.Code == "K4004" && d.Message.Contains("2001ms"));
+        Assert.Single(bag.Items, d => d.Code == "K4004" && d.Message.Contains("[0ms, 2s]"));
+    }
+
+    [Fact]
+    public void AMinuteModuleTruncatesANonWholeSchemaDefaultWithAWarning()
+    {
+        var schema = LoadActionSchema(ActionSchema.Replace("default = 400ms", "default = 90s").Replace("min = 100ms", "min = 0").Replace("max = 2s", "max = 5min"));
+        var (catalog, bag) = Resolve("attack a { }", baseUnit: null, schema);
+        Assert.Single(bag.Items, d => d.Code == "K4014" && !d.IsError && d.Message.Contains("`attack.windup`") && d.Message.Contains("counts as `1min`"));
+        Assert.Equal("1min", Field(catalog, "attack:a", "windup").CanonicalText);
+    }
+
+    [Fact]
+    public void IncrementalMatchesFullWithASchemaDefaultK4014()
+    {
+        var schema = LoadActionSchema(ActionSchema.Replace("default = 400ms", "default = 90s").Replace("min = 100ms", "min = 0").Replace("max = 2s", "max = 5min"));
+        var files = new Dictionary<string, string>(StringComparer.Ordinal) { ["a.kedo"] = "kedo 1\nmodule m\nattack a { }\nattack b { }\n" };
+        var session = new IncrementalCatalog(schema);
+        IncrementalTests.AssertSame(session, files, schema);
+        files["a.kedo"] += "attack c { windup = 2min }\n";
+        IncrementalTests.AssertSame(session, files, schema);
+    }
+
+    [Fact]
+    public void AnIntBoundIsReportedWithoutUnitsInAMillisecondModule()
+    {
+        var schema = LoadActionSchema();
+        var (_, bag) = Resolve("attack a { cooldown = -1ms }", baseUnit: "ms", schema);
+        Assert.Single(bag.Items, d => d.Code == "K4004" && d.Message == "`attack:a.cooldown` = -1ms is out of range");
+    }
+
+    [Fact]
+    public void DurationValueEqualityIgnoresTheLiteralText()
+    {
+        var bag = new DiagnosticBag();
+        var decls = Build("thing t { a = 1_500ms }", baseUnit: null, bag);
+        var parsed = decls.Objects.Single().Entries.OfType<FieldEntry>().Single().Value;
+        var origin = parsed.Origin;
+        Assert.Equal(new DurationValue(origin, 1500, "ms"), parsed);
+        Assert.Equal(new DurationValue(origin, 1500, "ms").GetHashCode(), parsed.GetHashCode());
+        Assert.NotEqual(new DurationValue(origin, 1500, "ms"), new DurationValue(origin, 1501, "ms"));
+    }
+
+    [Fact]
+    public void K4004ShowsDurationBoundsInTheLargestExactUnit()
+    {
+        var schema = LoadActionSchema(ActionSchema.Replace("min = 100ms  max = 2s", "min = 10min  max = 2h"));
+        var (_, bag) = Resolve("attack a { windup = 1min }", baseUnit: "ms", schema);
+        Assert.Single(bag.Items, d => d.Code == "K4004" && d.Message.EndsWith("[10min, 2h]"));
+    }
+
+    [Fact]
+    public void K4014QuotesTheLiteralAsWritten()
+    {
+        var (_, bag) = Resolve("thing t { a = 1_500ms }", baseUnit: "s");
+        Assert.Single(bag.Items, d => d.Code == "K4014" && d.Message.Contains("`1_500ms`"));
+    }
+
+    /// <summary>Offset of the section table entry <paramref name="index"/> (id u32, offset u64, length u64) in a pack.</summary>
+    private static int SectionEntry(byte[] bytes, int index)
+    {
+        var pos = 12;
+        pos += 4 + (int)BitConverter.ToUInt32(bytes, pos);
+        pos += 4 + (int)BitConverter.ToUInt32(bytes, pos);
+        pos += 4;
+        return pos + index * 20;
+    }
+
+    private static void Rehash(byte[] bytes) => System.IO.Hashing.XxHash128.Hash(bytes.AsSpan(0, bytes.Length - 16), bytes.AsSpan(bytes.Length - 16));
+
+    [Fact]
+    public void AMalformedUnitSectionIsRejectedWithItsOwnMessage()
+    {
+        var (catalog, _) = Resolve("attack a { windup = 350ms }", baseUnit: "ms");
+        var bytes = PackWriter.Write(catalog, Array.Empty<BehaviorProgram>());
+        var entry = SectionEntry(bytes, 3);
+        Assert.Equal(KedoPack.SectionTimeUnit, (int)BitConverter.ToUInt32(bytes, entry));
+        BitConverter.GetBytes(2L).CopyTo(bytes, entry + 12);
+        Rehash(bytes);
+        Assert.Contains("malformed time unit section", Assert.Throws<InvalidDataException>(() => KedoPack.Load(bytes)).Message);
+    }
+
+    [Fact]
+    public void ARepeatedSectionIdIsRejected()
+    {
+        var (catalog, _) = Resolve("attack a { windup = 350ms }", baseUnit: "ms");
+        var bytes = PackWriter.Write(catalog, Array.Empty<BehaviorProgram>());
+        BitConverter.GetBytes((uint)KedoPack.SectionStrings).CopyTo(bytes, SectionEntry(bytes, 1));
+        Rehash(bytes);
+        Assert.Contains("repeats section", Assert.Throws<InvalidDataException>(() => KedoPack.Load(bytes)).Message);
+    }
+
+    [Fact]
+    public void AFormat2PackIgnoresAStraySectionFour()
+    {
+        var (catalog, _) = Resolve("attack a { windup = 350ms }", baseUnit: "ms");
+        var bytes = PackWriter.Write(catalog, Array.Empty<BehaviorProgram>());
+        BitConverter.GetBytes(2).CopyTo(bytes, 4);
+        Rehash(bytes);
+        Assert.Equal(DurationUnit.Minute, KedoPack.Load(bytes).TimeUnit);
+    }
+
+    [Fact]
+    public void ACoarserUnitProgramOnAClocklessHostTruncatesFromMinutes()
+    {
+        var hours = Program("actor s { on go(ctx) { wait 2h } }", baseUnit: "h", "actor:s");
+        Assert.Equal((18L, DurationUnit.Hour), (new BehaviorVm(hours, new FakeHost()).Activate("go", "i").Frame!.Pending!.DueAtMinutes, DurationUnit.Hour));
+        var seconds = Program("actor s { on go(ctx) { wait 5s } }", baseUnit: "s", "actor:s");
+        Assert.Equal(60_005L, new BehaviorVm(seconds, new FakeHost()).Activate("go", "i").Frame!.Pending!.DueAtMinutes);
+    }
+
+    [Fact]
+    public void AHugeWaitSaturatesInsteadOfWrapping()
+    {
+        var program = Program("actor s { on go(ctx) { wait 9223372036854775807ms } }", baseUnit: "ms", "actor:s");
+        Assert.Equal(long.MaxValue, new BehaviorVm(program, new ClockHost()).Activate("go", "i").Frame!.Pending!.DueAtMinutes);
+        var host = new TraceHost { NowMinutes = long.MaxValue };
+        Assert.Equal(long.MaxValue, host.NowMilliseconds);
+    }
+
+    private sealed class ClockHost : IBehaviorHost, IBehaviorClock
+    {
+        public long Ms { get; set; } = 10_000;
+        public SymbolTable Symbols { get; } = new();
+        public List<string> Applied { get; } = new();
+        public long NowMinutes => Ms / 60_000;
+        public long Now(DurationUnit unit) => DurationUnits.ConvertTruncating(Ms, DurationUnit.Millisecond, unit);
+        public HostValue Context(string field) => HostValue.None;
+        public HostValue Query(string queryId, ReadOnlySpan<HostValue> args) => HostValue.Int(0);
+        public bool Apply(EffectKey key, string effectId, ReadOnlySpan<HostValue> args) { Applied.Add(effectId); return true; }
+        public long Roll(EffectKey key, string streamId, ReadOnlySpan<HostValue> args) => 1;
+        public void Raise(string signalId, ReadOnlySpan<HostValue> args) { }
+        public void Trace(string message) { }
+    }
+
+    private const string Telegraph = "actor boss { on slam(ctx) { wait 350ms\n apply effect:shockwave(3) } }";
+
+    [Fact]
+    public void WaitIsDueInTheProgramUnitFromTheClock()
+    {
+        var program = Program(Telegraph, baseUnit: "ms", "actor:boss");
+        var first = new BehaviorVm(program, new ClockHost()).Activate("slam", "i");
+        Assert.Equal(AwaitKind.Minutes, first.Frame!.Pending!.Kind);
+        Assert.Equal((10_350L, DurationUnit.Millisecond), (first.Frame.Pending.DueAtMinutes, first.Frame.Pending.Unit));
+        var json = BehaviorVm.Save(first.Frame);
+        Assert.Contains("\"unit\":1", json);
+        var host = new ClockHost { Ms = 10_350 };
+        Assert.Equal(RunStatus.Completed, new BehaviorVm(program, host).Resume(BehaviorVm.Load(json)!, new Resumption(AwaitKind.Minutes, 0)).Status);
+        Assert.Equal(new[] { "effect:shockwave" }, host.Applied);
+    }
+
+    [Fact]
+    public void AHostWithoutClockConvertsNowMinutes()
+    {
+        var program = Program(Telegraph, baseUnit: "ms", "actor:boss");
+        var frame = new BehaviorVm(program, new FakeHost()).Activate("slam", "i").Frame!;
+        Assert.Equal(60_000_350L, frame.Pending!.DueAtMinutes);
+    }
+
+    [Fact]
+    public void AFrameSavedBy10ResumesAsMinutes()
+    {
+        var program = Program("actor s { on arrive(ctx) { wait 30min\n apply effect:alarm(1) } }", baseUnit: null, "actor:s");
+        var frame = new BehaviorVm(program, new FakeHost()).Activate("arrive", "i").Frame!;
+        var json = BehaviorVm.Save(frame);
+        Assert.DoesNotContain("\"unit\"", json);
+        Assert.Equal(DurationUnit.Minute, BehaviorVm.Load(json)!.Pending!.Unit);
+        var msProgram = Program(Telegraph, baseUnit: "ms", "actor:boss");
+        var sameDefinition = frame with { DefinitionHash = msProgram.DefinitionHash, DefinitionVersion = msProgram.DefinitionVersion };
+        var stale = new BehaviorVm(msProgram, new FakeHost()).Resume(sameDefinition, new Resumption(AwaitKind.Minutes, 0));
+        Assert.Equal(RunStatus.Failed, stale.Status);
+        Assert.Contains("stale frame", stale.Error);
+    }
+
+    [Fact]
+    public void TheTraceHostRunsAMillisecondHook()
+    {
+        var host = new TraceHost();
+        var status = host.Run(Program(Telegraph, baseUnit: "ms", "actor:boss"), "slam");
+        Assert.Equal("Completed", status);
+        Assert.Equal(new[] { "effect:shockwave(3)" }, host.Applied);
+        Assert.Contains("suspended: Minutes slam/1", host.Lines);
+        Assert.Equal(350, host.NowMilliseconds);
+        Assert.Equal(0, host.NowMinutes);
+    }
+
+    [Fact]
+    public void APackInAnotherUnitIsFormat3AndKeepsIt()
+    {
+        var (catalog, bag) = Resolve("attack a { windup = 350ms }\n" + Telegraph, baseUnit: "ms");
+        Assert.False(bag.HasErrors);
+        var program = BehaviorCompiler.Compile(catalog.ByKey["actor:boss"], Array.Empty<FunctionEntry>(), new SchemaRegistry { Permissive = true }, bag)!;
+        var bytes = PackWriter.Write(catalog, new[] { program });
+        Assert.Equal(3, BitConverter.ToInt32(bytes, 4));
+        Assert.Equal(3, PackWriter.FormatFor(DurationUnit.Millisecond));
+        Assert.Equal(2, PackWriter.FormatFor(DurationUnit.Minute));
+        var pack = KedoPack.Load(bytes);
+        Assert.Equal(DurationUnit.Millisecond, pack.TimeUnit);
+        Assert.Equal(new PackInt(350, true), pack.Find("attack:a")!.Body.Fields["windup"]);
+        Assert.Equal(DurationUnit.Millisecond, pack.ProgramOf(pack.Find("actor:boss")!)!.TimeUnit);
+    }
+
+    [Fact]
+    public void AMinutePackStaysFormat2()
+    {
+        var (bytes, _, _) = PackTests.BuildExamples();
+        Assert.Equal(2, BitConverter.ToInt32(bytes, 4));
+        Assert.Equal(DurationUnit.Minute, KedoPack.Load(bytes).TimeUnit);
+    }
+
+    [Fact]
+    public void AnUnknownUnitByteIsRejected()
+    {
+        var (catalog, _) = Resolve("attack a { windup = 350ms }", baseUnit: "ms");
+        var bytes = PackWriter.Write(catalog, Array.Empty<BehaviorProgram>());
+        bytes[^17] = 9;
+        System.IO.Hashing.XxHash128.Hash(bytes.AsSpan(0, bytes.Length - 16), bytes.AsSpan(bytes.Length - 16));
+        Assert.Throws<InvalidDataException>(() => KedoPack.Load(bytes));
+    }
+
+    [Fact]
+    public void AFormat3PackWithoutTheUnitSectionIsRejected()
+    {
+        var (catalog, _) = Resolve("attack a { windup = 1min }", baseUnit: null);
+        var bytes = PackWriter.Write(catalog, Array.Empty<BehaviorProgram>());
+        BitConverter.GetBytes(3).CopyTo(bytes, 4);
+        System.IO.Hashing.XxHash128.Hash(bytes.AsSpan(0, bytes.Length - 16), bytes.AsSpan(bytes.Length - 16));
+        Assert.Throws<InvalidDataException>(() => KedoPack.Load(bytes));
+    }
+
+    [Fact]
+    public void AProgramWithAnotherUnitThanTheCatalogIsApiMisuse()
+    {
+        var (catalog, _) = Resolve("attack a { windup = 350ms }", baseUnit: "ms");
+        var program = new BehaviorProgram("actor:boss", 1, "h", Array.Empty<uint>(), Array.Empty<long>(), Array.Empty<string>(), new List<FunctionInfo>(), new Dictionary<string, int>(), new List<AwaitSite>(), Array.Empty<string>());
+        Assert.Throws<ArgumentException>(() => PackWriter.Write(catalog, new[] { program }));
+    }
+
+    [Fact]
+    public void DescribeNamesTheUnitOfDurationFields()
+    {
+        var schema = LoadActionSchema();
+        var (catalog, _) = Resolve("attack a { windup = 300ms }", baseUnit: "ms", schema);
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream)) { Kedo.Compiler.Editing.ObjectDescriber.Write(writer, catalog.ByKey["attack:a"], schema); }
+        var fields = JsonDocument.Parse(stream.ToArray()).RootElement.GetProperty("fields").EnumerateArray().ToDictionary(f => f.GetProperty("name").GetString()!);
+        Assert.Equal("ms", fields["windup"].GetProperty("unit").GetString());
+        Assert.Equal("300ms", fields["windup"].GetProperty("value").GetString());
+        Assert.Equal("100ms", fields["windup"].GetProperty("min_duration").GetString());
+        Assert.Equal("2s", fields["windup"].GetProperty("max_duration").GetString());
+        Assert.Equal("ms", fields["cooldown"].GetProperty("unit").GetString());
+        Assert.False(fields["cooldown"].TryGetProperty("min_duration", out _));
+    }
+
+    [Fact]
+    public void DescribeNamesTheUnitOfDurationListElements()
+    {
+        var schema = LoadActionSchema(ActionSchema.Replace("] }", "{ name = steps  kind = list  strategy = set  element = { kind = duration } } ] }"));
+        var (catalog, bag) = Resolve("attack a { steps = [100ms, 250ms] }", baseUnit: "ms", schema);
+        Assert.False(bag.HasErrors, string.Join("; ", bag.Items.Select(d => d.Message)));
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream)) { Kedo.Compiler.Editing.ObjectDescriber.Write(writer, catalog.ByKey["attack:a"], schema); }
+        var fields = JsonDocument.Parse(stream.ToArray()).RootElement.GetProperty("fields").EnumerateArray().ToDictionary(f => f.GetProperty("name").GetString()!);
+        Assert.Equal("ms", fields["steps"].GetProperty("unit").GetString());
+    }
+}

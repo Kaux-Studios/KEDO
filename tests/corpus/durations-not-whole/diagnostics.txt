@@ -1,0 +1,2 @@
+error K4014 8:13 `250ms` is not a whole number of `s` (the module's `base_unit`); write it in `s` or a larger unit, or set a smaller `base_unit` in the manifest
+error K4014 9:15 `500ms` is not a whole number of `s` (the module's `base_unit`); write it in `s` or a larger unit, or set a smaller `base_unit` in the manifest

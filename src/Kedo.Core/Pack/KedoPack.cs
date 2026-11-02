@@ -2,12 +2,13 @@ using System.Buffers.Binary;
 using System.IO.Hashing;
 using System.Text;
 using Kedo.Runtime;
+using Kedo.Schema;
 
 namespace Kedo.Pack;
 
 /// <summary>
 /// The compiled artifact (ADR-0007 D7): little-endian sectioned binary. Header = magic, format version, language major,
-/// catalog hash, section table. Sections: strings, objects, programs. Trailer: XxHash128 of everything before it.
+/// catalog hash, section table. Sections: strings, objects, programs and, from format 3, the time unit of the durations (one byte; format 2 packs are always minutes and ignore a section 4). A repeated section id is rejected. Trailer: XxHash128 of everything before it.
 /// Sources are the truth; a pack with another format version is rejected and must be rebuilt.
 /// </summary>
 public sealed class KedoPack
@@ -15,11 +16,14 @@ public sealed class KedoPack
     /// <summary>Magic bytes.</summary>
     public static ReadOnlySpan<byte> Magic => "KEDO"u8;
 
-    /// <summary>Current pack format. 2 adds the decimal tag (ADR-0008); format 1 packs still load.</summary>
+    /// <summary>Format written for packs in minutes (the 1.0 layout); other units are written as <see cref="LatestFormatVersion"/>. 2 adds the decimal tag (ADR-0008); format 1 packs still load.</summary>
     public const int FormatVersion = 2;
 
     /// <summary>Oldest pack format this runtime reads.</summary>
     public const int MinFormatVersion = 1;
+
+    /// <summary>Newest pack format this runtime reads. 3 adds the time unit section (ADR-0014).</summary>
+    public const int LatestFormatVersion = 3;
 
     /// <summary>Section id of the string table.</summary>
     public const int SectionStrings = 1;
@@ -27,15 +31,18 @@ public sealed class KedoPack
     public const int SectionObjects = 2;
     /// <summary>Section id of the programs.</summary>
     public const int SectionPrograms = 3;
+    /// <summary>Section id of the time unit (one byte, a <see cref="DurationUnit"/>); format 3 only.</summary>
+    public const int SectionTimeUnit = 4;
 
     private readonly Dictionary<string, PackObject> _byKey;
 
-    private KedoPack(string catalogHash, string toolchain, IReadOnlyList<PackObject> objects, IReadOnlyList<BehaviorProgram> programs)
+    private KedoPack(string catalogHash, string toolchain, IReadOnlyList<PackObject> objects, IReadOnlyList<BehaviorProgram> programs, DurationUnit timeUnit)
     {
         CatalogHash = catalogHash;
         Toolchain = toolchain;
         Objects = objects;
         Programs = programs;
+        TimeUnit = timeUnit;
         _byKey = objects.ToDictionary(o => o.Key, o => o, StringComparer.Ordinal);
     }
 
@@ -47,6 +54,9 @@ public sealed class KedoPack
 
     /// <summary>Concrete objects, ordered by type then id.</summary>
     public IReadOnlyList<PackObject> Objects { get; }
+
+    /// <summary>Unit the pack's durations and waits are counted in; minutes for formats 1 and 2.</summary>
+    public DurationUnit TimeUnit { get; }
 
     /// <summary>Behaviour programs.</summary>
     public IReadOnlyList<BehaviorProgram> Programs { get; }
@@ -74,9 +84,9 @@ public sealed class KedoPack
 
         r.Pos = 4;
         var format = r.U32();
-        if (format < MinFormatVersion || format > FormatVersion)
+        if (format < MinFormatVersion || format > LatestFormatVersion)
         {
-            throw new InvalidDataException($"pack format {format} is not supported by this runtime (format {FormatVersion}); rebuild from source");
+            throw new InvalidDataException($"pack format {format} is not supported by this runtime (format {LatestFormatVersion}); rebuild from source");
         }
 
         var major = r.U32();
@@ -103,7 +113,32 @@ public sealed class KedoPack
             var id = (int)r.U32();
             var offset = (int)r.U64();
             var length = (int)r.U64();
-            sections[id] = (offset, length);
+            if (!sections.TryAdd(id, (offset, length)))
+            {
+                throw new InvalidDataException($"pack repeats section {id}");
+            }
+        }
+
+        var timeUnit = DurationUnit.Minute;
+        if (format >= 3)
+        {
+            if (!sections.TryGetValue(SectionTimeUnit, out var unitSection))
+            {
+                throw new InvalidDataException("pack format 3 is missing its time unit section");
+            }
+
+            if (unitSection.length != 1 || unitSection.offset < 0 || unitSection.offset >= trailerStart)
+            {
+                throw new InvalidDataException("pack format 3 has a malformed time unit section (expected one byte inside the pack)");
+            }
+
+            var unitByte = bytes[unitSection.offset];
+            if (unitByte > (byte)DurationUnit.Day)
+            {
+                throw new InvalidDataException($"pack has an unknown time unit {unitByte}");
+            }
+
+            timeUnit = (DurationUnit)unitByte;
         }
 
         // Strings.
@@ -157,7 +192,7 @@ public sealed class KedoPack
             var mapLen = (int)r.U32();
             var map = new string[mapLen];
             for (var c = 0; c < mapLen; c++) map[c] = strings[r.U32()];
-            programs.Add(new BehaviorProgram(behaviorId, version, hash, code, constants, pstrings, functions, hooks, awaits, map));
+            programs.Add(new BehaviorProgram(behaviorId, version, hash, code, constants, pstrings, functions, hooks, awaits, map) { TimeUnit = timeUnit });
         }
 
         // Objects: only headers are decoded here; bodies and components decode on first access (#16).
@@ -187,7 +222,7 @@ public sealed class KedoPack
             objects.Add(new PackObject(type, id, hash, source, bodyOffset, componentsOffset, hookIds, programIndex));
         }
 
-        return new KedoPack(catalogHash, toolchain, objects, programs);
+        return new KedoPack(catalogHash, toolchain, objects, programs, timeUnit);
     }
 
     /// <summary>Advances over one encoded value without materialising it.</summary>

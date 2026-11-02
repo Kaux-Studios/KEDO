@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Kedo.Schema;
 
 namespace Kedo.Runtime;
 
@@ -11,6 +12,7 @@ public sealed class BehaviorVm
 {
     private readonly BehaviorProgram _program;
     private readonly IBehaviorHost _host;
+    private readonly IBehaviorClock? _clock;
     private readonly Budget _budget;
     private readonly List<string> _trace = new();
 
@@ -29,6 +31,7 @@ public sealed class BehaviorVm
     {
         _program = program;
         _host = host;
+        _clock = host as IBehaviorClock;
         _budget = budget ?? Budget.Default;
         Verify();
     }
@@ -66,7 +69,8 @@ public sealed class BehaviorVm
             return new RunResult(RunStatus.Failed, null, $"frame waits for {frame.Pending.Kind} but got {input.Kind}", Array.Empty<string>());
         }
 
-        var stale = frame.DefinitionHash != _program.DefinitionHash || frame.DefinitionVersion != _program.DefinitionVersion;
+        var stale = frame.DefinitionHash != _program.DefinitionHash || frame.DefinitionVersion != _program.DefinitionVersion
+            || (frame.Pending.Kind == AwaitKind.Minutes && frame.Pending.Unit != _program.TimeUnit);
         Reset(frame.InstanceId, frame.HookId);
         _steps = frame.StepsUsed;
         _effectSequence = frame.EffectSequence;
@@ -453,7 +457,10 @@ public sealed class BehaviorVm
                 case OpCode.WaitMinutes:
                 {
                     var label = _program.LabelAt(pc) ?? $"pc{pc}";
-                    return Suspend(frame, pc, new AwaitRequest(AwaitKind.Minutes, label, _host.NowMinutes + regs[a], null, Array.Empty<string>(), -1));
+                    var now = _clock?.Now(_program.TimeUnit) ?? DurationUnits.ConvertTruncating(_host.NowMinutes, DurationUnit.Minute, _program.TimeUnit);
+                    var wait = regs[a];
+                    var due = wait > 0 && now > long.MaxValue - wait ? long.MaxValue : now + wait;   // saturate: a huge wait must not wrap into the past
+                    return Suspend(frame, pc, new AwaitRequest(AwaitKind.Minutes, label, due, null, Array.Empty<string>(), -1) { Unit = _program.TimeUnit });
                 }
 
                 case OpCode.WaitDecision:

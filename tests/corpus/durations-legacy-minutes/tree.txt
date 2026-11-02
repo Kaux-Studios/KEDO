@@ -1,0 +1,21 @@
+File
+  Header `kedo` `1` `module` `m`
+  ObjectDecl
+    TypeName `event`
+    Name `pause`
+    Body `{` `}`
+      Field `short` `=`
+        LiteralExpr `30s`
+      Field `ninety` `=`
+        LiteralExpr `90s`
+      Field `sum` `=`
+        ParenExpr `(` `)`
+          BinaryExpr `+`
+            LiteralExpr `90s`
+            LiteralExpr `30s`
+      Field `milli` `=`
+        LiteralExpr `1500ms`
+      Field `hour` `=`
+        LiteralExpr `1h`
+      Field `day` `=`
+        LiteralExpr `1d`

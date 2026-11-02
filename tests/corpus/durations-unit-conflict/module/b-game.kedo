@@ -1,0 +1,4 @@
+kedo 1
+module game
+manifest { base_unit = s }
+thing b { t = 30s }

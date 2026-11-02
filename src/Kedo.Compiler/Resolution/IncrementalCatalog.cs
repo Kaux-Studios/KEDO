@@ -25,6 +25,8 @@ internal sealed class IncrementalState
 
     public HashSet<string> HasErrors { get; } = new(StringComparer.Ordinal);
 
+    public bool UnitConflict { get; set; }
+
     public int ResolvedCount { get; set; }
 
     public int ReusedCount { get; set; }
@@ -35,7 +37,7 @@ internal sealed class IncrementalState
 /// again, and only the objects an edit can affect are resolved again: those whose declaration text or position
 /// changed, their descendants and the users of a changed mixin. Stage B runs again for those and for the objects that
 /// referenced a key that changed, appeared or vanished. Every update returns the same catalog, hashes and diagnostics
-/// as a full <see cref="Resolver.Resolve"/>. Content with variants (ADR-0012) is resolved in full.
+/// as a full <see cref="Resolver.Resolve(IEnumerable{FileDeclarations}, SchemaRegistry, DiagnosticBag)"/>. Content with variants (ADR-0012) is resolved in full.
 /// </summary>
 public sealed class IncrementalCatalog
 {

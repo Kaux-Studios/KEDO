@@ -11,7 +11,7 @@ using Kedo.Schema;
 
 public class PackTests
 {
-    private static (byte[] bytes, ResolvedCatalog catalog, DiagnosticBag bag) BuildExamples()
+    internal static (byte[] bytes, ResolvedCatalog catalog, DiagnosticBag bag) BuildExamples()
     {
         var root = Path.Combine(ParserTests.RepoRoot(), "spec", "ejemplos");
         var bag = new DiagnosticBag();

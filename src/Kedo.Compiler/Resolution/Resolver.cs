@@ -40,6 +40,9 @@ public sealed class ResolvedCatalog
     /// <summary>Variant this catalog resolves (ADR-0012), or null for the base content.</summary>
     public string? Variant { get; internal set; }
 
+    /// <summary>Base unit of the durations of this content (<c>base_unit</c> of the manifest, ADR-0014); minutes by default.</summary>
+    public DurationUnit TimeUnit { get; internal set; } = DurationUnit.Minute;
+
     /// <summary>
     /// Catalogs of the variants declared in the input (files with <c>variant name</c>), by name, in order of first
     /// appearance. Each one is the base content plus that variant's new objects and overrides. Empty on a variant catalog.
@@ -84,12 +87,23 @@ public sealed class Resolver
     private int _reused;
     private bool _objectFailed;
 
-    private Resolver(SchemaRegistry schema, DiagnosticBag diagnostics, string? variant)
+    private readonly DurationUnit _unit;
+    private readonly bool _silentDurations;
+    private readonly HashSet<string> _durationSites = new(StringComparer.Ordinal);
+    private readonly Func<DurationValue, long?> _toUnit;
+
+    private Resolver(SchemaRegistry schema, DiagnosticBag diagnostics, string? variant, DurationUnit unit, bool silentDurations)
     {
         _schema = schema;
         _d = diagnostics;
         _variant = variant;
+        _unit = unit;
+        _silentDurations = silentDurations;
+        _toUnit = ToUnit;
     }
+
+    private long? ToUnit(DurationValue dv)
+        => DurationLowering.ToUnit(dv.Amount, dv.Unit, _unit, dv.Origin.File, dv.Origin.Span, _silentDurations ? null : _d, _durationSites, DurationSources.TextOf(dv));
 
     /// <summary>
     /// Resolves the declarations of several files against a schema. Files of a variant (<c>variant name</c> in the header)
@@ -97,9 +111,13 @@ public sealed class Resolver
     /// and its diagnostics that the base did not already report are added to <paramref name="diagnostics"/> (ADR-0012).
     /// </summary>
     public static ResolvedCatalog Resolve(IEnumerable<FileDeclarations> files, SchemaRegistry schema, DiagnosticBag diagnostics)
+        => Resolve(files, schema, diagnostics, null);
+
+    /// <summary>As <see cref="Resolve(IEnumerable{FileDeclarations}, SchemaRegistry, DiagnosticBag)"/>; with <paramref name="forcedUnit"/> the manifests are not read.</summary>
+    internal static ResolvedCatalog Resolve(IEnumerable<FileDeclarations> files, SchemaRegistry schema, DiagnosticBag diagnostics, DurationUnit? forcedUnit)
     {
         var all = files as IReadOnlyList<FileDeclarations> ?? files.ToList();
-        var catalog = ResolveView(all, schema, diagnostics, null);
+        var catalog = ResolveView(all, schema, diagnostics, null, forcedUnit);
         var names = all.Where(f => f.Variant is not null).Select(f => f.Variant!).Distinct(StringComparer.Ordinal).ToList();
         if (names.Count == 0)
         {
@@ -111,7 +129,7 @@ public sealed class Resolver
         foreach (var name in names)
         {
             var bag = new DiagnosticBag();
-            variants[name] = ResolveView(all, schema, bag, name);
+            variants[name] = ResolveView(all, schema, bag, name, forcedUnit);
             foreach (var d in bag.Items.Where(d => seen.Add(DiagnosticKey(d))))
             {
                 diagnostics.Add(d);
@@ -129,16 +147,23 @@ public sealed class Resolver
     /// mixins were resolved again, or that are new; the rest, with their diagnostics, come from <paramref name="previous"/>.
     /// Stage B runs again for resolved objects and for objects that referenced a key that changed, appeared or vanished.
     /// <paramref name="prints"/> maps <c>type:id</c> and <c>mixin:id</c> to a print of the declaration's text and position.
-    /// The result equals a full <see cref="Resolve"/> of the same files (without variants).
+    /// The result equals a full <see cref="Resolve(IEnumerable{FileDeclarations}, SchemaRegistry, DiagnosticBag)"/> of the same files (without variants).
     /// </summary>
     internal static (ResolvedCatalog Catalog, IncrementalState State) ResolveIncremental(IReadOnlyList<FileDeclarations> files, SchemaRegistry schema,
         DiagnosticBag diagnostics, IReadOnlyDictionary<string, string> prints, IncrementalState? previous)
     {
         var local = new DiagnosticBag();
-        var r = new Resolver(schema, local, null);
+        var unit = ModuleTimeUnit.Determine(files, local, out var conflict);
+        if (previous is not null && (previous.Catalog.TimeUnit != unit || previous.UnitConflict != conflict))
+        {
+            previous = null;
+        }
+
+        var r = new Resolver(schema, local, null, unit, conflict);
         r.Index(files);
+        r.CheckSchemaDurations();
         r.CheckReferencesToBases();
-        var state = new IncrementalState(prints);
+        var state = new IncrementalState(prints) { UnitConflict = conflict };
         var dirtyMixins = new Dictionary<string, bool>(StringComparer.Ordinal);
         bool MixinDirty(string id, int depth)
         {
@@ -191,6 +216,7 @@ public sealed class Resolver
             // Each object records every diagnostic it would report; duplicates across objects merge at the end, so the
             // set never depends on which objects were reused.
             r._warned.Clear();
+            r._durationSites.Clear();
             var start = local.Items.Count;
             var invalidBefore = new HashSet<string>(r._invalid, StringComparer.Ordinal);
             r.ResolveObject(key);
@@ -199,7 +225,7 @@ public sealed class Resolver
         }
 
         var objects = r._resolved.Values.OrderBy(o => o.Type, StringComparer.Ordinal).ThenBy(o => o.Id, StringComparer.Ordinal).ToList();
-        var catalog = new ResolvedCatalog(objects, r._resolved, r._mixins, diagnostics);
+        var catalog = new ResolvedCatalog(objects, r._resolved, r._mixins, diagnostics) { TimeUnit = unit };
 
         // Keys that changed meaning for a reference: resolved again, new, or gone.
         var changed = new HashSet<string>(r._dirty, StringComparer.Ordinal);
@@ -261,10 +287,13 @@ public sealed class Resolver
         return (catalog, state);
     }
 
-    private static ResolvedCatalog ResolveView(IReadOnlyList<FileDeclarations> files, SchemaRegistry schema, DiagnosticBag diagnostics, string? variant)
+    private static ResolvedCatalog ResolveView(IReadOnlyList<FileDeclarations> files, SchemaRegistry schema, DiagnosticBag diagnostics, string? variant, DurationUnit? forcedUnit)
     {
-        var r = new Resolver(schema, diagnostics, variant);
+        var conflict = false;
+        var unit = forcedUnit ?? ModuleTimeUnit.Determine(files, diagnostics, out conflict);
+        var r = new Resolver(schema, diagnostics, variant, unit, conflict);
         r.Index(files);
+        r.CheckSchemaDurations();
         r.CheckReferencesToBases();
         foreach (var key in r.TopologicalOrder())
         {
@@ -272,7 +301,7 @@ public sealed class Resolver
         }
 
         var objects = r._resolved.Values.OrderBy(o => o.Type, StringComparer.Ordinal).ThenBy(o => o.Id, StringComparer.Ordinal).ToList();
-        var catalog = new ResolvedCatalog(objects, r._resolved, r._mixins, diagnostics) { Variant = variant };
+        var catalog = new ResolvedCatalog(objects, r._resolved, r._mixins, diagnostics) { Variant = variant, TimeUnit = unit };
         r.ValidateStageB(catalog);
         CatalogHasher.Hash(catalog);
         return catalog;
@@ -578,10 +607,87 @@ public sealed class Resolver
             hooks.AddRange(parent.Hooks.Where(ph => hooks.All(h => h.HookId != ph.HookId)));
         }
 
-        _resolved[key] = new ResolvedObject(decl, body, components, hooks, functions, chain, mixins) { Order = _order[key] };
+        _resolved[key] = new ResolvedObject(decl, body, components, hooks, functions, chain, mixins) { Order = _order[key], TimeUnit = _unit, SilentDurations = _silentDurations };
     }
 
-    private static RRecord Defaults(RecordSchema schema, Origin origin)
+    // The default of a duration field in the content's unit; null when an exact schema default is not a whole count of it
+    // (CheckSchemaDurations reports that once per field, so the field simply has no default here).
+    private long? DurationDefault(FieldSchema f)
+    {
+        if (f.DefaultDurationMs is not { } ms)
+        {
+            return f.DefaultInt;
+        }
+
+        if (DurationUnits.TryConvert(ms, DurationUnit.Millisecond, _unit, out var exact))
+        {
+            return exact;
+        }
+
+        return _unit == DurationUnit.Minute ? DurationUnits.ConvertTruncating(ms, DurationUnit.Millisecond, _unit) : null;
+    }
+
+    /// <summary>
+    /// Reports, once per field, a schema duration default that is not a whole number of the content's <c>base_unit</c> (K4014):
+    /// a warning and truncation in minutes (1.0 behaviour), an error and no default in every other unit. Walks types, components,
+    /// records and their list/map elements.
+    /// </summary>
+    private void CheckSchemaDurations()
+    {
+        if (_silentDurations)
+        {
+            return;
+        }
+
+        foreach (var t in _schema.Types.Values)
+        {
+            CheckSchemaDurations(t.Body);
+        }
+
+        foreach (var c in _schema.Components.Values)
+        {
+            CheckSchemaDurations(c);
+        }
+
+        foreach (var r in _schema.Records.Values)
+        {
+            CheckSchemaDurations(r);
+        }
+    }
+
+    private void CheckSchemaDurations(RecordSchema record)
+    {
+        foreach (var f in record.Fields)
+        {
+            CheckSchemaDuration(record.Id, f);
+        }
+    }
+
+    private void CheckSchemaDuration(string owner, FieldSchema f)
+    {
+        if (f.Kind == ValueKind.Duration && f.DefaultDurationMs is { } ms && !DurationUnits.TryConvert(ms, DurationUnit.Millisecond, _unit, out _))
+        {
+            var u = DurationUnits.Suffix(_unit);
+            var text = $"default `{ms}ms` of `{owner}.{f.Name}` is not a whole number of `{u}` (the content's `base_unit`)";
+            if (_unit == DurationUnit.Minute)
+            {
+                _d.Warning("K4014", $"{text} and counts as `{DurationUnits.ConvertTruncating(ms, DurationUnit.Millisecond, _unit)}min`; give the default in whole `min`, or set a smaller `base_unit` in the manifest", null, default);
+            }
+            else
+            {
+                _d.Error("K4014", $"{text}; give the default in `{u}` or a larger unit, or set a smaller `base_unit` in the manifest", null, default);
+            }
+        }
+
+        if (f.Element is { } element)
+        {
+            CheckSchemaDuration(owner, element);
+        }
+    }
+
+    private static long Saturate(Int128 v) => v < long.MinValue ? long.MinValue : v > long.MaxValue ? long.MaxValue : (long)v;
+
+    private RRecord Defaults(RecordSchema schema, Origin origin)
     {
         var fields = OrderedFields.Empty;
         var prov = new Provenance(origin, LayerKind.Default, schema.Id);
@@ -590,7 +696,7 @@ public sealed class Resolver
             ResolvedValue? v = f.Kind switch
             {
                 ValueKind.Int when f.DefaultInt is not null => new RInt(prov, f.DefaultInt.Value),
-                ValueKind.Duration when f.DefaultInt is not null => new RDuration(prov, f.DefaultInt.Value),
+                ValueKind.Duration when DurationDefault(f) is { } dd => new RDuration(prov, dd) { Unit = _unit },
                 ValueKind.Bool when f.DefaultBool is not null => new RBool(prov, f.DefaultBool.Value),
                 ValueKind.Text when f.DefaultText is not null => new RText(prov, f.DefaultText),
                 ValueKind.Enum when f.DefaultText is not null => new REnum(prov, f.DefaultText),
@@ -1121,14 +1227,14 @@ public sealed class Resolver
         {
             case ExprValue ev:
             {
-                var folded = ConstEvaluator.Evaluate(ev, _d);
+                var folded = ConstEvaluator.Evaluate(ev, _d, _unit, _toUnit);
                 return folded is null ? null : Lower(folded, fs, p, current, nesting, path);
             }
 
             case IntValue iv:
                 if (fs is { Kind: ValueKind.Duration })
                 {
-                    return new RDuration(prov, iv.Number);
+                    return new RDuration(prov, iv.Number) { Unit = _unit };
                 }
 
                 if (fs is { Kind: ValueKind.Decimal })
@@ -1155,7 +1261,14 @@ public sealed class Resolver
             }
 
             case DurationValue dv:
-                return Check(fs, ValueKind.Duration, value) ? new RDuration(prov, dv.Minutes) : null;
+            {
+                if (!Check(fs, ValueKind.Duration, value))
+                {
+                    return null;
+                }
+
+                return ToUnit(dv) is { } lowered ? new RDuration(prov, lowered) { Unit = _unit } : null;
+            }
             case TextValue tv:
                 return Check(fs, ValueKind.Text, value) ? new RText(prov, tv.Text) : null;
             case BoolValue bv:
@@ -1487,9 +1600,22 @@ public sealed class Resolver
             }
 
             case RDuration du when fs is not null:
-                if ((fs.Min is { } dmin && du.Minutes < dmin) || (fs.Max is { } dmax && du.Minutes > dmax))
+                if (fs.MinDurationMs is not null || fs.MaxDurationMs is not null)
                 {
-                    AddOnce(WithProvenance("K4004", $"`{path}` = {du.Minutes}min is out of range", obj, value));
+                    var per = DurationUnits.MillisecondsPer(du.Unit);
+                    var actual = (Int128)du.Amount * per;
+                    var low = fs.MinDurationMs ?? (fs.Min is { } im ? Saturate((Int128)im * per) : null);
+                    var high = fs.MaxDurationMs ?? (fs.Max is { } ix ? Saturate((Int128)ix * per) : null);
+                    if ((low is { } l && actual < l) || (high is { } h && actual > h))
+                    {
+                        var lo = low is { } lv ? DurationLowering.FormatMs(lv) : "-∞";
+                        var hi = high is { } hv ? DurationLowering.FormatMs(hv) : "∞";
+                        AddOnce(WithProvenance("K4004", $"`{path}` = {du.CanonicalText} is out of range [{lo}, {hi}]", obj, value));
+                    }
+                }
+                else if ((fs.Min is { } dmin && du.Amount < dmin) || (fs.Max is { } dmax && du.Amount > dmax))
+                {
+                    AddOnce(WithProvenance("K4004", $"`{path}` = {du.CanonicalText} is out of range", obj, value));
                 }
 
                 break;

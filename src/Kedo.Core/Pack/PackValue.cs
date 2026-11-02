@@ -11,7 +11,7 @@ public enum PackTag : byte
     Bool = 2,
     /// <summary>Text (string table index).</summary>
     Text = 3,
-    /// <summary>Duration in minutes.</summary>
+    /// <summary>Duration in the pack's time unit (minutes up to format 2).</summary>
     Duration = 4,
     /// <summary>Enum value (string table index).</summary>
     Enum = 5,
@@ -32,7 +32,7 @@ public abstract record PackValue
     public abstract PackTag Tag { get; }
 }
 
-/// <summary>Integer or duration (minutes).</summary>
+/// <summary>Integer or duration (in the pack's time unit).</summary>
 public sealed record PackInt(long Number, bool IsDuration) : PackValue
 {
     /// <inheritdoc />

@@ -420,6 +420,8 @@ static int Build(string[] paths, bool json, string? outPath)
         writer.WriteNumber("objects", catalog.Concrete.Count());
         writer.WriteNumber("programs", programs.Count);
         writer.WriteString("catalog_hash", catalog.Hash);
+        writer.WriteString("time_unit", Kedo.Schema.DurationUnits.Suffix(catalog.TimeUnit));
+        writer.WriteNumber("format", Kedo.Compiler.Pack.PackWriter.FormatFor(catalog.TimeUnit));
         WriteDiagnosticsJson(writer, bag, trees);
         writer.WriteEndObject();
         writer.Flush();
@@ -453,6 +455,7 @@ static int Catalog(string[] paths, bool json)
         using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
         writer.WriteStartObject();
         writer.WriteString("catalog_hash", catalog.Hash);
+        writer.WriteString("time_unit", Kedo.Schema.DurationUnits.Suffix(catalog.TimeUnit));
         writer.WriteStartArray("objects");
         foreach (var o in catalog.Objects)
         {

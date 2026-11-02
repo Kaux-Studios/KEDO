@@ -45,11 +45,11 @@ public static class ObjectDescriber
             w.WriteString("type_doc", typeDoc);
         }
 
-        WriteFields(w, obj.Body, schema.FindType(obj.Type)?.Body, schema, obj.Key);
+        WriteFields(w, obj.Body, schema.FindType(obj.Type)?.Body, schema, obj.Key, DurationUnits.Suffix(obj.TimeUnit));
         w.WriteEndObject();
     }
 
-    private static void WriteFields(Utf8JsonWriter w, RRecord record, RecordSchema? recordSchema, SchemaRegistry schema, string key)
+    private static void WriteFields(Utf8JsonWriter w, RRecord record, RecordSchema? recordSchema, SchemaRegistry schema, string key, string unit)
     {
         w.WriteStartArray("fields");
         var listed = new HashSet<string>(StringComparer.Ordinal);
@@ -57,21 +57,21 @@ public static class ObjectDescriber
         {
             listed.Add(f.Name);
             record.Fields.TryGetValue(f.Name, out var value);
-            WriteField(w, f.Name, f, value, schema, key);
+            WriteField(w, f.Name, f, value, schema, key, unit);
         }
 
         foreach (var kv in record.Fields)
         {
             if (!listed.Contains(kv.Key))
             {
-                WriteField(w, kv.Key, null, kv.Value, schema, key);
+                WriteField(w, kv.Key, null, kv.Value, schema, key, unit);
             }
         }
 
         w.WriteEndArray();
     }
 
-    private static void WriteField(Utf8JsonWriter w, string name, FieldSchema? f, ResolvedValue? value, SchemaRegistry schema, string key)
+    private static void WriteField(Utf8JsonWriter w, string name, FieldSchema? f, ResolvedValue? value, SchemaRegistry schema, string key, string unit)
     {
         w.WriteStartObject();
         w.WriteString("name", name);
@@ -130,6 +130,21 @@ public static class ObjectDescriber
             w.WriteNumber("max", max);
         }
 
+        if (kind == ValueKind.Duration || f is { Kind: ValueKind.List or ValueKind.Map, Element.Kind: ValueKind.Duration })
+        {
+            w.WriteString("unit", unit);
+        }
+
+        if (f?.MinDurationMs is { } minMs)
+        {
+            w.WriteString("min_duration", Resolution.DurationLowering.FormatMs(minMs));
+        }
+
+        if (f?.MaxDurationMs is { } maxMs)
+        {
+            w.WriteString("max_duration", Resolution.DurationLowering.FormatMs(maxMs));
+        }
+
         if (value is null)
         {
             w.WriteNull("value");
@@ -156,7 +171,7 @@ public static class ObjectDescriber
 
             if (value is RRecord nested && f is { Kind: ValueKind.Record, RecordId: { } rid })
             {
-                WriteFields(w, nested, schema.FindRecord(rid), schema, key);
+                WriteFields(w, nested, schema.FindRecord(rid), schema, key, unit);
             }
 
             if (value is RList list && f is { Kind: ValueKind.List, Element: { Kind: ValueKind.Record, RecordId: { } eid } })
@@ -176,7 +191,7 @@ public static class ObjectDescriber
                         w.WriteString("key", itemKey);
                     }
 
-                    WriteFields(w, item, schema.FindRecord(eid), schema, key);
+                    WriteFields(w, item, schema.FindRecord(eid), schema, key, unit);
                     w.WriteEndObject();
                 }
 

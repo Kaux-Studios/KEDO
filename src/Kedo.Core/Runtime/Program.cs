@@ -1,3 +1,5 @@
+using Kedo.Schema;
+
 namespace Kedo.Runtime;
 
 /// <summary>
@@ -57,7 +59,7 @@ public enum OpCode : byte
     Apply,
     /// <summary><c>host.Raise(signal strings[imm], args)</c>. Two words.</summary>
     Emit,
-    /// <summary>Suspend until <c>r[a]</c> minutes elapse. Resumes at the next instruction.</summary>
+    /// <summary>Suspend until <c>r[a]</c> units of the program's <see cref="BehaviorProgram.TimeUnit"/> (minutes by default) elapse. Resumes at the next instruction.</summary>
     WaitMinutes,
     /// <summary>Suspend for a player decision on prompt <c>strings[imm]</c>; resumes with the chosen option index in <c>r[a]</c>. Options table in the trailing <see cref="Nop"/> word (a=first option symbol index, b=count).</summary>
     WaitDecision,
@@ -123,6 +125,9 @@ public sealed class BehaviorProgram
         AwaitSites = awaitSites;
         SourceMap = sourceMap;
     }
+
+    /// <summary>Unit of every duration in this program: the <c>WaitMinutes</c> operand and the duration constants. Minutes unless the module sets another <c>base_unit</c> (ADR-0014).</summary>
+    public DurationUnit TimeUnit { get; init; } = DurationUnit.Minute;
 
     /// <summary>Owner object key (<c>type:id</c>) or module function group.</summary>
     public string BehaviorId { get; }

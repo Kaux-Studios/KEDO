@@ -1,0 +1,12 @@
+kedo 1
+module m
+
+// A literal that is not a whole number of the base unit is an error (K4014).
+manifest { base_unit = s }
+
+attack jab {
+    blink = 250ms
+    double = (500ms * 2)
+    ok = 3s
+    minute = 1min
+}

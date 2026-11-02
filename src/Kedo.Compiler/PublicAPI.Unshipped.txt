@@ -1,1 +1,10 @@
 #nullable enable
+Kedo.Compiler.Evaluation.TraceHost.Now(Kedo.Schema.DurationUnit unit) -> long
+Kedo.Compiler.Evaluation.TraceHost.NowMilliseconds.get -> long
+Kedo.Compiler.Evaluation.TraceHost.NowMilliseconds.set -> void
+Kedo.Compiler.Resolution.RDuration.Amount.get -> long
+Kedo.Compiler.Resolution.RDuration.Unit.get -> Kedo.Schema.DurationUnit
+Kedo.Compiler.Resolution.RDuration.Unit.init -> void
+Kedo.Compiler.Resolution.ResolvedCatalog.TimeUnit.get -> Kedo.Schema.DurationUnit
+Kedo.Compiler.Resolution.ResolvedObject.TimeUnit.get -> Kedo.Schema.DurationUnit
+static Kedo.Compiler.Pack.PackWriter.FormatFor(Kedo.Schema.DurationUnit timeUnit) -> int

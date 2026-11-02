@@ -1,0 +1,12 @@
+kedo 1
+module m
+
+// Without a manifest durations count minutes and sub-minute literals truncate with a warning (K4014).
+event pause {
+    short = 30s
+    ninety = 90s
+    sum = (90s + 30s)
+    milli = 1500ms
+    hour = 1h
+    day = 1d
+}

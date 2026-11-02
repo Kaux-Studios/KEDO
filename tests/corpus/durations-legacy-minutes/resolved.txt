@@ -1,0 +1,9 @@
+event pause
+    short = 0min
+    ninety = 1min
+    sum = 1min
+    milli = 0min
+    hour = 60min
+    day = 1440min
+    hash c3ce52ce42dc57153ccaa020c19b274d
+catalog 4101e1dda835816b4801133537537ba6

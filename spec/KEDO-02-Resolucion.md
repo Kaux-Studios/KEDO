@@ -29,7 +29,7 @@ Defaults(esquema del tipo) → Resuelto(P) → M1 … Mn (aplanados) → Propio(
 
 | Clase | `k = v` | `k =! v` | `k += [..]` | `k -= [..]` | `k[clave] { }` |
 |---|---|---|---|---|---|
-| Escalar (int, decimal, bool, text, duration, enum, referencia, asset) | reemplaza | — (K3005) | — | — | — |
+| Escalar (int, decimal, bool, text, duration, enum, referencia, asset) (una duración vale una cantidad entera de la unidad base del módulo, ADR-0014) | reemplaza | — (K3005) | — | — | — |
 | Record | mezcla recursiva campo a campo (`= { }` sobre uno heredado no vacío: advertencia K3015) | reemplaza entero | — | — | — |
 | Mapa (`kind = map`, ADR-0009) | mezcla clave a clave | reemplaza entero | — | — | — |
 | Lista `atomic` (default si el esquema no dice otra cosa) | reemplaza entera (K3011 advierte si la heredada no era vacía) | reemplaza | — (K3005) | — | — |
@@ -75,8 +75,8 @@ Razón (anexo I §5): el enlace tardío obliga a cerrar cada campo en una clausu
 
 ## 8. Validación en dos etapas
 
-- R23. **Etapa A, por declaración** (sin resolver): errores de parseo; tipo, componente, hook o campo desconocidos (esquemas cerrados, con sugerencia); clase de valor incorrecta (K4001); operación de lista no permitida para la estrategia (K3005); padre o mixin ausente; id duplicado. Ubicación exacta de autoría.
-- R24. **Etapa B, por objeto resuelto concreto** (los `abstract` se saltan): campos obligatorios (K4002, salvo si el campo se escribió y su valor ya fue rechazado), rangos (K4004), escala decimal (K4009), cantidad de elementos (K4010), largo de texto (K4011), texto fuera de `one_of` (K4012), enums (K4003), referencia inexistente (K4005) o de tipo equivocado (K4006), asset de otra clase que la que pide el campo (`asset_kind` contra el campo `kind` del objeto asset, K4013), asset ausente del manifiesto (K4007, advertencia en modo rápido), invariantes declaradas por el esquema del juego (K4008).
+- R23. **Etapa A, por declaración** (sin resolver): errores de parseo; tipo, componente, hook o campo desconocidos (esquemas cerrados, con sugerencia); clase de valor incorrecta (K4001); operación de lista no permitida para la estrategia (K3005); padre o mixin ausente; id duplicado; duración que no es entera en la unidad base del módulo o no cabe en 64 bits (K4014), incluido el valor por defecto de un campo `duration` del esquema cuando se aplica sin archivo que lo escriba (K4014 sin archivo ni posición). Ubicación exacta de autoría.
+- R24. **Etapa B, por objeto resuelto concreto** (los `abstract` se saltan): campos obligatorios (K4002, salvo si el campo se escribió y su valor ya fue rechazado), rangos (K4004; los límites `min`/`max` de un campo `duration` se comparan exactamente en milisegundos, también cuando uno es entero y otro duración), escala decimal (K4009), cantidad de elementos (K4010), largo de texto (K4011), texto fuera de `one_of` (K4012), enums (K4003), referencia inexistente (K4005) o de tipo equivocado (K4006), asset de otra clase que la que pide el campo (`asset_kind` contra el campo `kind` del objeto asset, K4013), asset ausente del manifiesto (K4007, advertencia en modo rápido), invariantes declaradas por el esquema del juego (K4008).
 - R25. Todo diagnóstico de etapa B cita el objeto resuelto y la ruta, el origen de autoría por procedencia y la cadena de herencia. Errores idénticos con el mismo origen se agrupan: "`max` fuera de rango, definido en base.kedo:12, afecta a 37 objetos".
 - R26. Los validadores **acumulan**, no lanzan; el resolver devuelve el catálogo con su lista de diagnósticos aunque haya errores; el juego rechaza cargar con algún error.
 
@@ -157,6 +157,7 @@ Orden: `creature → wolf → alpha_wolf`.
 | K4011 | Texto fuera de `min_length`/`max_length` |
 | K4012 | Texto que no está en `one_of` |
 | K4013 | Referencia `asset:` a un asset de otra clase: el campo declara `asset_kind` y el objeto asset tiene otro `kind` |
+| K4014 | Duración que no es entera en la unidad base del módulo o no cabe en 64 bits (advertencia con truncado en `min`, error en las demás unidades); también para el valor por defecto del esquema aplicado sin archivo (sin posición) |
 | K5001 | Hook: variable o campo de contexto desconocido |
 | K5002 | Función recursiva o ciclo de llamadas |
 | K5003 | Tipo incompatible en expresión |

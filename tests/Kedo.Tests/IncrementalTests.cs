@@ -62,7 +62,7 @@ public class IncrementalTests
             catalog.Objects.Where(o => o.HasErrors).Select(o => o.Key).ToArray(),
             catalog.InDeclarationOrder.Select(o => o.Key).ToArray());
 
-    private static void AssertSame(IncrementalCatalog session, Dictionary<string, string> files, SchemaRegistry schema)
+    internal static void AssertSame(IncrementalCatalog session, Dictionary<string, string> files, SchemaRegistry schema)
     {
         var sources = Sources(files);
         var fullBag = new DiagnosticBag();
@@ -75,6 +75,60 @@ public class IncrementalTests
         Assert.Equal(full.Order, inc.Order);
         Assert.Equal(full.Hash, inc.Hash);
         Assert.Equal(full.Dump, inc.Dump);
+    }
+
+    [Fact]
+    public void ResolvingAConflictAwayAndBackResolvesEverythingAgain()
+    {
+        var schema = new SchemaRegistry { Permissive = true };
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["a.kedo"] = "kedo 1\nmodule m\nmanifest { base_unit = min }\nthing t { a = 30s }\n",
+            ["b.kedo"] = "kedo 1\nmodule m\nmanifest { base_unit = s }\n",
+        };
+        var session = new IncrementalCatalog(schema);
+        AssertSame(session, files, schema);
+        files["b.kedo"] = files["b.kedo"].Replace("base_unit = s", "base_unit = min");
+        AssertSame(session, files, schema);
+        Assert.Equal(0, session.LastReusedObjects);
+        files["b.kedo"] = files["b.kedo"].Replace("base_unit = min", "base_unit = s");
+        AssertSame(session, files, schema);
+        Assert.Equal(0, session.LastReusedObjects);
+    }
+
+    [Fact]
+    public void SubUnitDurationDiagnosticsMatchAFullResolutionAfterEdits()
+    {
+        var schema = new SchemaRegistry { Permissive = true };
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["a.kedo"] = "kedo 1\nmodule m\nmixin quick { a = 30s }\nthing t1 with quick { }\nthing t2 with quick { }\nthing t3 { b = 90s }\n",
+        };
+        var session = new IncrementalCatalog(schema);
+        AssertSame(session, files, schema);
+        files["a.kedo"] = files["a.kedo"].Replace("b = 90s", "b = 45s");
+        AssertSame(session, files, schema);
+        files["a.kedo"] = files["a.kedo"].Replace("a = 30s", "a = 20s");
+        AssertSame(session, files, schema);
+    }
+
+    [Fact]
+    public void EditingTheManifestResolvesEverythingAgain()
+    {
+        var schema = new SchemaRegistry { Permissive = true };
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["module.kedo"] = "kedo 1\nmodule m\nmanifest { base_unit = s }\n",
+            ["a.kedo"] = "kedo 1\nmodule m\nthing t { a = 2min }\n",
+        };
+        var session = new IncrementalCatalog(schema);
+        AssertSame(session, files, schema);
+        files["module.kedo"] = files["module.kedo"].Replace("base_unit = s", "base_unit = ms");
+        AssertSame(session, files, schema);
+        Assert.Equal(0, session.LastReusedObjects);
+        var catalog = session.Update(Sources(files), new DiagnosticBag());
+        Assert.Equal(DurationUnit.Millisecond, catalog.TimeUnit);
+        Assert.All(catalog.Objects, o => Assert.Equal(DurationUnit.Millisecond, o.TimeUnit));
     }
 
     [Fact]

@@ -47,7 +47,7 @@ actor depot_sentinel extends sentinel_machine {
 | Ruta de módulo | `ident '/' id-calificado`, por ejemplo `core/basic_item`. Solo en referencias a otro módulo |
 | Entero | `[0-9]+` con `_` opcional como separador (`1_500`). Un `-` pegado a un entero o duración en posición de valor forma un literal negativo (`mood_shift = -1`); cualquier otra expresión con `-` va entre paréntesis |
 | Decimal | `[0-9_]+ '.' [0-9_]+`, hasta 9 decimales (K1006): `1.25`, `-0.5`, `1_000.5`. Punto fijo, nunca coma flotante; no se reconoce después de un `.` (`place.1.5` es un id calificado). Sólo como dato: dentro de hooks, funciones y expresiones es K5007 ([ADR-0008](adr/0008-decimales-de-punto-fijo.md)) |
-| Duración | entero seguido sin espacio de `s`, `min`, `h` o `d` (`30min`, `2h`). Un solo token; se baja a entero en la unidad base del esquema (minutos por defecto) |
+| Duración | entero seguido sin espacio de `ms`, `s`, `min`, `h` o `d` (`350ms`, `30min`, `2h`). Un solo token; se baja a entero en la unidad base del módulo (§10; `min` por defecto, ADR-0014) |
 | Cadena | `"..."` con escapes `\" \\ \n \t \u{XXXX}`. Sin cadenas multilínea en v0.1 |
 | Booleano | `true`, `false` |
 | Referencia | `tipo ':' id-calificado` o `tipo ':' ruta-de-módulo`, sin espacios: `effect:alarm_raised`, `item:core/rope`. `asset:` es un tipo reservado |
@@ -182,7 +182,7 @@ terminator = newline | ";" ;
 
 - `on nombre(ctx)`: el nombre del hook lo fija el catálogo del juego (K2006 si no existe) y determina el tipo de `ctx`. Un objeto puede declarar varios hooks; dos para el mismo nombre es error (K2007).
 - Las sentencias terminan en salto de línea o `;`. Es el **único** lugar donde el salto de línea es significativo. Una expresión no puede partirse en dos líneas salvo dentro de paréntesis o corchetes.
-- `wait`: suspende el comportamiento. Sus formas se corresponden con `AwaitRequest` del runtime (tiempo, decisión del jugador, tirada, señal). La VM guarda el frame en ese punto; la etiqueta de reanudación es estable por hook y posición declarada (anexo E).
+- `wait`: suspende el comportamiento. Sus formas se corresponden con `AwaitRequest` del runtime (tiempo, decisión del jugador, tirada, señal). La VM guarda el frame en ese punto; la etiqueta de reanudación es estable por hook y posición declarada (anexo E). `wait <duración>` espera tiempo simulado en la unidad base del programa; el host da la hora con `IBehaviorClock.Now(unidad)` o, si no lo implementa, se convierte `NowMinutes` (ADR-0014).
 - `apply effect:x(args)`: la única vía de mutación; pasa por el host con clave idempotente. `emit signal:x(args)`: encola una señal, nunca ejecuta de forma reentrante.
 - `function`: funciones puras o con sentencias, llamables desde hooks del mismo módulo o de módulos que lo requieren. Sin recursión en v0.1 (K5002 al compilar).
 - Lo que no existe en v0.1: bucles (`for`, `while`), cadenas de formato, flotantes, acceso a estado fuera de `ctx` y de consultas del host (`query`), definición de tipos por el autor.
@@ -208,6 +208,8 @@ manifest {
 ```
 
 Todos los `.kedo` bajo ese directorio pertenecen al módulo. Un objeto puede heredar o referenciar objetos de los módulos en `requires` con la forma `tipo:modulo/id`. Ciclos entre módulos son error (K2009).
+
+`base_unit` fija la unidad en que se guardan las duraciones: `ms`, `s`, `min`, `h` o `d` (`min` por defecto, como en 1.0). Rige para todo lo que se resuelve junto, el contenido base y sus variantes: si dos manifiestos declaran unidades distintas es error (K2012, en el segundo manifiesto, con la etiqueta «first declared here» en el primero) y la resolución sigue en `min`, y el diagnóstico sugiere declarar la misma `base_unit` en todos los manifiestos. Un valor que no es una unidad es advertencia (K2011) y se ignora: las duraciones quedan en la unidad que resulte de los demás manifiestos (`min` si no hay ninguna). Los enteros escritos en un campo `duration` son unidades base. Caso en `tests/corpus/durations-unit-conflict`.
 
 ## 11. Decisiones para la revisión
 
@@ -241,6 +243,8 @@ Todos los `.kedo` bajo ese directorio pertenecen al módulo. Un objeto puede her
 | K2008 | `override` con `extends`, `with` o `abstract` |
 | K2009 | `override` fuera de un archivo de variante |
 | K2010 | `override` de un id que no existe en la base (con sugerencia) |
+| K2011 | `base_unit` no es una unidad de duración; se ignora (advertencia) |
+| K2012 | `base_unit` distinta entre manifiestos que se resuelven juntos (error, etiqueta en el primero; el mensaje sugiere declarar la misma `base_unit` en todos) |
 | K2008 | Anotación desconocida (advertencia) |
 | K2009 | Ciclo entre módulos |
 

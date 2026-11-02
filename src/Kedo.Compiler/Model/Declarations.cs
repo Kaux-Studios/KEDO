@@ -52,7 +52,7 @@ public sealed record IntValue(Origin Origin, long Number) : Value(Origin);
 public sealed record DurationValue(Origin Origin, long Amount, string Unit) : Value(Origin)
 {
     /// <summary>Amount expressed in minutes (the default base unit).</summary>
-    public long Minutes => Unit switch { "s" => Amount / 60, "h" => Amount * 60, "d" => Amount * 1440, _ => Amount };
+    public long Minutes => Unit switch { "ms" => Amount / 60_000, "s" => Amount / 60, "h" => Amount * 60, "d" => Amount * 1440, _ => Amount };
 }
 
 /// <summary>Fixed-point decimal literal: <see cref="Units"/> / 10^<see cref="Scale"/> (ADR-0008).</summary>

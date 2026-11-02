@@ -4,15 +4,27 @@ using System.Text;
 using Kedo.Compiler.Resolution;
 using Kedo.Pack;
 using Kedo.Runtime;
+using Kedo.Schema;
 
 namespace Kedo.Compiler.Pack;
 
-/// <summary>Writes a resolved catalog and its programs as a <see cref="KedoPack"/> (format 1). Only concrete objects are written.</summary>
+/// <summary>Writes a resolved catalog and its programs as a <see cref="KedoPack"/> (format 2 in minutes, 3 otherwise). Only concrete objects are written.</summary>
 public static class PackWriter
 {
+    /// <summary>Pack format written for a time unit: 2 (the 1.0 layout) for minutes, 3 (with the unit section) for the rest.</summary>
+    public static int FormatFor(DurationUnit timeUnit) => timeUnit == DurationUnit.Minute ? KedoPack.FormatVersion : KedoPack.LatestFormatVersion;
+
     /// <summary>Serialises the pack.</summary>
     public static byte[] Write(ResolvedCatalog catalog, IReadOnlyList<BehaviorProgram> programs)
     {
+        foreach (var p in programs)
+        {
+            if (p.TimeUnit != catalog.TimeUnit)
+            {
+                throw new ArgumentException($"program `{p.BehaviorId}` counts time in {p.TimeUnit} but the catalog uses {catalog.TimeUnit}", nameof(programs));
+            }
+        }
+
         var strings = new StringPool();
         var programIndex = new Dictionary<string, int>(StringComparer.Ordinal);
         for (var i = 0; i < programs.Count; i++)
@@ -95,20 +107,22 @@ public static class PackWriter
         // Assemble: header, section table, sections, trailer.
         var output = new MemoryStream();
         output.Write(KedoPack.Magic);
-        W32(output, KedoPack.FormatVersion);
+        var format = FormatFor(catalog.TimeUnit);
+        var sectionTotal = format >= 3 ? 4 : 3;
+        W32(output, (uint)format);
         W32(output, (uint)KedoVersion.LanguageMajor);
         WStr(output, KedoVersion.Current);
         WStr(output, catalog.Hash);
-        W32(output, 3);
+        W32(output, (uint)sectionTotal);
         var tablePos = output.Position;
-        for (var i = 0; i < 3; i++)
+        for (var i = 0; i < sectionTotal; i++)
         {
             W32(output, 0);
             W64(output, 0);
             W64(output, 0);
         }
 
-        var offsets = new (int id, long offset, long length)[3];
+        var offsets = new (int id, long offset, long length)[sectionTotal];
         offsets[0] = (KedoPack.SectionStrings, output.Position, stringsSection.Length);
         stringsSection.WriteTo(output);
         offsets[1] = (KedoPack.SectionObjects, output.Position, objects.Length + 4);
@@ -117,6 +131,11 @@ public static class PackWriter
         offsets[2] = (KedoPack.SectionPrograms, output.Position, progs.Length + 4);
         W32(output, (uint)programs.Count);
         progs.WriteTo(output);
+        if (format >= 3)
+        {
+            offsets[3] = (KedoPack.SectionTimeUnit, output.Position, 1);
+            output.WriteByte((byte)catalog.TimeUnit);
+        }
 
         var end = output.Position;
         output.Position = tablePos;
@@ -142,7 +161,7 @@ public static class PackWriter
         switch (v)
         {
             case RInt i: s.WriteByte((byte)PackTag.Int); W64(s, i.Number); break;
-            case RDuration d: s.WriteByte((byte)PackTag.Duration); W64(s, d.Minutes); break;
+            case RDuration d: s.WriteByte((byte)PackTag.Duration); W64(s, d.Amount); break;
             case RDecimal m: s.WriteByte((byte)PackTag.Decimal); W64(s, m.Units); s.WriteByte((byte)m.Scale); break;
             case RBool b: s.WriteByte((byte)PackTag.Bool); s.WriteByte(b.Flag ? (byte)1 : (byte)0); break;
             case RText t: s.WriteByte((byte)PackTag.Text); W32(s, strings.Id(t.Text)); break;

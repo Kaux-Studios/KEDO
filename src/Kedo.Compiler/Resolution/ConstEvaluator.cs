@@ -1,6 +1,7 @@
 using Kedo.Compiler.Model;
 using Kedo.Compiler.Syntax;
 using Kedo.Diagnostics;
+using Kedo.Schema;
 
 namespace Kedo.Compiler.Resolution;
 
@@ -11,7 +12,11 @@ namespace Kedo.Compiler.Resolution;
 /// </summary>
 internal static class ConstEvaluator
 {
-    public static Value? Evaluate(ExprValue expr, DiagnosticBag diagnostics)
+    /// <summary>
+    /// Folds <paramref name="expr"/>. Every duration literal goes through <paramref name="toUnit"/> (a whole count of <paramref name="unit"/>,
+    /// or <c>null</c> after reporting K4014) and the arithmetic runs on those counts.
+    /// </summary>
+    public static Value? Evaluate(ExprValue expr, DiagnosticBag diagnostics, DurationUnit unit, Func<DurationValue, long?> toUnit)
     {
         var tree = expr.Tree;
         var node = expr.Node;
@@ -21,17 +26,17 @@ internal static class ConstEvaluator
             node = tree.Children(node)[0];
         }
 
-        return Eval(tree, node, expr.Origin.File, diagnostics);
+        return Eval(tree, node, expr.Origin.File, diagnostics, DurationUnits.Suffix(unit), toUnit);
     }
 
-    private static Value? Eval(SyntaxTree t, int node, string? file, DiagnosticBag d)
+    private static Value? Eval(SyntaxTree t, int node, string? file, DiagnosticBag d, string suffix, Func<DurationValue, long?> toUnit)
     {
         var n = t[node];
         var origin = Origin.Of(t, node);
         switch (n.Kind)
         {
             case NodeKind.ParenExpr:
-                return t.Children(node).Length == 1 ? Eval(t, t.Children(node)[0], file, d) : null;
+                return t.Children(node).Length == 1 ? Eval(t, t.Children(node)[0], file, d, suffix, toUnit) : null;
             case NodeKind.LiteralExpr:
             {
                 var tk = t.OwnTokens(node)[0];
@@ -45,7 +50,7 @@ internal static class ConstEvaluator
                 return t.Tokens[tk].Kind switch
                 {
                     TokenKind.Integer => new IntValue(origin, long.Parse(text.Replace("_", ""), System.Globalization.CultureInfo.InvariantCulture)),
-                    TokenKind.Duration => ParseDuration(origin, text),
+                    TokenKind.Duration => Lower(ParseDuration(origin, text), suffix, toUnit),
                     TokenKind.String => new TextValue(origin, text.Length >= 2 ? text[1..^1] : text),
                     TokenKind.KwTrue => new BoolValue(origin, true),
                     TokenKind.KwFalse => new BoolValue(origin, false),
@@ -71,7 +76,7 @@ internal static class ConstEvaluator
             case NodeKind.UnaryExpr:
             {
                 var opKind = t.Tokens[t.OwnTokens(node)[0]].Kind;
-                var operand = Eval(t, t.Children(node)[0], file, d);
+                var operand = Eval(t, t.Children(node)[0], file, d, suffix, toUnit);
                 if (operand is null)
                 {
                     return null;
@@ -94,14 +99,14 @@ internal static class ConstEvaluator
             {
                 var opKind = t.Tokens[t.OwnTokens(node)[0]].Kind;
                 var children = t.Children(node);
-                var lhs = Eval(t, children[0], file, d);
-                var rhs = children.Length > 1 ? Eval(t, children[1], file, d) : null;
+                var lhs = Eval(t, children[0], file, d, suffix, toUnit);
+                var rhs = children.Length > 1 ? Eval(t, children[1], file, d, suffix, toUnit) : null;
                 if (lhs is null || rhs is null)
                 {
                     return null;
                 }
 
-                return Binary(origin, opKind, lhs, rhs) ?? Mismatch(d, file, t, node, "operands have incompatible kinds");
+                return Binary(origin, opKind, lhs, rhs, suffix) ?? Mismatch(d, file, t, node, "operands have incompatible kinds");
             }
 
             default:
@@ -120,10 +125,13 @@ internal static class ConstEvaluator
     {
         var i = 0;
         while (i < text.Length && (char.IsDigit(text[i]) || text[i] == '_')) i++;
-        return new DurationValue(origin, long.Parse(text[..i].Replace("_", ""), System.Globalization.CultureInfo.InvariantCulture), text[i..]);
+        return DurationSources.Remember(new DurationValue(origin, long.Parse(text[..i].Replace("_", ""), System.Globalization.CultureInfo.InvariantCulture), text[i..]), text);
     }
 
-    private static Value? Binary(Origin o, TokenKind op, Value l, Value r)
+    private static DurationValue? Lower(DurationValue literal, string suffix, Func<DurationValue, long?> toUnit)
+        => toUnit(literal) is { } n ? new DurationValue(literal.Origin, n, suffix) : null;
+
+    private static Value? Binary(Origin o, TokenKind op, Value l, Value r, string suffix)
     {
         switch (l, r)
         {
@@ -146,20 +154,20 @@ internal static class ConstEvaluator
             case (DurationValue a, DurationValue b):
                 return op switch
                 {
-                    TokenKind.Plus => new DurationValue(o, a.Minutes + b.Minutes, "min"),
-                    TokenKind.Minus => new DurationValue(o, a.Minutes - b.Minutes, "min"),
-                    TokenKind.EqualsEquals => new BoolValue(o, a.Minutes == b.Minutes),
-                    TokenKind.BangEquals => new BoolValue(o, a.Minutes != b.Minutes),
-                    TokenKind.Less => new BoolValue(o, a.Minutes < b.Minutes),
-                    TokenKind.LessEquals => new BoolValue(o, a.Minutes <= b.Minutes),
-                    TokenKind.Greater => new BoolValue(o, a.Minutes > b.Minutes),
-                    TokenKind.GreaterEquals => new BoolValue(o, a.Minutes >= b.Minutes),
+                    TokenKind.Plus => new DurationValue(o, a.Amount + b.Amount, suffix),
+                    TokenKind.Minus => new DurationValue(o, a.Amount - b.Amount, suffix),
+                    TokenKind.EqualsEquals => new BoolValue(o, a.Amount == b.Amount),
+                    TokenKind.BangEquals => new BoolValue(o, a.Amount != b.Amount),
+                    TokenKind.Less => new BoolValue(o, a.Amount < b.Amount),
+                    TokenKind.LessEquals => new BoolValue(o, a.Amount <= b.Amount),
+                    TokenKind.Greater => new BoolValue(o, a.Amount > b.Amount),
+                    TokenKind.GreaterEquals => new BoolValue(o, a.Amount >= b.Amount),
                     _ => null,
                 };
             case (DurationValue a, IntValue b) when op is TokenKind.Star or TokenKind.Slash:
-                return op == TokenKind.Star ? new DurationValue(o, a.Minutes * b.Number, "min") : b.Number == 0 ? null : new DurationValue(o, a.Minutes / b.Number, "min");
+                return op == TokenKind.Star ? new DurationValue(o, a.Amount * b.Number, suffix) : b.Number == 0 ? null : new DurationValue(o, a.Amount / b.Number, suffix);
             case (IntValue a, DurationValue b) when op == TokenKind.Star:
-                return new DurationValue(o, a.Number * b.Minutes, "min");
+                return new DurationValue(o, a.Number * b.Amount, suffix);
             case (BoolValue a, BoolValue b):
                 return op switch
                 {

@@ -11,7 +11,7 @@ public static class SchemaLoader
     /// <summary>Resolves schema declarations against the meta schema and builds the registry. Errors are reported in the bag.</summary>
     public static SchemaRegistry Load(IEnumerable<FileDeclarations> files, DiagnosticBag diagnostics)
     {
-        var catalog = Resolver.Resolve(files, MetaSchema.Build(), diagnostics);
+        var catalog = Resolver.Resolve(files, MetaSchema.Build(), diagnostics, DurationUnit.Millisecond);
         var registry = new SchemaRegistry();
 
         foreach (var obj in catalog.Concrete.Where(o => o.Type == "kedo_enum"))
@@ -243,9 +243,12 @@ public static class SchemaLoader
             Doc = Text(item, "doc"),
             Min = Int(item, "min"),
             Max = Int(item, "max"),
+            MinDurationMs = DurationMs(item, "min"),
+            MaxDurationMs = DurationMs(item, "max"),
             MinDecimal = Decimal(item, "min"),
             MaxDecimal = Decimal(item, "max"),
-            DefaultInt = def is RInt di ? di.Number : def is RDuration dd ? dd.Minutes : null,
+            DefaultInt = def is RInt di ? di.Number : def is RDuration dd ? DurationUnits.ConvertTruncating(dd.Amount, DurationUnit.Millisecond, DurationUnit.Minute) : null,
+            DefaultDurationMs = def is RDuration dm ? dm.Amount : null,
             DefaultBool = def is RBool db ? db.Flag : null,
             DefaultText = def is RText dt ? dt.Text : def is REnum de ? de.Name : null,
             DefaultEmpty = defaultEmpty,
@@ -271,6 +274,9 @@ public static class SchemaLoader
     private static bool? Bool(RRecord r, string name) => r.Fields.TryGetValue(name, out var v) && v is RBool b ? b.Flag : null;
 
     private static long? Int(RRecord r, string name) => r.Fields.TryGetValue(name, out var v) && v is RInt i ? i.Number : null;
+
+    // The schema resolves in milliseconds (forced unit), so a duration literal's count is already milliseconds.
+    private static long? DurationMs(RRecord r, string name) => r.Fields.TryGetValue(name, out var v) && v is RDuration d ? d.Amount : null;
 
     private static decimal? Decimal(RRecord r, string name)
         => r.Fields.TryGetValue(name, out var v) && v is RDecimal d ? decimal.Parse(d.CanonicalText, System.Globalization.CultureInfo.InvariantCulture) : null;

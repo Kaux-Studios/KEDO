@@ -436,9 +436,13 @@ public static class DeclarationBuilder
 
                     if (negative)
                     {
-                        return token.Kind == TokenKind.Duration
-                            ? ParseDuration(origin, text) is var d ? new DurationValue(origin, -d.Amount, d.Unit) : throw new InvalidOperationException()
-                            : new IntValue(origin, -ParseInt(text, token.Span));
+                        if (token.Kind != TokenKind.Duration)
+                        {
+                            return new IntValue(origin, -ParseInt(text, token.Span));
+                        }
+
+                        var literal = ParseDuration(origin, text);
+                        return DurationSources.Remember(new DurationValue(origin, -literal.Amount, literal.Unit), "-" + text);
                     }
 
                     return token.Kind switch
@@ -516,7 +520,7 @@ public static class DeclarationBuilder
             var i = 0;
             while (i < text.Length && (char.IsDigit(text[i]) || text[i] == '_')) i++;
             var amount = ParseInt(text[..i], origin.Span);
-            return new DurationValue(origin, amount, text[i..]);
+            return DurationSources.Remember(new DurationValue(origin, amount, text[i..]), text);
         }
 
         private static RefValue ParseRef(Origin origin, string text)
