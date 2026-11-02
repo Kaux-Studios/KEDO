@@ -161,6 +161,7 @@ public sealed class Resolver
 
         var r = new Resolver(schema, local, null, unit, conflict);
         r.Index(files);
+        r.CheckSchemaDurations();
         r.CheckReferencesToBases();
         var state = new IncrementalState(prints) { UnitConflict = conflict };
         var dirtyMixins = new Dictionary<string, bool>(StringComparer.Ordinal);
@@ -292,6 +293,7 @@ public sealed class Resolver
         var unit = forcedUnit ?? ModuleTimeUnit.Determine(files, diagnostics, out conflict);
         var r = new Resolver(schema, diagnostics, variant, unit, conflict);
         r.Index(files);
+        r.CheckSchemaDurations();
         r.CheckReferencesToBases();
         foreach (var key in r.TopologicalOrder())
         {
@@ -608,6 +610,83 @@ public sealed class Resolver
         _resolved[key] = new ResolvedObject(decl, body, components, hooks, functions, chain, mixins) { Order = _order[key], TimeUnit = _unit };
     }
 
+    // The default of a duration field in the content's unit; null when an exact schema default is not a whole count of it
+    // (CheckSchemaDurations reports that once per field, so the field simply has no default here).
+    private long? DurationDefault(FieldSchema f)
+    {
+        if (f.DefaultDurationMs is not { } ms)
+        {
+            return f.DefaultInt;
+        }
+
+        if (DurationUnits.TryConvert(ms, DurationUnit.Millisecond, _unit, out var exact))
+        {
+            return exact;
+        }
+
+        return _unit == DurationUnit.Minute ? DurationUnits.ConvertTruncating(ms, DurationUnit.Millisecond, _unit) : null;
+    }
+
+    /// <summary>
+    /// Reports, once per field, a schema duration default that is not a whole number of the content's <c>base_unit</c> (K4014):
+    /// a warning and truncation in minutes (1.0 behaviour), an error and no default in every other unit. Walks types, components,
+    /// records and their list/map elements.
+    /// </summary>
+    private void CheckSchemaDurations()
+    {
+        if (_silentDurations)
+        {
+            return;
+        }
+
+        foreach (var t in _schema.Types.Values)
+        {
+            CheckSchemaDurations(t.Body);
+        }
+
+        foreach (var c in _schema.Components.Values)
+        {
+            CheckSchemaDurations(c);
+        }
+
+        foreach (var r in _schema.Records.Values)
+        {
+            CheckSchemaDurations(r);
+        }
+    }
+
+    private void CheckSchemaDurations(RecordSchema record)
+    {
+        foreach (var f in record.Fields)
+        {
+            CheckSchemaDuration(record.Id, f);
+        }
+    }
+
+    private void CheckSchemaDuration(string owner, FieldSchema f)
+    {
+        if (f.Kind == ValueKind.Duration && f.DefaultDurationMs is { } ms && !DurationUnits.TryConvert(ms, DurationUnit.Millisecond, _unit, out _))
+        {
+            var u = DurationUnits.Suffix(_unit);
+            var text = $"default `{ms}ms` of `{owner}.{f.Name}` is not a whole number of `{u}` (the content's `base_unit`)";
+            if (_unit == DurationUnit.Minute)
+            {
+                _d.Warning("K4014", $"{text} and counts as `{DurationUnits.ConvertTruncating(ms, DurationUnit.Millisecond, _unit)}min`; give the default in whole `min`, or set a smaller `base_unit` in the manifest", null, default);
+            }
+            else
+            {
+                _d.Error("K4014", $"{text}; give the default in `{u}` or a larger unit, or set a smaller `base_unit` in the manifest", null, default);
+            }
+        }
+
+        if (f.Element is { } element)
+        {
+            CheckSchemaDuration(owner, element);
+        }
+    }
+
+    private static long Saturate(Int128 v) => v < long.MinValue ? long.MinValue : v > long.MaxValue ? long.MaxValue : (long)v;
+
     private RRecord Defaults(RecordSchema schema, Origin origin)
     {
         var fields = OrderedFields.Empty;
@@ -617,7 +696,7 @@ public sealed class Resolver
             ResolvedValue? v = f.Kind switch
             {
                 ValueKind.Int when f.DefaultInt is not null => new RInt(prov, f.DefaultInt.Value),
-                ValueKind.Duration when f.DefaultInt is not null => new RDuration(prov, f.DefaultInt.Value) { Unit = _unit },
+                ValueKind.Duration when DurationDefault(f) is { } dd => new RDuration(prov, dd) { Unit = _unit },
                 ValueKind.Bool when f.DefaultBool is not null => new RBool(prov, f.DefaultBool.Value),
                 ValueKind.Text when f.DefaultText is not null => new RText(prov, f.DefaultText),
                 ValueKind.Enum when f.DefaultText is not null => new REnum(prov, f.DefaultText),
@@ -1521,7 +1600,20 @@ public sealed class Resolver
             }
 
             case RDuration du when fs is not null:
-                if ((fs.Min is { } dmin && du.Minutes < dmin) || (fs.Max is { } dmax && du.Minutes > dmax))
+                if (fs.MinDurationMs is not null || fs.MaxDurationMs is not null)
+                {
+                    var per = DurationUnits.MillisecondsPer(du.Unit);
+                    var actual = (Int128)du.Amount * per;
+                    var low = fs.MinDurationMs ?? (fs.Min is { } im ? Saturate((Int128)im * per) : null);
+                    var high = fs.MaxDurationMs ?? (fs.Max is { } ix ? Saturate((Int128)ix * per) : null);
+                    if ((low is { } l && actual < l) || (high is { } h && actual > h))
+                    {
+                        var lo = low is { } lv ? DurationUnits.Format(lv, DurationUnit.Millisecond) : "-∞";
+                        var hi = high is { } hv ? DurationUnits.Format(hv, DurationUnit.Millisecond) : "∞";
+                        AddOnce(WithProvenance("K4004", $"`{path}` = {du.CanonicalText} is out of range [{lo}, {hi}]", obj, value));
+                    }
+                }
+                else if ((fs.Min is { } dmin && du.Amount < dmin) || (fs.Max is { } dmax && du.Amount > dmax))
                 {
                     AddOnce(WithProvenance("K4004", $"`{path}` = {du.CanonicalText} is out of range", obj, value));
                 }

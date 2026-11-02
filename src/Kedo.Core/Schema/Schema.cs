@@ -73,6 +73,21 @@ public sealed class FieldSchema
     /// <summary>Default integer/duration value (schema layer).</summary>
     public long? DefaultInt { get; init; }
 
+    /// <summary>
+    /// Exact inclusive minimum of a <see cref="ValueKind.Duration"/> written as a duration literal, in milliseconds (ADR-0014);
+    /// <see cref="Min"/> stays <c>null</c> in that case. Content in any base unit is checked against it exactly.
+    /// </summary>
+    public long? MinDurationMs { get; init; }
+
+    /// <summary>Exact inclusive maximum of a <see cref="ValueKind.Duration"/> written as a duration literal, in milliseconds.</summary>
+    public long? MaxDurationMs { get; init; }
+
+    /// <summary>
+    /// Exact default of a <see cref="ValueKind.Duration"/> written as a duration literal, in milliseconds. <see cref="DefaultInt"/>
+    /// keeps the 1.0 value (whole minutes, truncated).
+    /// </summary>
+    public long? DefaultDurationMs { get; init; }
+
     /// <summary>Default boolean value (schema layer).</summary>
     public bool? DefaultBool { get; init; }
 

@@ -1,6 +1,8 @@
+using System.Text.Json;
 using Kedo.Compiler.Behaviors;
 using Kedo.Compiler.Model;
 using Kedo.Compiler.Resolution;
+using Kedo.Compiler.Schema;
 using Kedo.Compiler.Syntax;
 using Kedo.Diagnostics;
 using Kedo.Runtime;
@@ -248,5 +250,74 @@ public class DurationUnitTests
         Resolver.Resolve(files, new SchemaRegistry { Permissive = true }, bag);
         Assert.Contains(bag.Items, d => d.Code == "K2012");
         Assert.DoesNotContain(bag.Items, d => d.Code == "K4014");
+    }
+    private const string ActionSchema = """
+        kedo 1
+        module s
+        kedo_type attack { fields = [
+            { name = windup  kind = duration  min = 100ms  max = 2s  default = 400ms }
+            { name = cooldown  kind = duration  min = 0  default = 3 }
+        ] }
+        """;
+
+    private static SchemaRegistry LoadActionSchema(string text = ActionSchema)
+    {
+        var bag = new DiagnosticBag();
+        var schema = SchemaLoader.Load(new[] { DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(text, "s.kedo"), bag), bag) }, bag);
+        Assert.False(bag.HasErrors, string.Join("\n", bag.Items.Select(d => d.Message)));
+        return schema;
+    }
+
+    [Fact]
+    public void SchemaDurationsAreExactInMilliseconds()
+    {
+        var schema = LoadActionSchema();
+        var windup = schema.FindType("attack")!.Body.Find("windup")!;
+        Assert.Equal((100L, 2000L, 400L), (windup.MinDurationMs, windup.MaxDurationMs, windup.DefaultDurationMs));
+        Assert.Equal(0, windup.DefaultInt);
+        Assert.Null(windup.Min);
+
+        var (catalog, cbag) = Resolve("attack a { }\nattack b { windup = 50ms }\nattack c { windup = 3s }", baseUnit: "ms", schema);
+        Assert.Equal("400ms", Field(catalog, "attack:a", "windup").CanonicalText);
+        Assert.Equal("3ms", Field(catalog, "attack:a", "cooldown").CanonicalText);
+        Assert.Equal(2, cbag.Items.Count(d => d.Code == "K4004"));
+        Assert.Contains(cbag.Items, d => d.Message.Contains("[100ms, 2000ms]"));
+    }
+
+    [Fact]
+    public void ASchemaMinuteDefaultKeepsItsValueInAMillisecondModule()
+    {
+        var schema = LoadActionSchema(ActionSchema.Replace("default = 400ms", "default = 2min").Replace("max = 2s", "max = 5min"));
+        Assert.Equal(120000L, schema.FindType("attack")!.Body.Find("windup")!.DefaultDurationMs);
+        var (catalog, bag) = Resolve("attack a { }", baseUnit: "ms", schema);
+        Assert.Equal("120000ms", Field(catalog, "attack:a", "windup").CanonicalText);
+        Assert.DoesNotContain(bag.Items, d => d.IsError);
+        var (minutes, _) = Resolve("attack a { }", baseUnit: null, schema);
+        Assert.Equal("2min", Field(minutes, "attack:a", "windup").CanonicalText);
+    }
+
+    [Fact]
+    public void ASchemaDefaultThatIsNotWholeInTheContentUnitIsReportedOnce()
+    {
+        var schema = LoadActionSchema();
+        var (catalog, cbag) = Resolve("attack a { }\nattack b { }", baseUnit: "s", schema);
+        Assert.Single(cbag.Items, d => d.Code == "K4014" && d.IsError && d.Message.Contains("attack.windup"));
+        Assert.False(catalog.ByKey["attack:a"].Body.Fields.TryGetValue("windup", out _));
+    }
+
+    [Fact]
+    public void JsonSchemaWritesDurationDefaults()
+    {
+        var registry = LoadActionSchema();
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            JsonSchemaWriter.Write(registry, writer);
+        }
+
+        var fields = JsonDocument.Parse(stream.ToArray()).RootElement.GetProperty("types").GetProperty("attack").GetProperty("properties");
+        Assert.Equal("400ms", fields.GetProperty("windup").GetProperty("default").GetString());
+        Assert.Equal("3min", fields.GetProperty("cooldown").GetProperty("default").GetString());
+        Assert.Contains("ms|", fields.GetProperty("windup").GetProperty("pattern").GetString());
     }
 }
