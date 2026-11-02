@@ -148,7 +148,7 @@ public sealed class Resolver
     {
         var local = new DiagnosticBag();
         var unit = ModuleTimeUnit.Determine(files, local, out var conflict);
-        if (previous is not null && previous.Catalog.TimeUnit != unit)
+        if (previous is not null && (previous.Catalog.TimeUnit != unit || previous.UnitConflict != conflict))
         {
             previous = null;
         }
@@ -156,7 +156,7 @@ public sealed class Resolver
         var r = new Resolver(schema, local, null, unit, conflict);
         r.Index(files);
         r.CheckReferencesToBases();
-        var state = new IncrementalState(prints);
+        var state = new IncrementalState(prints) { UnitConflict = conflict };
         var dirtyMixins = new Dictionary<string, bool>(StringComparer.Ordinal);
         bool MixinDirty(string id, int depth)
         {

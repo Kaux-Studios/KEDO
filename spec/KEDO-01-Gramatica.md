@@ -209,7 +209,7 @@ manifest {
 
 Todos los `.kedo` bajo ese directorio pertenecen al módulo. Un objeto puede heredar o referenciar objetos de los módulos en `requires` con la forma `tipo:modulo/id`. Ciclos entre módulos son error (K2009).
 
-`base_unit` fija la unidad en que se guardan las duraciones: `ms`, `s`, `min`, `h` o `d` (`min` por defecto, como en 1.0). Rige para todo lo que se resuelve junto, el contenido base y sus variantes: si dos manifiestos declaran unidades distintas es error (K2012, en el segundo manifiesto, con la etiqueta «first declared here» en el primero) y la resolución sigue en `min`. Un valor que no es una unidad es advertencia (K2011) y las duraciones quedan en `min`. Los enteros escritos en un campo `duration` son unidades base. Caso en `tests/corpus/durations-unit-conflict`.
+`base_unit` fija la unidad en que se guardan las duraciones: `ms`, `s`, `min`, `h` o `d` (`min` por defecto, como en 1.0). Rige para todo lo que se resuelve junto, el contenido base y sus variantes: si dos manifiestos declaran unidades distintas es error (K2012, en el segundo manifiesto, con la etiqueta «first declared here» en el primero) y la resolución sigue en `min`, y el diagnóstico sugiere declarar la misma `base_unit` en todos los manifiestos. Un valor que no es una unidad es advertencia (K2011) y se ignora: las duraciones quedan en la unidad que resulte de los demás manifiestos (`min` si no hay ninguna). Los enteros escritos en un campo `duration` son unidades base. Caso en `tests/corpus/durations-unit-conflict`.
 
 ## 11. Decisiones para la revisión
 
@@ -243,8 +243,8 @@ Todos los `.kedo` bajo ese directorio pertenecen al módulo. Un objeto puede her
 | K2008 | `override` con `extends`, `with` o `abstract` |
 | K2009 | `override` fuera de un archivo de variante |
 | K2010 | `override` de un id que no existe en la base (con sugerencia) |
-| K2011 | `base_unit` no es una unidad de duración; las duraciones quedan en `min` (advertencia) |
-| K2012 | `base_unit` distinta entre manifiestos que se resuelven juntos (error, etiqueta en el primero) |
+| K2011 | `base_unit` no es una unidad de duración; se ignora (advertencia) |
+| K2012 | `base_unit` distinta entre manifiestos que se resuelven juntos (error, etiqueta en el primero, con sugerencia) |
 | K2008 | Anotación desconocida (advertencia) |
 | K2009 | Ciclo entre módulos |
 

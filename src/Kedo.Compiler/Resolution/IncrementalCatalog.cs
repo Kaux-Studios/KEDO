@@ -25,6 +25,8 @@ internal sealed class IncrementalState
 
     public HashSet<string> HasErrors { get; } = new(StringComparer.Ordinal);
 
+    public bool UnitConflict { get; set; }
+
     public int ResolvedCount { get; set; }
 
     public int ReusedCount { get; set; }

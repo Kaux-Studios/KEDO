@@ -22,6 +22,7 @@ internal static class ModuleTimeUnit
         var found = false;
         var unit = DurationUnit.Minute;
         Origin first = default;
+        List<Value>? invalid = null;
         foreach (var file in files)
         {
             if (file.Manifest is null)
@@ -39,7 +40,7 @@ internal static class ModuleTimeUnit
                 var value = field.Value;
                 if (value is not EnumValue named || !DurationUnits.TryParseSuffix(named.Name, out var parsed))
                 {
-                    diagnostics.Warning("K2011", $"`{Field} = {Describe(value)}` is not a duration unit (`ms`, `s`, `min`, `h` or `d`); durations stay in `min`", value.Origin.File, value.Origin.Span);
+                    (invalid ??= new List<Value>()).Add(value);
                     continue;
                 }
 
@@ -55,12 +56,21 @@ internal static class ModuleTimeUnit
                     diagnostics.Add(new Diagnostic("K2012", Severity.Error,
                         $"`{Field} = {named.Name}` differs from `{Field} = {DurationUnits.Suffix(unit)}` declared in another manifest; content resolved together counts durations in one unit",
                         value.Origin.File, value.Origin.Span,
-                        new[] { new DiagnosticLabel(first.File, first.Span, "first declared here") }, Array.Empty<string>()));
+                        new[] { new DiagnosticLabel(first.File, first.Span, "first declared here") }, new[] { "declare the same `base_unit` in every manifest" }));
                 }
             }
         }
 
-        return conflict ? DurationUnit.Minute : unit;
+        var result = conflict ? DurationUnit.Minute : unit;
+        if (invalid is not null)
+        {
+            foreach (var value in invalid)
+            {
+                diagnostics.Warning("K2011", $"`{Field} = {Describe(value)}` is not a duration unit (`ms`, `s`, `min`, `h` or `d`); durations stay in `{DurationUnits.Suffix(result)}`", value.Origin.File, value.Origin.Span);
+            }
+        }
+
+        return result;
     }
 
     private static string Describe(Value value) => value switch

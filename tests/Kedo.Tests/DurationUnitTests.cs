@@ -55,6 +55,22 @@ public class DurationUnitTests
     }
 
     [Fact]
+    public void AnInvalidUnitNamesTheUnitThatApplies()
+    {
+        var bag = new DiagnosticBag();
+        var files = new[]
+        {
+            "kedo 1\nmodule m\nmanifest { base_unit = s }\nthing t { a = 2s }\n",
+            "kedo 1\nmodule m\nmanifest { base_unit = secs }\n",
+        }.Select((text, i) => DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(text, $"f{i}.kedo"), bag), bag)).ToList();
+        var catalog = Resolver.Resolve(files, new SchemaRegistry { Permissive = true }, bag);
+        Assert.Equal(DurationUnit.Second, catalog.TimeUnit);
+        var k2011 = Assert.Single(bag.Items, d => d.Code == "K2011");
+        Assert.EndsWith("durations stay in `s`", k2011.Message);
+        Assert.False(bag.HasErrors);
+    }
+
+    [Fact]
     public void AVariantCannotChangeTheUnit()
     {
         var bag = new DiagnosticBag();
@@ -65,6 +81,10 @@ public class DurationUnitTests
         }.Select((text, i) => DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(text, $"f{i}.kedo"), bag), bag)).ToList();
         var catalog = Resolver.Resolve(files, new SchemaRegistry { Permissive = true }, bag);
         Assert.Contains(bag.Items, d => d.Code == "K2012" && d.IsError && d.File == "f1.kedo");
+        var k2012 = bag.Items.First(d => d.Code == "K2012");
+        Assert.Equal("f0.kedo", k2012.Labels[0].File);
+        Assert.Equal("first declared here", k2012.Labels[0].Message);
+        Assert.Contains("declare the same `base_unit` in every manifest", k2012.Notes);
         Assert.Equal(DurationUnit.Minute, catalog.TimeUnit);
         Assert.Equal(DurationUnit.Minute, catalog.Variants["fast"].TimeUnit);
         Assert.DoesNotContain(bag.Items, d => d.Code == "K4014");
