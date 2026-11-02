@@ -538,7 +538,7 @@ public sealed class BehaviorCompiler
                         var i = 0;
                         while (i < text.Length && (char.IsDigit(text[i]) || text[i] == '_')) i++;
                         var amount = long.Parse(text[..i].Replace("_", ""), System.Globalization.CultureInfo.InvariantCulture);
-                        var minutes = text[i..] switch { "s" => amount / 60, "h" => amount * 60, "d" => amount * 1440, _ => amount };
+                        var minutes = text[i..] switch { "ms" => amount / 60_000, "s" => amount / 60, "h" => amount * 60, "d" => amount * 1440, _ => amount };
                         Emit(Instr.AImm(OpCode.LoadConst, target, Const(minutes)), node);
                         return target;
                     }

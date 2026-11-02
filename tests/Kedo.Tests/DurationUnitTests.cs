@@ -100,4 +100,27 @@ public class DurationUnitTests
         Assert.Contains(bag.Items, d => d.Code == "K1002" && d.Message == "invalid number suffix `mss`; durations use `s`, `min`, `h` or `d`");
         Assert.Equal(0, new DurationValue(default, 1500, "ms").Minutes);
     }
+
+    [Fact]
+    public void MillisecondLiteralsInHooksCompileToTruncatedMinutes()
+    {
+        var program = Program("actor z { on go(ctx) { wait 350ms; wait 120000ms } }", baseUnit: null, "actor:z");
+        Assert.Contains(0L, program.Constants);
+        Assert.Contains(2L, program.Constants);
+        Assert.DoesNotContain(350L, program.Constants);
+        Assert.DoesNotContain(120000L, program.Constants);
+    }
+
+    [Fact]
+    public void FormatterPreservesMillisecondLiterals()
+    {
+        const string text = "kedo 1\nmodule m\n\nthing t {\n    a = 350ms\n    b = 1_500ms\n}\n";
+        var bag = new DiagnosticBag();
+        var formatted = Kedo.Compiler.Formatting.Formatter.Format(Parser.Parse(SourceText.FromString(text, "f.kedo"), bag));
+        Assert.False(bag.HasErrors);
+        Assert.Contains("350ms", formatted);
+        Assert.Contains("1_500ms", formatted);
+        var again = Kedo.Compiler.Formatting.Formatter.Format(Parser.Parse(SourceText.FromString(formatted, "f.kedo"), new DiagnosticBag()));
+        Assert.Equal(formatted, again);
+    }
 }
