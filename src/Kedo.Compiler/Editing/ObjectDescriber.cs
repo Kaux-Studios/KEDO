@@ -130,7 +130,7 @@ public static class ObjectDescriber
             w.WriteNumber("max", max);
         }
 
-        if (kind == ValueKind.Duration)
+        if (kind == ValueKind.Duration || f is { Kind: ValueKind.List or ValueKind.Map, Element.Kind: ValueKind.Duration })
         {
             w.WriteString("unit", unit);
         }

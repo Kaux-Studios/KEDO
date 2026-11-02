@@ -565,7 +565,7 @@ public sealed class BehaviorCompiler
                         var suffix = text[i..];
                         var lowered = DurationUnits.TryParseSuffix(suffix, out var from) && DurationUnits.TryConvert(amount, from, _unit, out var exact)
                             ? exact
-                            : DurationLowering.ToUnit(amount, suffix, _unit, _file, tk.Span, _silent ? null : _d, _silent ? null : ReportedDurationSites());
+                            : DurationLowering.ToUnit(amount, suffix, _unit, _file, tk.Span, _silent ? null : _d, _silent ? null : ReportedDurationSites(), text);
                         Emit(Instr.AImm(OpCode.LoadConst, target, Const(lowered ?? 0)), node);
                         return target;
                     }

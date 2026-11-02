@@ -343,10 +343,11 @@ public sealed class TraceHost : IBehaviorHost, IBehaviorClock
     public SymbolTable Symbols { get; } = new();
 
     /// <inheritdoc />
+    /// <remarks>The setter saturates at the range of <see cref="NowMilliseconds"/>.</remarks>
     public long NowMinutes
     {
         get => NowMilliseconds / 60_000;
-        set => NowMilliseconds = value * 60_000;
+        set => NowMilliseconds = value > long.MaxValue / 60_000 ? long.MaxValue : value < long.MinValue / 60_000 ? long.MinValue : value * 60_000;
     }
 
     /// <summary>Simulated time in milliseconds (what <see cref="NowMinutes"/> truncates).</summary>

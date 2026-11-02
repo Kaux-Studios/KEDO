@@ -87,7 +87,7 @@ internal static class ConstEvaluator
                     return operand switch
                     {
                         IntValue i => new IntValue(origin, -i.Number),
-                        DurationValue du => new DurationValue(origin, -du.Amount, du.Unit),
+                        DurationValue du => new DurationValue(origin, -du.Amount, du.Unit) { SourceText = du.SourceText is { } st ? "-" + st : null },
                         _ => Mismatch(d, file, t, node, "`-` needs a number or duration"),
                     };
                 }
@@ -125,7 +125,7 @@ internal static class ConstEvaluator
     {
         var i = 0;
         while (i < text.Length && (char.IsDigit(text[i]) || text[i] == '_')) i++;
-        return new DurationValue(origin, long.Parse(text[..i].Replace("_", ""), System.Globalization.CultureInfo.InvariantCulture), text[i..]);
+        return new DurationValue(origin, long.Parse(text[..i].Replace("_", ""), System.Globalization.CultureInfo.InvariantCulture), text[i..]) { SourceText = text };
     }
 
     private static DurationValue? Lower(DurationValue literal, string suffix, Func<DurationValue, long?> toUnit)

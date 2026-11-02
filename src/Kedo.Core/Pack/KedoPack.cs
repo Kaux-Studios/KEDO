@@ -8,7 +8,7 @@ namespace Kedo.Pack;
 
 /// <summary>
 /// The compiled artifact (ADR-0007 D7): little-endian sectioned binary. Header = magic, format version, language major,
-/// catalog hash, section table. Sections: strings, objects, programs. Trailer: XxHash128 of everything before it.
+/// catalog hash, section table. Sections: strings, objects, programs and, from format 3, the time unit of the durations (one byte; format 2 packs are always minutes and ignore a section 4). A repeated section id is rejected. Trailer: XxHash128 of everything before it.
 /// Sources are the truth; a pack with another format version is rejected and must be rebuilt.
 /// </summary>
 public sealed class KedoPack
@@ -113,15 +113,24 @@ public sealed class KedoPack
             var id = (int)r.U32();
             var offset = (int)r.U64();
             var length = (int)r.U64();
-            sections[id] = (offset, length);
+            if (!sections.TryAdd(id, (offset, length)))
+            {
+                throw new InvalidDataException($"pack repeats section {id}");
+            }
+
         }
 
         var timeUnit = DurationUnit.Minute;
         if (format >= 3)
         {
-            if (!sections.TryGetValue(SectionTimeUnit, out var unitSection) || unitSection.length != 1 || unitSection.offset < 0 || unitSection.offset >= trailerStart)
+            if (!sections.TryGetValue(SectionTimeUnit, out var unitSection))
             {
                 throw new InvalidDataException("pack format 3 is missing its time unit section");
+            }
+
+            if (unitSection.length != 1 || unitSection.offset < 0 || unitSection.offset >= trailerStart)
+            {
+                throw new InvalidDataException("pack format 3 has a malformed time unit section (expected one byte inside the pack)");
             }
 
             var unitByte = bytes[unitSection.offset];

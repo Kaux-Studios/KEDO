@@ -62,7 +62,7 @@ public class IncrementalTests
             catalog.Objects.Where(o => o.HasErrors).Select(o => o.Key).ToArray(),
             catalog.InDeclarationOrder.Select(o => o.Key).ToArray());
 
-    private static void AssertSame(IncrementalCatalog session, Dictionary<string, string> files, SchemaRegistry schema)
+    internal static void AssertSame(IncrementalCatalog session, Dictionary<string, string> files, SchemaRegistry schema)
     {
         var sources = Sources(files);
         var fullBag = new DiagnosticBag();

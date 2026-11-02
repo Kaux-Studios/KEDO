@@ -1,5 +1,5 @@
-using Kedo.Schema;
 using System.Text.Json;
+using Kedo.Schema;
 
 namespace Kedo.Runtime;
 
@@ -458,7 +458,9 @@ public sealed class BehaviorVm
                 {
                     var label = _program.LabelAt(pc) ?? $"pc{pc}";
                     var now = _clock?.Now(_program.TimeUnit) ?? DurationUnits.ConvertTruncating(_host.NowMinutes, DurationUnit.Minute, _program.TimeUnit);
-                    return Suspend(frame, pc, new AwaitRequest(AwaitKind.Minutes, label, now + regs[a], null, Array.Empty<string>(), -1) { Unit = _program.TimeUnit });
+                    var wait = regs[a];
+                    var due = wait > 0 && now > long.MaxValue - wait ? long.MaxValue : now + wait;   // saturate: a huge wait must not wrap into the past
+                    return Suspend(frame, pc, new AwaitRequest(AwaitKind.Minutes, label, due, null, Array.Empty<string>(), -1) { Unit = _program.TimeUnit });
                 }
 
                 case OpCode.WaitDecision:

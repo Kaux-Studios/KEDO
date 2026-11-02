@@ -2,6 +2,8 @@
 Kedo.Compiler.Evaluation.TraceHost.Now(Kedo.Schema.DurationUnit unit) -> long
 Kedo.Compiler.Evaluation.TraceHost.NowMilliseconds.get -> long
 Kedo.Compiler.Evaluation.TraceHost.NowMilliseconds.set -> void
+Kedo.Compiler.Model.DurationValue.SourceText.get -> string?
+Kedo.Compiler.Model.DurationValue.SourceText.init -> void
 Kedo.Compiler.Resolution.RDuration.Amount.get -> long
 Kedo.Compiler.Resolution.RDuration.Unit.get -> Kedo.Schema.DurationUnit
 Kedo.Compiler.Resolution.RDuration.Unit.init -> void

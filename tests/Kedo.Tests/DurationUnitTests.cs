@@ -402,6 +402,112 @@ public class DurationUnitTests
         Assert.Contains("ms|", fields.GetProperty("windup").GetProperty("pattern").GetString());
     }
 
+    [Fact]
+    public void MixedIntAndDurationBoundsCompareExactlyInMilliseconds()
+    {
+        var schema = LoadActionSchema(ActionSchema.Replace("{ name = cooldown  kind = duration  min = 0  default = 3 }", "{ name = cooldown  kind = duration  min = 0  max = 2s }"));
+        var (_, bag) = Resolve("attack a { cooldown = 2000ms }\nattack b { cooldown = 2001ms }", baseUnit: "ms", schema);
+        Assert.Single(bag.Items, d => d.Code == "K4004" && d.Message.Contains("2001ms"));
+        Assert.Single(bag.Items, d => d.Code == "K4004" && d.Message.Contains("[0ms, 2000ms]"));
+    }
+
+    [Fact]
+    public void AMinuteModuleTruncatesANonWholeSchemaDefaultWithAWarning()
+    {
+        var schema = LoadActionSchema(ActionSchema.Replace("default = 400ms", "default = 90s").Replace("min = 100ms", "min = 0").Replace("max = 2s", "max = 5min"));
+        var (catalog, bag) = Resolve("attack a { }", baseUnit: null, schema);
+        Assert.Single(bag.Items, d => d.Code == "K4014" && !d.IsError && d.Message.Contains("`attack.windup`") && d.Message.Contains("counts as `1min`"));
+        Assert.Equal("1min", Field(catalog, "attack:a", "windup").CanonicalText);
+    }
+
+    [Fact]
+    public void IncrementalMatchesFullWithASchemaDefaultK4014()
+    {
+        var schema = LoadActionSchema(ActionSchema.Replace("default = 400ms", "default = 90s").Replace("min = 100ms", "min = 0").Replace("max = 2s", "max = 5min"));
+        var files = new Dictionary<string, string>(StringComparer.Ordinal) { ["a.kedo"] = "kedo 1\nmodule m\nattack a { }\nattack b { }\n" };
+        var session = new IncrementalCatalog(schema);
+        IncrementalTests.AssertSame(session, files, schema);
+        files["a.kedo"] += "attack c { windup = 2min }\n";
+        IncrementalTests.AssertSame(session, files, schema);
+    }
+
+    [Fact]
+    public void AnIntBoundIsReportedWithoutUnitsInAMillisecondModule()
+    {
+        var schema = LoadActionSchema();
+        var (_, bag) = Resolve("attack a { cooldown = -1ms }", baseUnit: "ms", schema);
+        Assert.Single(bag.Items, d => d.Code == "K4004" && d.Message == "`attack:a.cooldown` = -1ms is out of range");
+    }
+
+    [Fact]
+    public void K4014QuotesTheLiteralAsWritten()
+    {
+        var (_, bag) = Resolve("thing t { a = 1_500ms }", baseUnit: "s");
+        Assert.Single(bag.Items, d => d.Code == "K4014" && d.Message.Contains("`1_500ms`"));
+    }
+
+    /// <summary>Offset of the section table entry <paramref name="index"/> (id u32, offset u64, length u64) in a pack.</summary>
+    private static int SectionEntry(byte[] bytes, int index)
+    {
+        var pos = 12;
+        pos += 4 + (int)BitConverter.ToUInt32(bytes, pos);
+        pos += 4 + (int)BitConverter.ToUInt32(bytes, pos);
+        pos += 4;
+        return pos + index * 20;
+    }
+
+    private static void Rehash(byte[] bytes) => System.IO.Hashing.XxHash128.Hash(bytes.AsSpan(0, bytes.Length - 16), bytes.AsSpan(bytes.Length - 16));
+
+    [Fact]
+    public void AMalformedUnitSectionIsRejectedWithItsOwnMessage()
+    {
+        var (catalog, _) = Resolve("attack a { windup = 350ms }", baseUnit: "ms");
+        var bytes = PackWriter.Write(catalog, Array.Empty<BehaviorProgram>());
+        var entry = SectionEntry(bytes, 3);
+        Assert.Equal(KedoPack.SectionTimeUnit, (int)BitConverter.ToUInt32(bytes, entry));
+        BitConverter.GetBytes(2L).CopyTo(bytes, entry + 12);
+        Rehash(bytes);
+        Assert.Contains("malformed time unit section", Assert.Throws<InvalidDataException>(() => KedoPack.Load(bytes)).Message);
+    }
+
+    [Fact]
+    public void ARepeatedSectionIdIsRejected()
+    {
+        var (catalog, _) = Resolve("attack a { windup = 350ms }", baseUnit: "ms");
+        var bytes = PackWriter.Write(catalog, Array.Empty<BehaviorProgram>());
+        BitConverter.GetBytes((uint)KedoPack.SectionStrings).CopyTo(bytes, SectionEntry(bytes, 1));
+        Rehash(bytes);
+        Assert.Contains("repeats section", Assert.Throws<InvalidDataException>(() => KedoPack.Load(bytes)).Message);
+    }
+
+    [Fact]
+    public void AFormat2PackIgnoresAStraySectionFour()
+    {
+        var (catalog, _) = Resolve("attack a { windup = 350ms }", baseUnit: "ms");
+        var bytes = PackWriter.Write(catalog, Array.Empty<BehaviorProgram>());
+        BitConverter.GetBytes(2).CopyTo(bytes, 4);
+        Rehash(bytes);
+        Assert.Equal(DurationUnit.Minute, KedoPack.Load(bytes).TimeUnit);
+    }
+
+    [Fact]
+    public void ACoarserUnitProgramOnAClocklessHostTruncatesFromMinutes()
+    {
+        var hours = Program("actor s { on go(ctx) { wait 2h } }", baseUnit: "h", "actor:s");
+        Assert.Equal((18L, DurationUnit.Hour), (new BehaviorVm(hours, new FakeHost()).Activate("go", "i").Frame!.Pending!.DueAtMinutes, DurationUnit.Hour));
+        var seconds = Program("actor s { on go(ctx) { wait 5s } }", baseUnit: "s", "actor:s");
+        Assert.Equal(60_005L, new BehaviorVm(seconds, new FakeHost()).Activate("go", "i").Frame!.Pending!.DueAtMinutes);
+    }
+
+    [Fact]
+    public void AHugeWaitSaturatesInsteadOfWrapping()
+    {
+        var program = Program("actor s { on go(ctx) { wait 9223372036854775807ms } }", baseUnit: "ms", "actor:s");
+        Assert.Equal(long.MaxValue, new BehaviorVm(program, new ClockHost()).Activate("go", "i").Frame!.Pending!.DueAtMinutes);
+        var host = new TraceHost { NowMinutes = long.MaxValue };
+        Assert.Equal(long.MaxValue, host.NowMilliseconds);
+    }
+
     private sealed class ClockHost : IBehaviorHost, IBehaviorClock
     {
         public long Ms { get; set; } = 10_000;
@@ -534,5 +640,17 @@ public class DurationUnitTests
         Assert.Equal("2000ms", fields["windup"].GetProperty("max_duration").GetString());
         Assert.Equal("ms", fields["cooldown"].GetProperty("unit").GetString());
         Assert.False(fields["cooldown"].TryGetProperty("min_duration", out _));
+    }
+
+    [Fact]
+    public void DescribeNamesTheUnitOfDurationListElements()
+    {
+        var schema = LoadActionSchema(ActionSchema.Replace("] }", "{ name = steps  kind = list  strategy = set  element = { kind = duration } } ] }"));
+        var (catalog, bag) = Resolve("attack a { steps = [100ms, 250ms] }", baseUnit: "ms", schema);
+        Assert.False(bag.HasErrors, string.Join("; ", bag.Items.Select(d => d.Message)));
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream)) { Kedo.Compiler.Editing.ObjectDescriber.Write(writer, catalog.ByKey["attack:a"], schema); }
+        var fields = JsonDocument.Parse(stream.ToArray()).RootElement.GetProperty("fields").EnumerateArray().ToDictionary(f => f.GetProperty("name").GetString()!);
+        Assert.Equal("ms", fields["steps"].GetProperty("unit").GetString());
     }
 }

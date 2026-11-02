@@ -83,6 +83,12 @@ public enum AwaitKind
 }
 
 /// <summary>Pending suspension stored in a frame.</summary>
+/// <param name="Kind">What the frame waits for.</param>
+/// <param name="Label">Label of the await site.</param>
+/// <param name="DueAtMinutes">Due time in <see cref="Unit"/> (minutes by default).</param>
+/// <param name="Id">Decision, roll or signal id, when the kind has one.</param>
+/// <param name="Options">Option labels of a decision.</param>
+/// <param name="ResultRegister">Register that receives the result, or -1.</param>
 public sealed record AwaitRequest(AwaitKind Kind, string Label, long DueAtMinutes, string? Id, IReadOnlyList<string> Options, int ResultRegister)
 {
     /// <summary>Unit of <see cref="DueAtMinutes"/>: the due time is in this unit (minutes by default, omitted from the JSON then).</summary>

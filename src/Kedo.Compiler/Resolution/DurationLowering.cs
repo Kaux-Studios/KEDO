@@ -11,12 +11,14 @@ internal static class DurationLowering
     /// Exact value of <paramref name="amount"/> <paramref name="suffix"/> in <paramref name="unit"/>. When it is not a whole
     /// number, minutes truncate with the K4014 warning (1.0 behaviour) and every other unit gets the K4014 error and <c>null</c>;
     /// a count that does not fit in 64 bits is a K4014 error and <c>null</c>. A <c>null</c> <paramref name="diagnostics"/> reports
-    /// nothing; <paramref name="reportedSites"/> keeps a literal reached more than once (mixins) from being reported twice.
+    /// nothing; <paramref name="reportedSites"/> keeps a literal reached more than once (mixins) from being reported twice;
+    /// <paramref name="sourceText"/> is the literal as written (`1_500ms`), quoted in the messages when known.
     /// </summary>
-    public static long? ToUnit(long amount, string suffix, DurationUnit unit, string? file, TextSpan span, DiagnosticBag? diagnostics, ISet<string>? reportedSites = null)
+    public static long? ToUnit(long amount, string suffix, DurationUnit unit, string? file, TextSpan span, DiagnosticBag? diagnostics, ISet<string>? reportedSites = null, string? sourceText = null)
     {
         if (!DurationUnits.TryParseSuffix(suffix, out var from))
         {
+            System.Diagnostics.Debug.Fail($"unknown duration suffix `{suffix}`");
             return amount;
         }
 
@@ -25,7 +27,7 @@ internal static class DurationLowering
             return exact;
         }
 
-        var literal = $"{amount}{suffix}";
+        var literal = sourceText ?? $"{amount}{suffix}";
         var total = (Int128)amount * DurationUnits.MillisecondsPer(from);
         var divisor = DurationUnits.MillisecondsPer(unit);
         var quotient = total / divisor;
