@@ -137,12 +137,12 @@ public static class ObjectDescriber
 
         if (f?.MinDurationMs is { } minMs)
         {
-            w.WriteString("min_duration", DurationUnits.Format(minMs, DurationUnit.Millisecond));
+            w.WriteString("min_duration", Resolution.DurationLowering.FormatMs(minMs));
         }
 
         if (f?.MaxDurationMs is { } maxMs)
         {
-            w.WriteString("max_duration", DurationUnits.Format(maxMs, DurationUnit.Millisecond));
+            w.WriteString("max_duration", Resolution.DurationLowering.FormatMs(maxMs));
         }
 
         if (value is null)

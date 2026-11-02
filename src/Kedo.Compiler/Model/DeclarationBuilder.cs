@@ -436,9 +436,13 @@ public static class DeclarationBuilder
 
                     if (negative)
                     {
-                        return token.Kind == TokenKind.Duration
-                            ? ParseDuration(origin, text) is var d ? DurationSources.Remember(new DurationValue(origin, -d.Amount, d.Unit), "-" + text) : throw new InvalidOperationException()
-                            : new IntValue(origin, -ParseInt(text, token.Span));
+                        if (token.Kind != TokenKind.Duration)
+                        {
+                            return new IntValue(origin, -ParseInt(text, token.Span));
+                        }
+
+                        var literal = ParseDuration(origin, text);
+                        return DurationSources.Remember(new DurationValue(origin, -literal.Amount, literal.Unit), "-" + text);
                     }
 
                     return token.Kind switch

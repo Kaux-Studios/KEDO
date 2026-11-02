@@ -220,7 +220,7 @@ public static class JsonSchemaWriter
                 w.WriteString("pattern", "^[0-9][0-9_]*(ms|s|min|h|d)$");
                 if (f.DefaultDurationMs is { } dms)
                 {
-                    w.WriteString("default", dms % 60000 == 0 ? dms / 60000 + "min" : dms % 1000 == 0 ? dms / 1000 + "s" : dms + "ms");
+                    w.WriteString("default", Resolution.DurationLowering.FormatMs(dms));
                 }
                 else if (f.DefaultInt is { } dd)
                 {

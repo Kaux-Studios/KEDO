@@ -135,7 +135,7 @@ internal sealed class Workspace
 /// <summary>Diagnostic as returned to agents.</summary>
 internal sealed record DiagnosticDto(string Code, string Severity, string Message, string? File, int Line, int Column, string[] Related);
 
-internal sealed record CheckResult(bool Ok, string Summary, int Objects, string CatalogHash, List<DiagnosticDto> Diagnostics, bool Truncated);
+internal sealed record CheckResult(bool Ok, string Summary, int Objects, string CatalogHash, List<DiagnosticDto> Diagnostics, bool Truncated, string TimeUnit);
 
 internal sealed record FormatResult(bool Changed, string FormattedText, List<DiagnosticDto> Diagnostics);
 
@@ -145,7 +145,7 @@ internal sealed record ExplainResult(string Key, string Path, string Explanation
 
 internal sealed record CatalogItem(string Kind, string Name, string Summary);
 
-internal sealed record CatalogResult(string Kind, List<CatalogItem> Items, bool Truncated);
+internal sealed record CatalogResult(string Kind, List<CatalogItem> Items, bool Truncated, string TimeUnit);
 
 internal sealed record CompileResult(List<string> Listings, List<DiagnosticDto> Diagnostics);
 
@@ -164,7 +164,7 @@ internal sealed class KedoTools
         var errors = ws.Bag.Items.Count(d => d.IsError);
         var warnings = ws.Bag.Items.Count(d => d.Severity == Severity.Warning);
         return new CheckResult(!ws.Bag.HasErrors, $"{ws.Catalog.Concrete.Count()} object(s), {errors} error(s), {warnings} warning(s)", ws.Catalog.Concrete.Count(), ws.Catalog.Hash,
-            ws.Diagnostics(max_diagnostics), ws.Bag.Items.Count > max_diagnostics);
+            ws.Diagnostics(max_diagnostics), ws.Bag.Items.Count > max_diagnostics, DurationUnits.Suffix(ws.Catalog.TimeUnit));
     }
 
     [McpServerTool(Name = "kedo_format", ReadOnly = true, Idempotent = true), Description("Return the canonical formatting of a .kedo file or text. Never writes; the caller writes the result. Formatting changes only whitespace.")]
@@ -266,7 +266,7 @@ internal sealed class KedoTools
         }
 
         var list = items.OrderBy(i => i.Name, StringComparer.Ordinal).ToList();
-        return new CatalogResult(kind, list.Take(limit).ToList(), list.Count > limit);
+        return new CatalogResult(kind, list.Take(limit).ToList(), list.Count > limit, DurationUnits.Suffix(ws.Catalog.TimeUnit));
     }
 
     [McpServerTool(Name = "kedo_compile", ReadOnly = true, Idempotent = true), Description("Compile the hooks and functions of one object (or all) to KEDO IR and return the disassembly, with diagnostics about context fields, recursion and permissions.")]

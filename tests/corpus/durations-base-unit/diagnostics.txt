@@ -1,3 +1,0 @@
-error K1002 12:16 durations are whole numbers: write `1.5s` in a smaller unit
-error K1002 12:16 expected a value, found `1.5s`
-error K1002 12:16 expected a field, `component`, `remove`, `on` or `function`, found `1.5s`

@@ -36,7 +36,7 @@ internal static class DurationLowering
 
         if (!fits)
         {
-            Report(diagnostics, reportedSites, file, span, error: true, $"`{literal}` does not fit in a 64-bit count of `{u}`");
+            Report(diagnostics, reportedSites, file, span, error: true, $"`{literal}` does not fit in a 64-bit count of `{u}`; use a larger `base_unit` or a smaller amount");
             return null;
         }
 
@@ -51,6 +51,21 @@ internal static class DurationLowering
         Report(diagnostics, reportedSites, file, span, error: true,
             $"`{literal}` is not a whole number of `{u}` (the module's `base_unit`); write it in `{u}` or a larger unit, or set a smaller `base_unit` in the manifest");
         return null;
+    }
+
+    /// <summary>A millisecond count in the largest unit that divides it exactly (`10min`, `2h`, `350ms`); zero is `0ms`.</summary>
+    public static string FormatMs(long milliseconds)
+    {
+        foreach (var unit in new[] { DurationUnit.Day, DurationUnit.Hour, DurationUnit.Minute, DurationUnit.Second })
+        {
+            var per = DurationUnits.MillisecondsPer(unit);
+            if (milliseconds != 0 && milliseconds % per == 0)
+            {
+                return DurationUnits.Format(milliseconds / per, unit);
+            }
+        }
+
+        return DurationUnits.Format(milliseconds, DurationUnit.Millisecond);
     }
 
     private static void Report(DiagnosticBag? diagnostics, ISet<string>? sites, string? file, TextSpan span, bool error, string message)

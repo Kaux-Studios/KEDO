@@ -54,7 +54,7 @@ internal static class ModuleTimeUnit
                 {
                     conflict = true;
                     diagnostics.Add(new Diagnostic("K2012", Severity.Error,
-                        $"`{Field} = {named.Name}` differs from `{Field} = {DurationUnits.Suffix(unit)}` declared in another manifest; content resolved together counts durations in one unit; declare the same `base_unit` in every manifest",
+                        $"`{Field} = {named.Name}` differs from `{Field} = {DurationUnits.Suffix(unit)}` declared elsewhere (first declaration is labelled); content resolved together counts durations in one unit; declare the same `base_unit` in every manifest",
                         value.Origin.File, value.Origin.Span,
                         new[] { new DiagnosticLabel(first.File, first.Span, "first declared here") }, Array.Empty<string>()));
                 }

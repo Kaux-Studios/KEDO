@@ -1608,8 +1608,8 @@ public sealed class Resolver
                     var high = fs.MaxDurationMs ?? (fs.Max is { } ix ? Saturate((Int128)ix * per) : null);
                     if ((low is { } l && actual < l) || (high is { } h && actual > h))
                     {
-                        var lo = low is { } lv ? DurationUnits.Format(lv, DurationUnit.Millisecond) : "-∞";
-                        var hi = high is { } hv ? DurationUnits.Format(hv, DurationUnit.Millisecond) : "∞";
+                        var lo = low is { } lv ? DurationLowering.FormatMs(lv) : "-∞";
+                        var hi = high is { } hv ? DurationLowering.FormatMs(hv) : "∞";
                         AddOnce(WithProvenance("K4004", $"`{path}` = {du.CanonicalText} is out of range [{lo}, {hi}]", obj, value));
                     }
                 }

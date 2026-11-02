@@ -1,8 +1,8 @@
 # Unidad base de las duraciones (`base_unit`) — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
-Preparado: 01/11/2026 · Extensión K1 pedida por un juego de acción (segundo consumidor de KEDO) · Estado: **plan para revisión**.
+Preparado: 01/11/2026 · Extensión K1 pedida por un juego de acción (segundo consumidor de KEDO) · Estado: **implementado en `feat/base-unit` (pendiente de merge)**.
 
 **Goal:** Implementar `manifest { base_unit = ms | s | min | h | d }` para que las duraciones se guarden, evalúen, validen, empaqueten y esperen en la unidad base del contenido, sin cambiar el significado ni los bytes del contenido en minutos (Patriark).
 
@@ -85,26 +85,26 @@ Contenido de Patriark revisado (`content/kedo`, 18 archivos): `module.kedo` decl
 - Consumes: nada.
 - Produces: el ADR que citan las demás tareas como `ADR-0014`; los códigos K2011 (advertencia), K2012 (error) y K4014 (advertencia en `min`, error en las demás).
 
-- [ ] **Step 1: Confirmar que el número y los códigos están libres**
+- [x] **Step 1: Confirmar que el número y los códigos están libres**
 
 Run: `Get-ChildItem spec/adr; Select-String -Path src/**/*.cs -Pattern '"K2011"|"K2012"|"K4014"'`
 Expected: el último ADR es `0013-defaults-vacios.md`; ninguna coincidencia de los tres códigos.
 
-- [ ] **Step 2: Enlazar el issue**
+- [x] **Step 2: Enlazar el issue**
 
 Run: `gh issue list --search "base_unit"`; si no existe, `gh issue create --title "Duration base unit (base_unit = ms|s|min|h|d)" --body "<resumen de Decisiones>"`.
 Expected: un número de issue para la cabecera del ADR.
 
-- [ ] **Step 3: Escribir el ADR**
+- [x] **Step 3: Escribir el ADR**
 
 Formato de los ADR existentes (ver `0008-decimales-de-punto-fijo.md`): `# ADR-0014 — Unidad base de las duraciones`, línea `Fecha: 01/11/2026 · Estado: propuesto · Origen: issue #N (extensión K1 de un juego de acción)`, secciones **Contexto** (el defecto verificado y el contenido revisado de la sección Decisiones de este plan), **Cómo lo resuelven otros** (Factorio y RimWorld: ticks en los datos; Godot y Unreal: segundos `float`; Protocol Buffers `Duration`: segundos + nanos enteros; Go `time.Duration`: int64 de nanosegundos), **Decisión** (D1-D11 de este plan, con los tres códigos y la tabla de severidad) y **Consecuencias** (Patriark sin cambios; en 2.0 K4014 es error también en `min`; un contenido 1.0 que ya declaraba `base_unit = s` y escribía `30s` pasa de 0 a 30 segundos: era el comportamiento documentado en KEDO-01 §10).
 
-- [ ] **Step 4: Revisar contra ADR-0001**
+- [x] **Step 4: Revisar contra ADR-0001**
 
 Leer el ADR y confirmar que cada cambio de la sección Decisiones dice por qué no rompe 1.x (valor por defecto `Minute`, advertencia y no error en `min`, formato 2 para `min`, `const` sin cambiar).
 Expected: ninguna decisión sin justificación de compatibilidad.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add spec/adr/0014-unidad-base-de-duraciones.md
@@ -126,7 +126,7 @@ Tests de caracterización escritos **antes** de tocar código: fijan lo que el c
   - `private static ResolvedValue Field(ResolvedCatalog catalog, string key, string field)`.
   - `private static BehaviorProgram Program(string content, string? baseUnit, string key)` — resuelve y compila con `BehaviorCompiler.Compile(catalog.ByKey[key], decls.Functions, schema, bag)`.
 
-- [ ] **Step 1: Escribir los tests de caracterización**
+- [x] **Step 1: Escribir los tests de caracterización**
 
 ```csharp
 /// <summary>Duration base unit (ADR-0014).</summary>
@@ -169,17 +169,17 @@ public class DurationUnitTests
 }
 ```
 
-- [ ] **Step 2: Correr para obtener los pines**
+- [x] **Step 2: Correr para obtener los pines**
 
 Run: `dotnet test tests/Kedo.Tests/Kedo.Tests.csproj --filter "FullyQualifiedName~DurationUnitTests"`
 Expected: los dos primeros PASS; `ExamplePackAndFramesArePinned` FAIL mostrando los valores reales. Copiar cada valor real en su `<PIN_…>` (la cadena JSON del frame con las comillas escapadas).
 
-- [ ] **Step 3: Correr de nuevo**
+- [x] **Step 3: Correr de nuevo**
 
 Run: el mismo comando.
 Expected: 3 PASS.
 
-- [ ] **Step 4: Guardar los packs de Patriark de antes (fuera del repositorio)**
+- [x] **Step 4: Guardar los packs de Patriark de antes (fuera del repositorio)**
 
 Run:
 ```powershell
@@ -191,7 +191,7 @@ $kedo = "src/Kedo.Cli/bin/Release/net8.0/kedo.exe"; $p = "C:/dev/Project-Patriar
 ```
 Expected: `"written": true`, `"diagnostics": []` en ambos (hoy: 226 objetos y 0 programas; 233 objetos y 1 programa). Estos archivos no se agregan a Git.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/Kedo.Tests/DurationUnitTests.cs tests/Kedo.Tests/PackTests.cs
@@ -217,7 +217,7 @@ git commit -m "Pin the 1.0 meaning of durations in minutes"
     - `long ConvertTruncating(long amount, DurationUnit from, DurationUnit to)` — divide truncando hacia cero; al multiplicar satura en `long.MinValue`/`long.MaxValue`.
     - `string Format(long amount, DurationUnit unit)` → `"350ms"` (cultura invariante).
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 ```csharp
 [Fact]
@@ -241,26 +241,26 @@ public void UnitsConvertExactlyOrSayWhy()
 }
 ```
 
-- [ ] **Step 2: Correr y ver que falla**
+- [x] **Step 2: Correr y ver que falla**
 
 Run: `dotnet test tests/Kedo.Tests/Kedo.Tests.csproj --filter "FullyQualifiedName~DurationUnitTests.UnitsConvertExactlyOrSayWhy"`
 Expected: FAIL de compilación: `DurationUnits` no existe.
 
-- [ ] **Step 3: Implementar `DurationUnit` y `DurationUnits` en `src/Kedo.Core/Schema/DurationUnit.cs`**
+- [x] **Step 3: Implementar `DurationUnit` y `DurationUnits` en `src/Kedo.Core/Schema/DurationUnit.cs`**
 
 `TryConvert` pasa por ms con aritmética `checked` dentro de `try/catch (OverflowException)` o con `Math.BigMul`/`Int128`; preferir `Int128` (sin excepciones): `Int128 total = (Int128)amount * MillisecondsPer(from)`, entero si `total % MillisecondsPer(to) == 0`, cabe si el cociente está en el rango de `long`.
 
-- [ ] **Step 4: Declarar la API**
+- [x] **Step 4: Declarar la API**
 
 Run: `powershell -File tools/public-api.ps1`
 Expected: `src/Kedo.Core/PublicAPI.Unshipped.txt` gana las líneas de `Kedo.Schema.DurationUnit` (5 miembros) y de los 6 métodos de `Kedo.Schema.DurationUnits`.
 
-- [ ] **Step 5: Correr los tests**
+- [x] **Step 5: Correr los tests**
 
 Run: el comando del Step 2.
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/Kedo.Core/Schema/DurationUnit.cs src/Kedo.Core/PublicAPI.Unshipped.txt tests/Kedo.Tests/DurationUnitTests.cs
@@ -279,7 +279,7 @@ git commit -m "DurationUnit and exact duration conversions in Kedo.Core"
 - Consumes: nada.
 - Produces: `TokenKind.Duration` para `<entero>ms`; `DurationValue.Minutes` devuelve `Amount / 60_000` para `"ms"` (semántica 1.0 de truncado).
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 En `LexerTests.cs`:
 ```csharp
@@ -307,21 +307,21 @@ public void MillisecondLiteralsAreOneTokenAndDecimalsStayRejected()
 }
 ```
 
-- [ ] **Step 2: Correr y ver que falla**
+- [x] **Step 2: Correr y ver que falla**
 
 Run: `dotnet test tests/Kedo.Tests/Kedo.Tests.csproj --filter "FullyQualifiedName~LexesMillisecondDurations|FullyQualifiedName~MillisecondLiteralsAreOneToken"`
 Expected: FAIL: `350ms` produce K1002.
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 En `Lexer.cs` agregar `unit.SequenceEqual("ms"u8)` a `isUnit`; el texto del mensaje de K1002 no cambia (golden `errors-lexical`). En `DurationValue.Minutes` agregar `"ms" => Amount / 60_000`. En KEDO-01 §2: "entero seguido sin espacio de `ms`, `s`, `min`, `h` o `d` (`350ms`, `30min`, `2h`). Un solo token; se baja a entero en la unidad base del módulo (§10; `min` por defecto, ADR-0014)".
 
-- [ ] **Step 4: Correr los tests y el corpus**
+- [x] **Step 4: Correr los tests y el corpus**
 
 Run: `dotnet test tests/Kedo.Tests/Kedo.Tests.csproj; git status --porcelain tests/corpus`
 Expected: todo PASS; ninguna línea de `git status` bajo `tests/corpus`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/Kedo.Compiler/Syntax/Lexer.cs src/Kedo.Compiler/Model/Declarations.cs spec/KEDO-01-Gramatica.md tests/Kedo.Tests/LexerTests.cs tests/Kedo.Tests/DurationUnitTests.cs
@@ -347,7 +347,7 @@ git commit -m "Lex millisecond durations (350ms)"
   - Campos del resolver que usa la Tarea 6: `private readonly DurationUnit _unit;` y `private readonly bool _silentDurations;` (true tras K2012).
   - Mensajes: K2011 (advertencia, en el valor) "`base_unit = {texto}` is not a duration unit (`ms`, `s`, `min`, `h` or `d`); durations stay in `min`"; K2012 (error, en el segundo manifiesto, etiqueta "first declared here" en el primero) "`base_unit = {b}` differs from `base_unit = {a}` declared in another manifest; content resolved together counts durations in one unit".
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 ```csharp
 [Fact]
@@ -404,36 +404,36 @@ public void EditingTheManifestResolvesEverythingAgain()
 }
 ```
 
-- [ ] **Step 2: Correr y ver que falla**
+- [x] **Step 2: Correr y ver que falla**
 
 Run: `dotnet test tests/Kedo.Tests/Kedo.Tests.csproj --filter "FullyQualifiedName~DurationUnitTests|FullyQualifiedName~EditingTheManifest"`
 Expected: FAIL de compilación: `ResolvedCatalog.TimeUnit` no existe.
 
-- [ ] **Step 3: Implementar `ModuleTimeUnit.Determine`**
+- [x] **Step 3: Implementar `ModuleTimeUnit.Determine`**
 
 Recorre los archivos en orden; por cada `base_unit` válida recuerda la primera `(unidad, Origin)`; un `EnumValue` cuyo nombre no pasa `TryParseSuffix`, o cualquier otra clase de valor, es K2011 y se ignora; la primera unidad distinta de la recordada es K2012 (una vez) y `conflict = true`. Devuelve `Minute` si no hay ninguna o si hubo conflicto.
 
-- [ ] **Step 4: Conectar el resolver**
+- [x] **Step 4: Conectar el resolver**
 
 `ResolveView` y `ResolveIncremental` calculan `unit = forcedUnit ?? ModuleTimeUnit.Determine(files, diagnostics, out conflict)` y la pasan al constructor (`_unit`, `_silentDurations = conflict`); el catálogo y cada `ResolvedObject` nuevo reciben `TimeUnit = _unit`. En `ResolveIncremental`, si `previous is not null && previous.Catalog.TimeUnit != unit`, tratar `previous` como `null`. `Resolve` (público) delega en el interno; cada vista de variante llama a `Determine` sobre los mismos archivos (sus diagnósticos repetidos ya se deduplican por `DiagnosticKey`).
 
-- [ ] **Step 5: Golden de módulo**
+- [x] **Step 5: Golden de módulo**
 
 `a-core.kedo`: `kedo 1` / `module core` / `manifest { base_unit = min }` / `thing a { t = 1min }`. `b-game.kedo`: `module game`, `manifest { base_unit = s }`, `thing b { t = 30s }`. `c-typo.kedo`: `module game`, `manifest { base_unit = seconds }`.
 
 Run: `dotnet test tests/Kedo.Tests/Kedo.Tests.csproj --filter "FullyQualifiedName~ModuleCaseMatchesGoldenFiles"` dos veces (la primera genera los archivos).
 Expected: `diagnostics.txt` con exactamente `error K2012 b-game.kedo:…` y `warning K2011 c-typo.kedo:…`, sin K4014; `resolved.txt` con `t = 1min` en `thing a` y `t = 0min` en `thing b`. Segunda corrida PASS.
 
-- [ ] **Step 6: Spec y API**
+- [x] **Step 6: Spec y API**
 
 KEDO-01 §10: el manifiesto de ejemplo con `base_unit = min` y las reglas: unidades `ms s min h d`, `min` por defecto, una unidad para todo lo que se resuelve junto (base y variantes), K2011 y K2012, y que los enteros en campos `duration` son unidades base. KEDO-01 §12: filas K2011 y K2012. Run: `powershell -File tools/public-api.ps1` (agrega `ResolvedCatalog.TimeUnit.get` y `ResolvedObject.TimeUnit.get`).
 
-- [ ] **Step 7: Correr todo**
+- [x] **Step 7: Correr todo**
 
 Run: `dotnet build Kedo.sln -c Release; dotnet test tests/Kedo.Tests/Kedo.Tests.csproj; git status --porcelain tests/corpus`
 Expected: 0 advertencias; todo PASS; sólo `?? tests/corpus/durations-unit-conflict/`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/Kedo.Compiler tests spec/KEDO-01-Gramatica.md
@@ -462,7 +462,7 @@ git commit -m "Read base_unit from manifests (K2011, K2012)"
   - Resolver: `private long? ToUnit(DurationValue dv)` (llama a `DurationLowering.ToUnit` con `_silentDurations ? null : _d` y `_durationSites`), y un delegado cacheado en un campo para `ConstEvaluator`.
   - Hash: `RDuration` con `Unit == Minute` escribe `"d"` + i64 (igual que 1.0); con otra, `"D"` + u8 `(byte)Unit` + i64.
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 ```csharp
 [Fact]
@@ -522,32 +522,32 @@ public void TheUnitIsPartOfTheHashButMinutesHashAsBefore()
 }
 ```
 
-- [ ] **Step 2: Correr y ver que falla**
+- [x] **Step 2: Correr y ver que falla**
 
 Run: `dotnet test tests/Kedo.Tests/Kedo.Tests.csproj --filter "FullyQualifiedName~DurationUnitTests"`
 Expected: FAIL: `RDuration.Unit` no existe; los pines de la Tarea 2 siguen PASS una vez que compile.
 
-- [ ] **Step 3: Implementar `DurationLowering`, `RDuration`, el resolver, `ConstEvaluator` y el hash**
+- [x] **Step 3: Implementar `DurationLowering`, `RDuration`, el resolver, `ConstEvaluator` y el hash**
 
 Según el bloque Interfaces. `IntValue` en un campo `duration` da `new RDuration(prov, iv.Number) { Unit = _unit }` sin conversión (D5). `DurationLowering` distingue "no entero" de "no cabe" con `Int128` (`(Int128)amount * MillisecondsPer(from)` contra `MillisecondsPer(to)` y el rango de `long`), porque `TryConvert` sólo devuelve `false`. Si `toUnit` devuelve `null` dentro de una expresión, `ConstEvaluator` devuelve `null` sin agregar K5003.
 
-- [ ] **Step 4: Golden cases de un archivo**
+- [x] **Step 4: Golden cases de un archivo**
 
 `durations-base-unit/input.kedo`: `manifest { base_unit = ms }` y `attack slash { windup = 350ms  cooldown = 2s  combo_window = (1s + 250ms)  long = 2min  fraction = 1.5s }`. `durations-not-whole/input.kedo`: `manifest { base_unit = s }` y `attack jab { blink = 250ms  double = (500ms * 2)  ok = 3s  minute = 1min }`. `durations-legacy-minutes/input.kedo`: sin manifiesto, `event pause { short = 30s  ninety = 90s  sum = (90s + 30s)  milli = 1500ms  hour = 1h  day = 1d }`.
 
 Run: `dotnet test tests/Kedo.Tests/Kedo.Tests.csproj --filter "FullyQualifiedName~CaseMatchesGoldenFiles"` dos veces.
 Expected tras revisar los archivos generados: `durations-base-unit` → `resolved.txt` con `windup = 350ms`, `cooldown = 2000ms`, `combo_window = 1250ms`, `long = 120000ms` y sin `fraction`; `diagnostics.txt` sólo con diagnósticos sobre `1.5s`, entre ellos `error K1002 … durations are whole numbers: write `1.5s` in a smaller unit`, y ningún K4014. `durations-not-whole` → dos `error K4014` (`250ms` y `500ms`), `ok = 3s`, `minute = 60s`, sin `blink` ni `double`. `durations-legacy-minutes` → cinco `warning K4014` (30s, 90s, 90s, 30s, 1500ms) y `short = 0min`, `ninety = 1min`, `sum = 1min`, `milli = 0min`, `hour = 60min`, `day = 1440min`. `formatted.kedo` conserva `350ms`. Segunda corrida PASS.
 
-- [ ] **Step 5: Spec y API**
+- [x] **Step 5: Spec y API**
 
 KEDO-02 §3: la fila de escalares menciona que una duración vale una cantidad entera en la unidad base. R23: K4014 en la etapa A. §11: fila K4014 "Duración que no es entera en la unidad base del módulo o no cabe en 64 bits (advertencia con truncado en `min`, error en las demás unidades)". Run: `powershell -File tools/public-api.ps1` (agrega `RDuration.Unit.get/init` y `RDuration.Amount.get`).
 
-- [ ] **Step 6: Correr todo**
+- [x] **Step 6: Correr todo**
 
 Run: `dotnet build Kedo.sln -c Release; dotnet test tests/Kedo.Tests/Kedo.Tests.csproj; git status --porcelain tests/corpus`
 Expected: 0 advertencias; todo PASS (incluido `ExamplePackAndFramesArePinned`); sólo los tres directorios nuevos como `??`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/Kedo.Compiler tests spec/KEDO-02-Resolucion.md
@@ -574,7 +574,7 @@ git commit -m "Resolve durations in the base unit (K4014)"
   - K4004 con bornes en ms: "`{path}` = {CanonicalText} is out of range [{min}, {max}]" con `DurationUnits.Format(…, Millisecond)` y `-∞`/`∞`; con bornes enteros, el texto de 1.0 ("`{path}` = {CanonicalText} is out of range", idéntico para `min`).
   - JSON Schema: `pattern` `^[0-9][0-9_]*(ms|s|min|h|d)$`; `default` con `DefaultDurationMs`: `{ms/60000}min` si es divisible (igual que 1.0), si no `{ms/1000}s` si es divisible, si no `{ms}ms`; sin `DefaultDurationMs`, `{DefaultInt}min` como 1.0.
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 ```csharp
 private const string ActionSchema = """
@@ -616,24 +616,24 @@ public void ASchemaDefaultThatIsNotWholeInTheContentUnitIsReportedOnce()
 ```
 Y en `DecimalAndMapTests.JsonSchemaDescribesDecimalsMapsAndConstraints` no se toca nada; un test nuevo `JsonSchemaWritesDurationDefaults` en `DurationUnitTests` comprueba `"400ms"` como `default` de `windup`, `"3min"` de `cooldown` y que el `pattern` contiene `ms|`.
 
-- [ ] **Step 2: Correr y ver que falla**
+- [x] **Step 2: Correr y ver que falla**
 
 Run: `dotnet test tests/Kedo.Tests/Kedo.Tests.csproj --filter "FullyQualifiedName~DurationUnitTests"`
 Expected: FAIL: `FieldSchema.MinDurationMs` no existe.
 
-- [ ] **Step 3: Implementar** según el bloque Interfaces. `Defaults` calcula el default de duración con `DefaultDurationMs` si existe (convertido sin diagnósticos: los informa `CheckSchemaDurations`, que recorre una vez tipos, componentes, records y sus `Element`), y si no con `DefaultInt` tal cual. La comparación de rango usa `(Int128)du.Amount * DurationUnits.MillisecondsPer(du.Unit)`.
+- [x] **Step 3: Implementar** según el bloque Interfaces. `Defaults` calcula el default de duración con `DefaultDurationMs` si existe (convertido sin diagnósticos: los informa `CheckSchemaDurations`, que recorre una vez tipos, componentes, records y sus `Element`), y si no con `DefaultInt` tal cual. La comparación de rango usa `(Int128)du.Amount * DurationUnits.MillisecondsPer(du.Unit)`.
 
-- [ ] **Step 4: API**
+- [x] **Step 4: API**
 
 Run: `powershell -File tools/public-api.ps1`
 Expected: 6 líneas nuevas en `src/Kedo.Core/PublicAPI.Unshipped.txt` (get/init de los tres campos).
 
-- [ ] **Step 5: Correr todo**
+- [x] **Step 5: Correr todo**
 
 Run: `dotnet build Kedo.sln -c Release; dotnet test tests/Kedo.Tests/Kedo.Tests.csproj`
 Expected: 0 advertencias; todo PASS (incluidos `SamplesTests` y `SchemaTests`, que usan `min = 0  default = 0`).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/Kedo.Core src/Kedo.Compiler tests/Kedo.Tests/DurationUnitTests.cs
@@ -657,7 +657,7 @@ git commit -m "Exact duration bounds and defaults in the schema"
   - `Disassembler.Dump`: la primera línea es `program {id} v{n}` y, si `TimeUnit != Minute`, `program {id} v{n} time_unit={sufijo}`.
   - El doc de `OpCode.WaitMinutes`: "Suspend until `r[a]` units of the program's `TimeUnit` (minutes by default) elapse".
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 ```csharp
 [Fact]
@@ -683,23 +683,23 @@ public void ANonWholeWaitIsK4014()
 }
 ```
 
-- [ ] **Step 2: Correr y ver que falla**
+- [x] **Step 2: Correr y ver que falla**
 
 Run: `dotnet test tests/Kedo.Tests/Kedo.Tests.csproj --filter "FullyQualifiedName~HookLiteralsCompile|FullyQualifiedName~ANonWholeWait"`
 Expected: FAIL: `BehaviorProgram.TimeUnit` no existe.
 
-- [ ] **Step 3: Implementar** según el bloque Interfaces; borrar la conversión duplicada de `BehaviorCompiler.cs:540-541`.
+- [x] **Step 3: Implementar** según el bloque Interfaces; borrar la conversión duplicada de `BehaviorCompiler.cs:540-541`.
 
-- [ ] **Step 4: API**
+- [x] **Step 4: API**
 
 Run: `powershell -File tools/public-api.ps1` (agrega `BehaviorProgram.TimeUnit.get/init`).
 
-- [ ] **Step 5: Correr todo**
+- [x] **Step 5: Correr todo**
 
 Run: `dotnet test tests/Kedo.Tests/Kedo.Tests.csproj`
 Expected: todo PASS; `LegacyWaitInSecondsLoadsWholeMinutes` y `DisassemblyListsHooksAndAwaitSites` siguen PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/Kedo.Core src/Kedo.Compiler tests/Kedo.Tests/DurationUnitTests.cs
@@ -723,7 +723,7 @@ git commit -m "Compile hook durations in the program's time unit"
   - VM: `_clock = host as IBehaviorClock` en el constructor; `WaitMinutes` usa `now = _clock?.Now(_program.TimeUnit) ?? DurationUnits.ConvertTruncating(_host.NowMinutes, DurationUnit.Minute, _program.TimeUnit)` y crea el `AwaitRequest` con `Unit = _program.TimeUnit`. `Resume` marca obsoleto (`stale = true`) un frame con `Pending.Kind == AwaitKind.Minutes && Pending.Unit != _program.TimeUnit`.
   - `TraceHost : IBehaviorHost, IBehaviorClock`: `public long NowMilliseconds { get; set; }`; `NowMinutes { get => NowMilliseconds / 60_000; set => NowMilliseconds = value * 60_000; }`; `public long Now(DurationUnit unit) => DurationUnits.ConvertTruncating(NowMilliseconds, DurationUnit.Millisecond, unit)`; `Run` avanza `NowMilliseconds` hasta `ConvertTruncating(pending.DueAtMinutes, pending.Unit, Millisecond)`.
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 ```csharp
 private sealed class ClockHost : IBehaviorHost, IBehaviorClock
@@ -795,23 +795,23 @@ public void TheTraceHostRunsAMillisecondHook()
 ```
 (`AFrameSavedBy10ResumesAsMinutes` usa el pin JSON de la Tarea 2: `ExamplePackAndFramesArePinned` tiene que seguir PASS.)
 
-- [ ] **Step 2: Correr y ver que falla**
+- [x] **Step 2: Correr y ver que falla**
 
 Run: `dotnet test tests/Kedo.Tests/Kedo.Tests.csproj --filter "FullyQualifiedName~DurationUnitTests"`
 Expected: FAIL de compilación: `IBehaviorClock` no existe.
 
-- [ ] **Step 3: Implementar** según el bloque Interfaces. Nada nuevo dentro del bucle de despacho fuera del `case OpCode.WaitMinutes`.
+- [x] **Step 3: Implementar** según el bloque Interfaces. Nada nuevo dentro del bucle de despacho fuera del `case OpCode.WaitMinutes`.
 
-- [ ] **Step 4: Spec y API**
+- [x] **Step 4: Spec y API**
 
 KEDO-01 §8: "`wait <duración>` espera tiempo simulado en la unidad base; el host da la hora con `IBehaviorClock.Now(unidad)` o, si no lo implementa, se convierte `NowMinutes` (ADR-0014)". Run: `powershell -File tools/public-api.ps1` (Core: `IBehaviorClock`, `IBehaviorClock.Now`, `AwaitRequest.Unit.get/init`; Compiler: `TraceHost.NowMilliseconds.get/set`, `TraceHost.Now`).
 
-- [ ] **Step 5: Correr todo**
+- [x] **Step 5: Correr todo**
 
 Run: `dotnet build Kedo.sln -c Release; dotnet test tests/Kedo.Tests/Kedo.Tests.csproj`
 Expected: 0 advertencias; todo PASS, incluidos `BehaviorTests` (`DueAtMinutes == 1030`) y `EvalTests`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/Kedo.Core src/Kedo.Compiler tests/Kedo.Tests/DurationUnitTests.cs spec/KEDO-01-Gramatica.md
@@ -833,7 +833,7 @@ git commit -m "Wait in the program's time unit through IBehaviorClock"
   - `public const int KedoPack.LatestFormatVersion = 3;`, `public const int KedoPack.SectionTimeUnit = 4;`, `public DurationUnit KedoPack.TimeUnit { get; }`. `FormatVersion` sigue `= 2` con doc "format written for packs in minutes (the 1.0 layout); other units are written as `LatestFormatVersion`". `Load` acepta `MinFormatVersion..LatestFormatVersion`; con formato 3 exige la sección 4 y un byte que sea un `DurationUnit` definido; cada programa leído recibe `TimeUnit = pack.TimeUnit`.
   - `public static int PackWriter.FormatFor(DurationUnit timeUnit)` → 2 para `Minute`, 3 para las demás. `Write` escribe 3 secciones (bytes de hoy) en `min`; en otra unidad, 4 secciones con la de unidad (1 byte) **al final**, justo antes del trailer. Un programa con `TimeUnit` distinto del catálogo es `ArgumentException` (uso indebido de la API, no error de contenido).
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 ```csharp
 [Fact]
@@ -869,23 +869,23 @@ public void AnUnknownUnitByteIsRejected()
 }
 ```
 
-- [ ] **Step 2: Correr y ver que falla**
+- [x] **Step 2: Correr y ver que falla**
 
 Run: `dotnet test tests/Kedo.Tests/Kedo.Tests.csproj --filter "FullyQualifiedName~DurationUnitTests"`
 Expected: FAIL de compilación: `KedoPack.TimeUnit` no existe.
 
-- [ ] **Step 3: Implementar** según el bloque Interfaces.
+- [x] **Step 3: Implementar** según el bloque Interfaces.
 
-- [ ] **Step 4: Spec y API**
+- [x] **Step 4: Spec y API**
 
 KEDO-03, fila del formato del pack: "El runtime carga formatos 1 a 3. El escritor usa el formato más bajo que expresa el contenido: 2 para duraciones en minutos, 3 (sección de unidad, ADR-0014) para las demás". Run: `powershell -File tools/public-api.ps1` (Core: `LatestFormatVersion`, `SectionTimeUnit`, `TimeUnit.get`; Compiler: `PackWriter.FormatFor`).
 
-- [ ] **Step 5: Correr todo**
+- [x] **Step 5: Correr todo**
 
 Run: `dotnet build Kedo.sln -c Release; dotnet test tests/Kedo.Tests/Kedo.Tests.csproj`
 Expected: 0 advertencias; todo PASS, en especial `ExamplePackAndFramesArePinned`, `PackBytesAreDeterministic` y `CorruptionAndWrongFormatAreRejected`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/Kedo.Core src/Kedo.Compiler tests/Kedo.Tests/DurationUnitTests.cs spec/KEDO-03-API-Publica-y-Paquetes.md
@@ -907,7 +907,7 @@ git commit -m "Pack format 3 carries the time unit; minute packs stay format 2"
   - `kedo catalog --json`: `"time_unit": "<sufijo>"` después de `catalog_hash`. `kedo build --json`: `"time_unit"` y `"format"`. La salida de texto no cambia para `min`.
   - Skills: `kedo-syntax` dice "durations (`350ms`, `45s`, `30min`, `2h`, `3d`; an integer count of the module's `base_unit` at runtime, `min` unless `manifest { base_unit = ms }`; a literal that is not whole in that unit is K4014)"; `kedo-author-content` dice que los enteros en campos de duración son unidades base y que la unidad está en `kedo describe` (`unit`).
 
-- [ ] **Step 1: Escribir los tests**
+- [x] **Step 1: Escribir los tests**
 
 ```csharp
 [Fact]
@@ -927,14 +927,14 @@ public void DescribeNamesTheUnitOfDurationFields()
 ```
 CLI (verificación manual, no hay tests de CLI en el repositorio): ver Step 4.
 
-- [ ] **Step 2: Correr y ver que falla**
+- [x] **Step 2: Correr y ver que falla**
 
 Run: `dotnet test tests/Kedo.Tests/Kedo.Tests.csproj --filter "FullyQualifiedName~DescribeNamesTheUnit"`
 Expected: FAIL: la propiedad `unit` no existe.
 
-- [ ] **Step 3: Implementar** describe, CLI y skills; correr `powershell -File tools/sync-skills.ps1`.
+- [x] **Step 3: Implementar** describe, CLI y skills; correr `powershell -File tools/sync-skills.ps1`.
 
-- [ ] **Step 4: Verificar la CLI**
+- [x] **Step 4: Verificar la CLI**
 
 Run (con un directorio temporal que tenga `module.kedo` con `manifest { base_unit = ms }` y `attack a { windup = 350ms }`):
 ```powershell
@@ -944,12 +944,12 @@ dotnet run --project src/Kedo.Cli -c Release -- catalog samples/outpost --schema
 ```
 Expected: `"time_unit": "ms"`; `"format": 3`; outpost con `"time_unit": "min"` y el mismo `catalog_hash` que antes del cambio.
 
-- [ ] **Step 5: Correr todo**
+- [x] **Step 5: Correr todo**
 
 Run: `dotnet test tests/Kedo.Tests/Kedo.Tests.csproj`
 Expected: todo PASS, incluidos `SkillsTests` y `EditingTests`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/Kedo.Compiler/Editing/ObjectDescriber.cs src/Kedo.Cli/Program.cs .agents/skills .claude/skills tests/Kedo.Tests
@@ -965,22 +965,22 @@ git commit -m "Expose the time unit in describe, catalog and build"
 - Consumes: todo lo anterior y los packs de antes de la Tarea 2 (`$env:TEMP\kedo-base-unit\before`).
 - Produces: evidencia de que nada de 1.0 cambió.
 
-- [ ] **Step 1: Build y tests**
+- [x] **Step 1: Build y tests**
 
 Run: `dotnet restore --locked-mode; dotnet build Kedo.sln -c Release; dotnet test tests/Kedo.Tests/Kedo.Tests.csproj`
 Expected: 0 advertencias, 0 errores; todos los tests PASS.
 
-- [ ] **Step 2: Corpus y API**
+- [x] **Step 2: Corpus y API**
 
 Run: `git status --porcelain tests/corpus; git diff --stat main -- src/*/PublicAPI.Shipped.txt`
 Expected: sólo los cuatro casos nuevos `durations-*`; ningún cambio en los `PublicAPI.Shipped.txt`.
 
-- [ ] **Step 3: Benchmarks**
+- [x] **Step 3: Benchmarks**
 
 Run: `dotnet run -c Release --project tests/Kedo.Benchmarks -- --filter '*' --job short; powershell -File tools/bench-gate.ps1`
 Expected: el gate pasa (asignaciones dentro del 10 %, tiempos dentro de 3x); `Run100kInstructions` con 0 B por instrucción.
 
-- [ ] **Step 4: Patriark byte a byte**
+- [x] **Step 4: Patriark byte a byte**
 
 Run:
 ```powershell
@@ -993,7 +993,7 @@ Get-FileHash "$env:TEMP/kedo-base-unit/before/*.kpk", "$out/*.kpk" | Format-Tabl
 ```
 Expected: `"diagnostics": []` (ningún K4014 ni K2011), `"time_unit": "min"`, `"format": 2`, y los mismos hashes antes y después para cada pack (la cadena de versión del toolchain no cambió porque este plan no sube la versión).
 
-- [ ] **Step 5: Commit (sólo si se actualizó la línea base)**
+- [x] **Step 5: Commit (sólo si se actualizó la línea base)**
 
 ```bash
 git add tests/Kedo.Benchmarks/baseline.json

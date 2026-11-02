@@ -362,7 +362,7 @@ public class DurationUnitTests
         Assert.Equal("400ms", Field(catalog, "attack:a", "windup").CanonicalText);
         Assert.Equal("3ms", Field(catalog, "attack:a", "cooldown").CanonicalText);
         Assert.Equal(2, cbag.Items.Count(d => d.Code == "K4004"));
-        Assert.Contains(cbag.Items, d => d.Message.Contains("[100ms, 2000ms]"));
+        Assert.Contains(cbag.Items, d => d.Message.Contains("[100ms, 2s]"));
     }
 
     [Fact]
@@ -408,7 +408,7 @@ public class DurationUnitTests
         var schema = LoadActionSchema(ActionSchema.Replace("{ name = cooldown  kind = duration  min = 0  default = 3 }", "{ name = cooldown  kind = duration  min = 0  max = 2s }"));
         var (_, bag) = Resolve("attack a { cooldown = 2000ms }\nattack b { cooldown = 2001ms }", baseUnit: "ms", schema);
         Assert.Single(bag.Items, d => d.Code == "K4004" && d.Message.Contains("2001ms"));
-        Assert.Single(bag.Items, d => d.Code == "K4004" && d.Message.Contains("[0ms, 2000ms]"));
+        Assert.Single(bag.Items, d => d.Code == "K4004" && d.Message.Contains("[0ms, 2s]"));
     }
 
     [Fact]
@@ -449,6 +449,14 @@ public class DurationUnitTests
         Assert.Equal(new DurationValue(origin, 1500, "ms"), parsed);
         Assert.Equal(new DurationValue(origin, 1500, "ms").GetHashCode(), parsed.GetHashCode());
         Assert.NotEqual(new DurationValue(origin, 1500, "ms"), new DurationValue(origin, 1501, "ms"));
+    }
+
+    [Fact]
+    public void K4004ShowsDurationBoundsInTheLargestExactUnit()
+    {
+        var schema = LoadActionSchema(ActionSchema.Replace("min = 100ms  max = 2s", "min = 10min  max = 2h"));
+        var (_, bag) = Resolve("attack a { windup = 1min }", baseUnit: "ms", schema);
+        Assert.Single(bag.Items, d => d.Code == "K4004" && d.Message.EndsWith("[10min, 2h]"));
     }
 
     [Fact]
@@ -649,7 +657,7 @@ public class DurationUnitTests
         Assert.Equal("ms", fields["windup"].GetProperty("unit").GetString());
         Assert.Equal("300ms", fields["windup"].GetProperty("value").GetString());
         Assert.Equal("100ms", fields["windup"].GetProperty("min_duration").GetString());
-        Assert.Equal("2000ms", fields["windup"].GetProperty("max_duration").GetString());
+        Assert.Equal("2s", fields["windup"].GetProperty("max_duration").GetString());
         Assert.Equal("ms", fields["cooldown"].GetProperty("unit").GetString());
         Assert.False(fields["cooldown"].TryGetProperty("min_duration", out _));
     }

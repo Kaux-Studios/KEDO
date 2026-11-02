@@ -1,2 +1,2 @@
-error K2012 b-game.kedo:3:24 `base_unit = s` differs from `base_unit = min` declared in another manifest; content resolved together counts durations in one unit; declare the same `base_unit` in every manifest
+error K2012 b-game.kedo:3:24 `base_unit = s` differs from `base_unit = min` declared elsewhere (first declaration is labelled); content resolved together counts durations in one unit; declare the same `base_unit` in every manifest
 warning K2011 c-typo.kedo:3:24 `base_unit = seconds` is not a duration unit (`ms`, `s`, `min`, `h` or `d`); durations stay in `min`

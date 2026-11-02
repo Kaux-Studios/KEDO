@@ -87,7 +87,7 @@ internal static class ConstEvaluator
                     return operand switch
                     {
                         IntValue i => new IntValue(origin, -i.Number),
-                        DurationValue du => DurationSources.Remember(new DurationValue(origin, -du.Amount, du.Unit), DurationSources.TextOf(du) is { } st ? "-" + st : null),
+                        DurationValue du => new DurationValue(origin, -du.Amount, du.Unit),
                         _ => Mismatch(d, file, t, node, "`-` needs a number or duration"),
                     };
                 }

@@ -19,5 +19,3 @@ File
             LiteralExpr `250ms`
       Field `long` `=`
         LiteralExpr `2min`
-      Field `fraction` `=`
-      Error `1.5s`

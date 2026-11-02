@@ -55,7 +55,11 @@ public interface IBehaviorHost
     void Trace(string message);
 }
 
-/// <summary>Optional companion of <see cref="IBehaviorHost"/>: simulated time at activation in the requested unit.</summary>
+/// <summary>
+/// Optional companion of <see cref="IBehaviorHost"/>: simulated time at activation in the requested unit. Content with a
+/// <c>base_unit</c> other than <c>min</c> schedules <see cref="AwaitRequest.DueAtMinutes"/> in <see cref="AwaitRequest.Unit"/>;
+/// implement this interface to give sub-minute precision (without it the VM truncates <see cref="IBehaviorHost.NowMinutes"/>).
+/// </summary>
 public interface IBehaviorClock
 {
     /// <summary>Simulated time at activation, in <paramref name="unit"/>.</summary>
