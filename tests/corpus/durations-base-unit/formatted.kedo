@@ -1,0 +1,13 @@
+kedo 1
+module m
+
+// Durations count a whole number of the manifest base_unit (ADR-0014).
+manifest { base_unit = ms }
+
+attack slash {
+    windup = 350ms
+    cooldown = 2s
+    combo_window = (1s + 250ms)
+    long = 2min
+    fraction =  1.5s
+}

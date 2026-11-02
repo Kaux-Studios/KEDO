@@ -97,6 +97,22 @@ public class IncrementalTests
     }
 
     [Fact]
+    public void SubUnitDurationDiagnosticsMatchAFullResolutionAfterEdits()
+    {
+        var schema = new SchemaRegistry { Permissive = true };
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["a.kedo"] = "kedo 1\nmodule m\nmixin quick { a = 30s }\nthing t1 with quick { }\nthing t2 with quick { }\nthing t3 { b = 90s }\n",
+        };
+        var session = new IncrementalCatalog(schema);
+        AssertSame(session, files, schema);
+        files["a.kedo"] = files["a.kedo"].Replace("b = 90s", "b = 45s");
+        AssertSame(session, files, schema);
+        files["a.kedo"] = files["a.kedo"].Replace("a = 30s", "a = 20s");
+        AssertSame(session, files, schema);
+    }
+
+    [Fact]
     public void EditingTheManifestResolvesEverythingAgain()
     {
         var schema = new SchemaRegistry { Permissive = true };

@@ -89,11 +89,17 @@ public sealed record RDecimal(Provenance Provenance, long Units, int Scale) : Re
     }
 }
 
-/// <summary>Duration in minutes.</summary>
+/// <summary>Duration as a whole count of the module's base unit (<see cref="Unit"/>, ADR-0014); <see cref="Minutes"/> is that count (minutes by default).</summary>
 public sealed record RDuration(Provenance Provenance, long Minutes) : ResolvedValue(Provenance)
 {
+    /// <summary>Unit <see cref="Minutes"/> is counted in; minutes unless the manifest sets <c>base_unit</c>.</summary>
+    public Kedo.Schema.DurationUnit Unit { get; init; }
+
+    /// <summary>The count of <see cref="Unit"/>; the same number as <see cref="Minutes"/>.</summary>
+    public long Amount => Minutes;
+
     /// <inheritdoc />
-    public override string CanonicalText => Minutes.ToString(System.Globalization.CultureInfo.InvariantCulture) + "min";
+    public override string CanonicalText => Kedo.Schema.DurationUnits.Format(Minutes, Unit);
 }
 
 /// <summary>Enumeration value.</summary>

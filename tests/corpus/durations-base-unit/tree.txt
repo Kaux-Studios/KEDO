@@ -1,0 +1,23 @@
+File
+  Header `kedo` `1` `module` `m`
+  ManifestDecl `manifest`
+    Body `{` `}`
+      Field `base_unit` `=`
+        NameExpr `ms`
+  ObjectDecl
+    TypeName `attack`
+    Name `slash`
+    Body `{` `}`
+      Field `windup` `=`
+        LiteralExpr `350ms`
+      Field `cooldown` `=`
+        LiteralExpr `2s`
+      Field `combo_window` `=`
+        ParenExpr `(` `)`
+          BinaryExpr `+`
+            LiteralExpr `1s`
+            LiteralExpr `250ms`
+      Field `long` `=`
+        LiteralExpr `2min`
+      Field `fraction` `=`
+      Error `1.5s`

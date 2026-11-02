@@ -1,0 +1,5 @@
+attack jab
+    ok = 3s
+    minute = 60s
+    hash eef31be060693ed04f77dcaf6a042c95
+catalog 0c7d7ee6e1312702c0722e79e39bf219

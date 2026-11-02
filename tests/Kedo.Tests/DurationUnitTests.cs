@@ -77,7 +77,7 @@ public class DurationUnitTests
         var files = new[]
         {
             "kedo 1\nmodule m\nmanifest { base_unit = ms }\nthing t { a = 2s }\n",
-            "kedo 1\nmodule m\nvariant fast\nmanifest { base_unit = s }\noverride thing t { a = 1s }\n",
+            "kedo 1\nmodule m\nvariant fast\nmanifest { base_unit = s }\noverride thing t { a = 1s  b = 250ms }\n",
         }.Select((text, i) => DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(text, $"f{i}.kedo"), bag), bag)).ToList();
         var catalog = Resolver.Resolve(files, new SchemaRegistry { Permissive = true }, bag);
         Assert.Contains(bag.Items, d => d.Code == "K2012" && d.IsError && d.File == "f1.kedo");
@@ -178,5 +178,75 @@ public class DurationUnitTests
         Assert.Contains("1_500ms", formatted);
         var again = Kedo.Compiler.Formatting.Formatter.Format(Parser.Parse(SourceText.FromString(formatted, "f.kedo"), new DiagnosticBag()));
         Assert.Equal(formatted, again);
+    }
+
+    [Fact]
+    public void DurationsResolveInTheBaseUnit()
+    {
+        var (catalog, bag) = Resolve("thing t { windup = 350ms  cooldown = 2s  combo = (1s + 250ms)  long = 2min  raw = 40  neg = -250ms }", baseUnit: "ms");
+        Assert.False(bag.HasErrors);
+        var cooldown = Assert.IsType<RDuration>(Field(catalog, "thing:t", "cooldown"));
+        Assert.Equal((2000L, DurationUnit.Millisecond), (cooldown.Amount, cooldown.Unit));
+        Assert.Equal("350ms", Field(catalog, "thing:t", "windup").CanonicalText);
+        Assert.Equal("1250ms", Field(catalog, "thing:t", "combo").CanonicalText);
+        Assert.Equal("120000ms", Field(catalog, "thing:t", "long").CanonicalText);
+        Assert.Equal("-250ms", Field(catalog, "thing:t", "neg").CanonicalText);
+        Assert.DoesNotContain(bag.Items, d => d.Code == "K4014");
+    }
+
+    [Fact]
+    public void ANonWholeLiteralWarnsInMinutesAndFailsElsewhere()
+    {
+        var (legacy, lbag) = Resolve("thing t { a = 30s  b = (90s + 30s) }", baseUnit: null);
+        Assert.False(lbag.HasErrors);
+        Assert.Equal(3, lbag.Items.Count(d => d.Code == "K4014" && d.Severity == Severity.Warning));
+        Assert.Equal("0min", Field(legacy, "thing:t", "a").CanonicalText);
+        Assert.Equal("1min", Field(legacy, "thing:t", "b").CanonicalText);
+
+        var (strict, sbag) = Resolve("thing t { a = 250ms  b = (500ms * 2)  c = 3s }", baseUnit: "s");
+        Assert.Equal(2, sbag.Items.Count(d => d.Code == "K4014" && d.IsError));
+        Assert.Contains(sbag.Items, d => d.Message.StartsWith("`250ms` is not a whole number of `s`"));
+        Assert.False(strict.ByKey["thing:t"].Body.Fields.TryGetValue("a", out _));
+        Assert.Equal("3s", Field(strict, "thing:t", "c").CanonicalText);
+    }
+
+    [Fact]
+    public void AMixinLiteralIsReportedOnce()
+    {
+        var (_, bag) = Resolve("mixin quick { a = 30s }\nthing t1 with quick { }\nthing t2 with quick { }\nthing t3 with quick { }", baseUnit: null);
+        Assert.Single(bag.Items, d => d.Code == "K4014");
+    }
+
+    [Fact]
+    public void AHugeLiteralIsAnErrorNotAWrap()
+    {
+        var (_, ms) = Resolve("thing t { a = 106751991167301d }", baseUnit: "ms");
+        Assert.Contains(ms.Items, d => d.Code == "K4014" && d.IsError && d.Message.Contains("64-bit"));
+        var (_, min) = Resolve("thing t { a = 9223372036854775807d }", baseUnit: null);
+        Assert.Contains(min.Items, d => d.Code == "K4014" && d.IsError);
+    }
+
+    [Fact]
+    public void TheUnitIsPartOfTheHashButMinutesHashAsBefore()
+    {
+        var a = Resolve("thing t { a = 30min }", baseUnit: null).Catalog.ByKey["thing:t"].Hash;
+        var b = Resolve("thing t { a = 30min }", baseUnit: "min").Catalog.ByKey["thing:t"].Hash;
+        var c = Resolve("thing t { a = 30s }", baseUnit: "s").Catalog.ByKey["thing:t"].Hash;
+        Assert.Equal(a, b);
+        Assert.NotEqual(a, c);
+    }
+
+    [Fact]
+    public void AUnitConflictSuppressesK4014()
+    {
+        var bag = new DiagnosticBag();
+        var files = new[]
+        {
+            "kedo 1\nmodule m\nmanifest { base_unit = ms }\nthing t { a = 30s }\n",
+            "kedo 1\nmodule m\nmanifest { base_unit = s }\nthing u { a = 250ms }\n",
+        }.Select((text, i) => DeclarationBuilder.Build(Parser.Parse(SourceText.FromString(text, $"g{i}.kedo"), bag), bag)).ToList();
+        Resolver.Resolve(files, new SchemaRegistry { Permissive = true }, bag);
+        Assert.Contains(bag.Items, d => d.Code == "K2012");
+        Assert.DoesNotContain(bag.Items, d => d.Code == "K4014");
     }
 }

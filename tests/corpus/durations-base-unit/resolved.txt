@@ -1,0 +1,7 @@
+attack slash
+    windup = 350ms
+    cooldown = 2000ms
+    combo_window = 1250ms
+    long = 120000ms
+    hash 81d8f3ab599ecc47d2bb7f9ea6ed08ca
+catalog 1f6750af7d416db8d67a6567415539fe

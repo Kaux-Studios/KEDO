@@ -89,6 +89,8 @@ public sealed class Resolver
 
     private readonly DurationUnit _unit;
     private readonly bool _silentDurations;
+    private readonly HashSet<string> _durationSites = new(StringComparer.Ordinal);
+    private readonly Func<DurationValue, long?> _toUnit;
 
     private Resolver(SchemaRegistry schema, DiagnosticBag diagnostics, string? variant, DurationUnit unit, bool silentDurations)
     {
@@ -97,7 +99,11 @@ public sealed class Resolver
         _variant = variant;
         _unit = unit;
         _silentDurations = silentDurations;
+        _toUnit = ToUnit;
     }
+
+    private long? ToUnit(DurationValue dv)
+        => DurationLowering.ToUnit(dv.Amount, dv.Unit, _unit, dv.Origin.File, dv.Origin.Span, _silentDurations ? null : _d, _durationSites);
 
     /// <summary>
     /// Resolves the declarations of several files against a schema. Files of a variant (<c>variant name</c> in the header)
@@ -209,6 +215,7 @@ public sealed class Resolver
             // Each object records every diagnostic it would report; duplicates across objects merge at the end, so the
             // set never depends on which objects were reused.
             r._warned.Clear();
+            r._durationSites.Clear();
             var start = local.Items.Count;
             var invalidBefore = new HashSet<string>(r._invalid, StringComparer.Ordinal);
             r.ResolveObject(key);
@@ -601,7 +608,7 @@ public sealed class Resolver
         _resolved[key] = new ResolvedObject(decl, body, components, hooks, functions, chain, mixins) { Order = _order[key], TimeUnit = _unit };
     }
 
-    private static RRecord Defaults(RecordSchema schema, Origin origin)
+    private RRecord Defaults(RecordSchema schema, Origin origin)
     {
         var fields = OrderedFields.Empty;
         var prov = new Provenance(origin, LayerKind.Default, schema.Id);
@@ -610,7 +617,7 @@ public sealed class Resolver
             ResolvedValue? v = f.Kind switch
             {
                 ValueKind.Int when f.DefaultInt is not null => new RInt(prov, f.DefaultInt.Value),
-                ValueKind.Duration when f.DefaultInt is not null => new RDuration(prov, f.DefaultInt.Value),
+                ValueKind.Duration when f.DefaultInt is not null => new RDuration(prov, f.DefaultInt.Value) { Unit = _unit },
                 ValueKind.Bool when f.DefaultBool is not null => new RBool(prov, f.DefaultBool.Value),
                 ValueKind.Text when f.DefaultText is not null => new RText(prov, f.DefaultText),
                 ValueKind.Enum when f.DefaultText is not null => new REnum(prov, f.DefaultText),
@@ -1141,14 +1148,14 @@ public sealed class Resolver
         {
             case ExprValue ev:
             {
-                var folded = ConstEvaluator.Evaluate(ev, _d);
+                var folded = ConstEvaluator.Evaluate(ev, _d, _unit, _toUnit);
                 return folded is null ? null : Lower(folded, fs, p, current, nesting, path);
             }
 
             case IntValue iv:
                 if (fs is { Kind: ValueKind.Duration })
                 {
-                    return new RDuration(prov, iv.Number);
+                    return new RDuration(prov, iv.Number) { Unit = _unit };
                 }
 
                 if (fs is { Kind: ValueKind.Decimal })
@@ -1175,7 +1182,14 @@ public sealed class Resolver
             }
 
             case DurationValue dv:
-                return Check(fs, ValueKind.Duration, value) ? new RDuration(prov, dv.Minutes) : null;
+                {
+                if (!Check(fs, ValueKind.Duration, value))
+                {
+                    return null;
+                }
+
+                return ToUnit(dv) is { } lowered ? new RDuration(prov, lowered) { Unit = _unit } : null;
+            }
             case TextValue tv:
                 return Check(fs, ValueKind.Text, value) ? new RText(prov, tv.Text) : null;
             case BoolValue bv:
@@ -1509,7 +1523,7 @@ public sealed class Resolver
             case RDuration du when fs is not null:
                 if ((fs.Min is { } dmin && du.Minutes < dmin) || (fs.Max is { } dmax && du.Minutes > dmax))
                 {
-                    AddOnce(WithProvenance("K4004", $"`{path}` = {du.Minutes}min is out of range", obj, value));
+                    AddOnce(WithProvenance("K4004", $"`{path}` = {du.CanonicalText} is out of range", obj, value));
                 }
 
                 break;

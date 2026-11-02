@@ -1,0 +1,21 @@
+File
+  Header `kedo` `1` `module` `m`
+  ManifestDecl `manifest`
+    Body `{` `}`
+      Field `base_unit` `=`
+        NameExpr `s`
+  ObjectDecl
+    TypeName `attack`
+    Name `jab`
+    Body `{` `}`
+      Field `blink` `=`
+        LiteralExpr `250ms`
+      Field `double` `=`
+        ParenExpr `(` `)`
+          BinaryExpr `*`
+            LiteralExpr `500ms`
+            LiteralExpr `2`
+      Field `ok` `=`
+        LiteralExpr `3s`
+      Field `minute` `=`
+        LiteralExpr `1min`

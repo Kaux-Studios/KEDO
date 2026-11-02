@@ -1,3 +1,6 @@
 #nullable enable
+Kedo.Compiler.Resolution.RDuration.Amount.get -> long
+Kedo.Compiler.Resolution.RDuration.Unit.get -> Kedo.Schema.DurationUnit
+Kedo.Compiler.Resolution.RDuration.Unit.init -> void
 Kedo.Compiler.Resolution.ResolvedCatalog.TimeUnit.get -> Kedo.Schema.DurationUnit
 Kedo.Compiler.Resolution.ResolvedObject.TimeUnit.get -> Kedo.Schema.DurationUnit

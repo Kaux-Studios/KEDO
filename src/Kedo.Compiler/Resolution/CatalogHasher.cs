@@ -76,7 +76,21 @@ public static class CatalogHasher
             case RInt i: h.Append("i"u8); WriteInt(h, i.Number); break;
             case RBool b: h.Append(b.Flag ? "T"u8 : "F"u8); break;
             case RText t: h.Append("s"u8); WriteString(h, t.Text); break;
-            case RDuration d: h.Append("d"u8); WriteInt(h, d.Minutes); break;
+            case RDuration d:
+                if (d.Unit == Kedo.Schema.DurationUnit.Minute)
+                {
+                    h.Append("d"u8);
+                }
+                else
+                {
+                    h.Append("D"u8);
+                    Span<byte> unit = stackalloc byte[1];
+                    unit[0] = (byte)d.Unit;
+                    h.Append(unit);
+                }
+
+                WriteInt(h, d.Minutes);
+                break;
             case RDecimal m: h.Append("m"u8); WriteInt(h, m.Units); WriteInt(h, m.Scale); break;
             case REnum e: h.Append("e"u8); WriteString(h, e.Name); break;
             case RRef r: h.Append("r"u8); WriteString(h, r.CanonicalText); break;
