@@ -519,4 +519,20 @@ public class DurationUnitTests
         var program = new BehaviorProgram("actor:boss", 1, "h", Array.Empty<uint>(), Array.Empty<long>(), Array.Empty<string>(), new List<FunctionInfo>(), new Dictionary<string, int>(), new List<AwaitSite>(), Array.Empty<string>());
         Assert.Throws<ArgumentException>(() => PackWriter.Write(catalog, new[] { program }));
     }
+
+    [Fact]
+    public void DescribeNamesTheUnitOfDurationFields()
+    {
+        var schema = LoadActionSchema();
+        var (catalog, _) = Resolve("attack a { windup = 300ms }", baseUnit: "ms", schema);
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream)) { Kedo.Compiler.Editing.ObjectDescriber.Write(writer, catalog.ByKey["attack:a"], schema); }
+        var fields = JsonDocument.Parse(stream.ToArray()).RootElement.GetProperty("fields").EnumerateArray().ToDictionary(f => f.GetProperty("name").GetString()!);
+        Assert.Equal("ms", fields["windup"].GetProperty("unit").GetString());
+        Assert.Equal("300ms", fields["windup"].GetProperty("value").GetString());
+        Assert.Equal("100ms", fields["windup"].GetProperty("min_duration").GetString());
+        Assert.Equal("2000ms", fields["windup"].GetProperty("max_duration").GetString());
+        Assert.Equal("ms", fields["cooldown"].GetProperty("unit").GetString());
+        Assert.False(fields["cooldown"].TryGetProperty("min_duration", out _));
+    }
 }
