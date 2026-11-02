@@ -93,4 +93,14 @@ public class LexerTests
 
         Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text), pos);
     }
+
+    [Theory]
+    [InlineData("t = 350ms")]
+    [InlineData("t = 1_500ms")]
+    public void LexesMillisecondDurations(string text)
+    {
+        var (tokens, bag) = Lex(text);
+        Assert.False(bag.HasErrors);
+        Assert.Contains(TokenKind.Duration, Significant(tokens));
+    }
 }

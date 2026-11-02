@@ -47,7 +47,7 @@ actor depot_sentinel extends sentinel_machine {
 | Ruta de módulo | `ident '/' id-calificado`, por ejemplo `core/basic_item`. Solo en referencias a otro módulo |
 | Entero | `[0-9]+` con `_` opcional como separador (`1_500`). Un `-` pegado a un entero o duración en posición de valor forma un literal negativo (`mood_shift = -1`); cualquier otra expresión con `-` va entre paréntesis |
 | Decimal | `[0-9_]+ '.' [0-9_]+`, hasta 9 decimales (K1006): `1.25`, `-0.5`, `1_000.5`. Punto fijo, nunca coma flotante; no se reconoce después de un `.` (`place.1.5` es un id calificado). Sólo como dato: dentro de hooks, funciones y expresiones es K5007 ([ADR-0008](adr/0008-decimales-de-punto-fijo.md)) |
-| Duración | entero seguido sin espacio de `s`, `min`, `h` o `d` (`30min`, `2h`). Un solo token; se baja a entero en la unidad base del esquema (minutos por defecto) |
+| Duración | entero seguido sin espacio de `ms`, `s`, `min`, `h` o `d` (`350ms`, `30min`, `2h`). Un solo token; se baja a entero en la unidad base del módulo (§10; `min` por defecto, ADR-0014) |
 | Cadena | `"..."` con escapes `\" \\ \n \t \u{XXXX}`. Sin cadenas multilínea en v0.1 |
 | Booleano | `true`, `false` |
 | Referencia | `tipo ':' id-calificado` o `tipo ':' ruta-de-módulo`, sin espacios: `effect:alarm_raised`, `item:core/rope`. `asset:` es un tipo reservado |

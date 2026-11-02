@@ -89,4 +89,15 @@ public class DurationUnitTests
         Assert.Equal("350ms", DurationUnits.Format(350, DurationUnit.Millisecond));
         Assert.Equal(DurationUnit.Minute, default(DurationUnit));
     }
+
+    [Fact]
+    public void MillisecondLiteralsAreOneTokenAndDecimalsStayRejected()
+    {
+        var bag = new DiagnosticBag();
+        var tokens = Lexer.Lex(SourceText.FromString("a = 350ms\nb = 1.5ms\nc = 5mss\n", "l.kedo"), bag);
+        Assert.Equal(1, tokens.Count(t => t.Kind == TokenKind.Duration));
+        Assert.Contains(bag.Items, d => d.Code == "K1002" && d.Message.Contains("whole numbers"));
+        Assert.Contains(bag.Items, d => d.Code == "K1002" && d.Message == "invalid number suffix `mss`; durations use `s`, `min`, `h` or `d`");
+        Assert.Equal(0, new DurationValue(default, 1500, "ms").Minutes);
+    }
 }
