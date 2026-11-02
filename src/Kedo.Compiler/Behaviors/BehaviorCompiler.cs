@@ -39,6 +39,7 @@ public sealed class BehaviorCompiler
     private string _currentFunction = "";
     private int _awaitOrdinal;
     private bool _inHook;
+    private DurationUnit _unit = DurationUnit.Minute;
 
     private BehaviorCompiler(SchemaRegistry schema, DiagnosticBag diagnostics)
     {
@@ -55,7 +56,7 @@ public sealed class BehaviorCompiler
             return null;
         }
 
-        var c = new BehaviorCompiler(schema, diagnostics);
+        var c = new BehaviorCompiler(schema, diagnostics) { _unit = obj.TimeUnit };
         foreach (var f in functions)
         {
             c._declaredFunctions[f.Name] = f;
@@ -87,7 +88,7 @@ public sealed class BehaviorCompiler
 
         c.CheckRecursion();
         var version = obj.Body.Fields.TryGetValue("version", out var v) && v is RInt vi ? (int)vi.Number : 1;
-        return new BehaviorProgram(obj.Key, version, obj.Hash, c._code.ToArray(), c._constants.ToArray(), c._strings.ToArray(), c._functions, c._hooks, c._awaits, c._sourceMap);
+        return new BehaviorProgram(obj.Key, version, obj.Hash, c._code.ToArray(), c._constants.ToArray(), c._strings.ToArray(), c._functions, c._hooks, c._awaits, c._sourceMap) { TimeUnit = obj.TimeUnit };
     }
 
     // ----- functions and hooks -----
@@ -538,8 +539,8 @@ public sealed class BehaviorCompiler
                         var i = 0;
                         while (i < text.Length && (char.IsDigit(text[i]) || text[i] == '_')) i++;
                         var amount = long.Parse(text[..i].Replace("_", ""), System.Globalization.CultureInfo.InvariantCulture);
-                        var minutes = text[i..] switch { "ms" => amount / 60_000, "s" => amount / 60, "h" => amount * 60, "d" => amount * 1440, _ => amount };
-                        Emit(Instr.AImm(OpCode.LoadConst, target, Const(minutes)), node);
+                        var lowered = DurationLowering.ToUnit(amount, text[i..], _unit, _file, tk.Span, _d);
+                        Emit(Instr.AImm(OpCode.LoadConst, target, Const(lowered ?? 0)), node);
                         return target;
                     }
 

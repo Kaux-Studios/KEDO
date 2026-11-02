@@ -1,4 +1,6 @@
 #nullable enable
+Kedo.Runtime.BehaviorProgram.TimeUnit.get -> Kedo.Schema.DurationUnit
+Kedo.Runtime.BehaviorProgram.TimeUnit.init -> void
 Kedo.Schema.DurationUnit
 Kedo.Schema.DurationUnit.Day = 4 -> Kedo.Schema.DurationUnit
 Kedo.Schema.DurationUnit.Hour = 3 -> Kedo.Schema.DurationUnit

@@ -9,7 +9,13 @@ public static class Disassembler
     public static string Dump(BehaviorProgram p)
     {
         var sb = new StringBuilder();
-        sb.Append("program ").Append(p.BehaviorId).Append(" v").Append(p.DefinitionVersion).Append('\n');
+        sb.Append("program ").Append(p.BehaviorId).Append(" v").Append(p.DefinitionVersion);
+        if (p.TimeUnit != Kedo.Schema.DurationUnit.Minute)
+        {
+            sb.Append(" time_unit=").Append(Kedo.Schema.DurationUnits.Suffix(p.TimeUnit));
+        }
+
+        sb.Append('\n');
         foreach (var hook in p.Hooks.OrderBy(h => h.Key, StringComparer.Ordinal))
         {
             sb.Append("  hook ").Append(hook.Key).Append(" -> ").Append(p.Functions[hook.Value].Name).Append('\n');

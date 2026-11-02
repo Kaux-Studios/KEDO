@@ -160,6 +160,28 @@ public class DurationUnitTests
     }
 
     [Fact]
+    public void HookLiteralsCompileInTheProgramUnit()
+    {
+        var program = Program("actor z { on go(ctx) { wait 350ms\n wait 2s } }", baseUnit: "ms", "actor:z");
+        Assert.Equal(DurationUnit.Millisecond, program.TimeUnit);
+        Assert.Contains(350L, program.Constants);
+        Assert.Contains(2000L, program.Constants);
+        Assert.StartsWith("program actor:z v1 time_unit=ms\n", Disassembler.Dump(program));
+        Assert.StartsWith("program actor:z v1\n", Disassembler.Dump(Program("actor z { on go(ctx) { wait 1min } }", baseUnit: null, "actor:z")));
+    }
+
+    [Fact]
+    public void ANonWholeWaitIsK4014()
+    {
+        var bag = new DiagnosticBag();
+        var decls = DeclarationBuilder.Build(Parser.Parse(SourceText.FromString("kedo 1\nmodule m\nmanifest { base_unit = s }\nactor z { on go(ctx) { wait 250ms } }", "h.kedo"), bag), bag);
+        var schema = new SchemaRegistry { Permissive = true };
+        var catalog = Resolver.Resolve(new[] { decls }, schema, bag);
+        BehaviorCompiler.Compile(catalog.ByKey["actor:z"], decls.Functions, schema, bag);
+        Assert.Contains(bag.Items, d => d.Code == "K4014" && d.IsError && d.File == "h.kedo");
+    }
+
+    [Fact]
     public void MillisecondLiteralsInHooksCompileToTruncatedMinutes()
     {
         var program = Program("actor z { on go(ctx) { wait 350ms; wait 120000ms } }", baseUnit: null, "actor:z");
@@ -167,6 +189,7 @@ public class DurationUnitTests
         Assert.Contains(2L, program.Constants);
         Assert.DoesNotContain(350L, program.Constants);
         Assert.DoesNotContain(120000L, program.Constants);
+        Assert.Equal(DurationUnit.Minute, program.TimeUnit);
     }
 
     [Fact]
