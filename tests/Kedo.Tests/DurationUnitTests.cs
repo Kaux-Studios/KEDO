@@ -84,7 +84,8 @@ public class DurationUnitTests
         var k2012 = bag.Items.First(d => d.Code == "K2012");
         Assert.Equal("f0.kedo", k2012.Labels[0].File);
         Assert.Equal("first declared here", k2012.Labels[0].Message);
-        Assert.Contains("declare the same `base_unit` in every manifest", k2012.Notes);
+        Assert.EndsWith("; declare the same `base_unit` in every manifest", k2012.Message);
+        Assert.Empty(k2012.Notes);
         Assert.Equal(DurationUnit.Minute, catalog.TimeUnit);
         Assert.Equal(DurationUnit.Minute, catalog.Variants["fast"].TimeUnit);
         Assert.DoesNotContain(bag.Items, d => d.Code == "K4014");
