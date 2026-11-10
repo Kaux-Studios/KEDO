@@ -1,0 +1,96 @@
+abstract branch base
+    ruleset = ruleset:main   # own (tree.kedo:16:15)
+    nodes [keyed]
+        - item
+            final = false   # schema default
+            id = a   # own (tree.kedo:18:16)
+            cost = 1   # own (tree.kedo:18:26)
+        - item
+            final = false   # schema default
+            id = b   # own (tree.kedo:19:16)
+            cost = 2   # own (tree.kedo:19:26)
+    hash 5b4186007f9ce59ee016055ecd5e2404
+branch cramped <- branch:mind <- branch:base [errors]
+    ruleset = ruleset:tight   # own (tree.kedo:38:15)
+    nodes [keyed]
+        - item
+            final = false   # schema default
+            id = a   # own (tree.kedo:18:16)
+            cost = 1   # own (tree.kedo:18:26)
+        - item
+            final = false   # schema default
+            id = b   # own (tree.kedo:19:16)
+            cost = 2   # own (tree.kedo:19:26)
+        - item
+            final = true   # own (tree.kedo:25:50)
+            id = capstone   # own (tree.kedo:25:22)
+            cost = 3   # own (tree.kedo:25:39)
+    total_cost = 6   # computed (sum(nodes, cost))
+    slack = 61   # computed (ruleset.spendable - total_cost)
+    finals = 1   # computed (count(nodes, final))
+    final_cost = 3   # computed (max(nodes, cost, final))
+    respec_time = 90s   # computed (30s * count(nodes))
+    average_cost = 1.50   # computed (0.25 * total_cost)
+    has_final = true   # computed (finals > 0)
+    hash 238580dc614526d7ce52c51a5ac5ad84
+branch greedy <- branch:base [errors]
+    ruleset = ruleset:main   # own (tree.kedo:16:15)
+    nodes [keyed]
+        - item
+            final = false   # schema default
+            id = a   # own (tree.kedo:18:16)
+            cost = 1   # own (tree.kedo:18:26)
+        - item
+            final = false   # schema default
+            id = b   # own (tree.kedo:19:16)
+            cost = 2   # own (tree.kedo:19:26)
+        - item
+            final = true   # own (tree.kedo:31:37)
+            id = c   # own (tree.kedo:31:16)
+            cost = 2   # own (tree.kedo:31:26)
+        - item
+            final = true   # own (tree.kedo:32:37)
+            id = d   # own (tree.kedo:32:16)
+            cost = 3   # own (tree.kedo:32:26)
+    total_cost = 8   # computed (sum(nodes, cost))
+    slack = 64   # computed (ruleset.spendable - total_cost)
+    finals = 2   # computed (count(nodes, final))
+    final_cost = 3   # computed (max(nodes, cost, final))
+    respec_time = 120s   # computed (30s * count(nodes))
+    average_cost = 2.00   # computed (0.25 * total_cost)
+    has_final = true   # computed (finals > 0)
+    hash 5ee3fdb13570e842a9a5168f1fbb1ff0
+branch mind <- branch:base
+    ruleset = ruleset:main   # own (tree.kedo:16:15)
+    nodes [keyed]
+        - item
+            final = false   # schema default
+            id = a   # own (tree.kedo:18:16)
+            cost = 1   # own (tree.kedo:18:26)
+        - item
+            final = false   # schema default
+            id = b   # own (tree.kedo:19:16)
+            cost = 2   # own (tree.kedo:19:26)
+        - item
+            final = true   # own (tree.kedo:25:50)
+            id = capstone   # own (tree.kedo:25:22)
+            cost = 3   # own (tree.kedo:25:39)
+    total_cost = 6   # computed (sum(nodes, cost))
+    slack = 66   # computed (ruleset.spendable - total_cost)
+    finals = 1   # computed (count(nodes, final))
+    final_cost = 3   # computed (max(nodes, cost, final))
+    respec_time = 90s   # computed (30s * count(nodes))
+    average_cost = 1.50   # computed (0.25 * total_cost)
+    has_final = true   # computed (finals > 0)
+    hash 59a87f78cfa1109487cc4ae06aab14ea
+ruleset main
+    max_points = 75   # own (tree.kedo:6:18)
+    start_points = 3   # own (tree.kedo:7:20)
+    spendable = 72   # computed (max_points - start_points)
+    hash 4b391268214c001aa208d7ab7a95049c
+ruleset tight
+    max_points = 70   # own (tree.kedo:11:18)
+    start_points = 3   # own (tree.kedo:12:20)
+    spendable = 67   # computed (max_points - start_points)
+    hash 7ab6761c039580cc26d485538f92aa35
+catalog 9c6c1287695fa3e03d67d9bed69ba7da

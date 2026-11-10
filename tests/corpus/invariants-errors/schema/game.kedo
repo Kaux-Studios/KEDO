@@ -1,0 +1,45 @@
+kedo 1
+module game
+
+// Schema expressions that do not type are K2013 at their exact position; cycles between computed fields are K3012
+// (ADR-0016). Content that writes a computed field is K4015; a rule that cannot be evaluated is K4016.
+
+kedo_enum role { values = [melee, ranged, smart] }
+
+kedo_record slot {
+    fields = [
+        { name = id  kind = enum  required = true }
+        { name = weight  kind = int  required = true }
+        { name = doubled  kind = int  computed = (weight * 2) }
+    ]
+}
+
+kedo_type enemy {
+    fields = [
+        { name = hp  kind = int  min = 1  required = true }
+        { name = speed  kind = decimal  scale = 2  required = true }
+        { name = role  kind = enum  enum = role  required = true }
+        { name = groupable  kind = bool  default = false }
+        { name = armor  kind = int }
+        { name = slots  kind = list  strategy = keyed  element = { kind = record  record = slot } }
+        { name = a  kind = int  computed = (b + 1) }
+        { name = b  kind = int  computed = (a + 1) }
+        { name = per_armor  kind = int  computed = (hp / armor) }
+        { name = tag  kind = text  computed = (hp + 1) }
+        { name = half_speed  kind = decimal  scale = 2  computed = (speed / 2) }
+    ]
+    invariants = [
+        { id = typo  check = (hp_max > 0) }
+        { id = not_bool  check = (hp + 1) }
+        { id = quoted  check = "hp > 0" }
+        { id = unknown_function  check = (total(slots, weight) > 0) }
+        { id = unknown_role  check = (role != smrt) }
+        { id = smart_not_groupable  check = (not (role == smart and groupable)) }
+        { id = armored  check = (armor > 0) }
+        { id = no_zero_weight  check = (all(slots, weight / (weight - weight) > 0)) }
+    ]
+}
+
+kedo_invariant enemies_have_hp {
+    check = (count(enemies) > 0)
+}

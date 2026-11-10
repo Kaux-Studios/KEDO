@@ -1,0 +1,44 @@
+kedo 1
+module game
+
+// Computed fields (ADR-0016): evaluated after resolution, in dependency order, also through a reference to an object
+// whose own computed field they read; invariants see them like any other field. The tree rule of survivors-like:
+// 4 × (15 + the cost of the final node) fits in the points of the ruleset.
+
+kedo_type ruleset {
+    fields = [
+        { name = max_points  kind = int  required = true }
+        { name = start_points  kind = int  required = true }
+        { name = spendable  kind = int  computed = (max_points - start_points) }
+    ]
+}
+
+kedo_record node {
+    fields = [
+        { name = id  kind = enum  required = true }
+        { name = cost  kind = int  min = 1  max = 3  required = true }
+        { name = final  kind = bool  default = false }
+    ]
+}
+
+kedo_type branch {
+    fields = [
+        { name = ruleset  kind = reference  target = ruleset  required = true }
+        { name = nodes  kind = list  strategy = keyed  element = { kind = record  record = node }  required = true }
+        { name = slack  kind = int  computed = (ruleset.spendable - total_cost) }
+        { name = total_cost  kind = int  computed = (sum(nodes, cost)) }
+        { name = finals  kind = int  computed = (count(nodes, final)) }
+        { name = final_cost  kind = int  computed = (max(nodes, cost, final)) }
+        { name = respec_time  kind = duration  computed = (30s * count(nodes)) }
+        { name = average_cost  kind = decimal  scale = 2  computed = (0.25 * total_cost) }
+        { name = has_final  kind = bool  computed = (finals > 0) }
+    ]
+    invariants = [
+        { id = one_final  check = (finals == 1)  message = "a branch has one final node, this one has {finals}" }
+        {
+            id = fits_budget
+            check = (4 * (15 + final_cost) <= ruleset.max_points)
+            message = "4 × (15 + {final_cost}) = {4 * (15 + final_cost)} is over the {ruleset.max_points} points of the ruleset"
+        }
+    ]
+}

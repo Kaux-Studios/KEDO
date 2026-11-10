@@ -74,5 +74,33 @@
     "LoadPackAndDecode|10000":  {
                                     "mean_ns":  35342600,
                                     "allocated_bytes":  30403594.24
-                                }
+                                },
+    "Run100kInstructions":  {
+                            "mean_ns":  2.431,
+                            "allocated_bytes":  0
+                          },
+    "FastActivate":  {
+                     "mean_ns":  57.73,
+                     "allocated_bytes":  0
+                   },
+    "FastActivateBatch1024":  {
+                              "mean_ns":  56.66,
+                              "allocated_bytes":  0
+                            },
+    "FastSuspendResume":  {
+                          "mean_ns":  62.86,
+                          "allocated_bytes":  0
+                        },
+    "LegacyActivate":  {
+                       "mean_ns":  165.51,
+                       "allocated_bytes":  465
+                     },
+    "ResolveTyped|10000":  {
+                               "mean_ns":  110100000,
+                               "allocated_bytes":  73316433.92
+                           },
+    "ResolveWithInvariants|10000":  {
+                                        "mean_ns":  115600000,
+                                        "allocated_bytes":  66395340.8
+                                    }
 }

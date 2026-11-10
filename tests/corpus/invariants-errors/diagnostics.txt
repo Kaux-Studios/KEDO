@@ -1,0 +1,18 @@
+error K4001 game.kedo:34:32 `check` takes a schema expression without quotes: write `check = (…)`
+error K2013 game.kedo:28:48 computed field `tag` of type `enemy` is text, but the expression gives an integer
+error K2013 game.kedo:29:69 `/` on a decimal has no exact result: decimals add, subtract, compare and multiply by an integer (ADR-0008)
+error K2013 game.kedo:32:31 `hp_max` is not a field of `enemy`
+error K2013 game.kedo:33:35 the check of invariant `not_bool` of type `enemy` must be a boolean; it gives an integer
+error K2013 game.kedo:35:43 unknown function `total` (schema expressions have all, any, count, forall, has, increasing, len, max, min, subsequence, sum, unique)
+error K2013 game.kedo:36:47 `smrt` is not a field here nor a value of enum `role` (melee, ranged, smart); did you mean `smart`?
+error K2013 game.kedo:13:51 field `doubled` of record `slot` cannot be computed: compute it on the type or component that holds the records (`sum(list, doubled)`…)
+error K2013 game.kedo:44:14 catalog invariant `enemies_have_hp` must be `forall(type, condition)`; a rule about one object goes in the `invariants` of its type
+error K3012 game.kedo:25:45 computed fields depend on themselves: enemy.a → enemy.b → enemy.a
+error K4015 enemies.kedo:17:5 `a` is computed by the schema (`b + 1`); remove it from the content
+error K4016 enemies.kedo:4:1 computed field `per_armor` of `enemy:brute` cannot be computed: division by zero
+error K4016 enemies.kedo:12:1 computed field `per_armor` of `enemy:schemer` cannot be computed: `armor` is not set; guard the rule with `has(armor)`
+error K4008 enemies.kedo:8:13 invariant `armored` fails: `armor > 0` is false
+error K4016 enemies.kedo:4:1 invariant `no_zero_weight` cannot be checked: division by zero
+error K4008 enemies.kedo:15:12 invariant `smart_not_groupable` fails: `not (role == smart and groupable)` is false
+error K4016 enemies.kedo:12:1 invariant `armored` cannot be checked: `armor` is not set; guard the rule with `has(armor)`
+error K4016 enemies.kedo:12:1 invariant `no_zero_weight` cannot be checked: `slots` is not set; guard the rule with `has(slots)`

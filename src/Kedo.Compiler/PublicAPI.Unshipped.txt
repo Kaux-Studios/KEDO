@@ -2,9 +2,15 @@
 Kedo.Compiler.Evaluation.TraceHost.Now(Kedo.Schema.DurationUnit unit) -> long
 Kedo.Compiler.Evaluation.TraceHost.NowMilliseconds.get -> long
 Kedo.Compiler.Evaluation.TraceHost.NowMilliseconds.set -> void
+Kedo.Compiler.Resolution.LayerKind.Computed = 5 -> Kedo.Compiler.Resolution.LayerKind
 Kedo.Compiler.Resolution.RDuration.Amount.get -> long
 Kedo.Compiler.Resolution.RDuration.Unit.get -> Kedo.Schema.DurationUnit
 Kedo.Compiler.Resolution.RDuration.Unit.init -> void
+Kedo.Compiler.Resolution.RExpression
+Kedo.Compiler.Resolution.RExpression.RExpression(Kedo.Compiler.Resolution.Provenance! Provenance, string! Text) -> void
+Kedo.Compiler.Resolution.RExpression.Text.get -> string!
+Kedo.Compiler.Resolution.RExpression.Text.init -> void
 Kedo.Compiler.Resolution.ResolvedCatalog.TimeUnit.get -> Kedo.Schema.DurationUnit
 Kedo.Compiler.Resolution.ResolvedObject.TimeUnit.get -> Kedo.Schema.DurationUnit
+override Kedo.Compiler.Resolution.RExpression.CanonicalText.get -> string!
 static Kedo.Compiler.Pack.PackWriter.FormatFor(Kedo.Schema.DurationUnit timeUnit) -> int

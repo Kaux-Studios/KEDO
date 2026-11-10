@@ -5,7 +5,8 @@ namespace Kedo.Compiler.Schema;
 
 /// <summary>
 /// Emits a registry as a JSON Schema bundle for editors (form generation) and agents: one JSON document with
-/// <c>types</c>, <c>components</c>, <c>hooks</c> and shared <c>$defs</c> for records and enums. Field kinds map to JSON
+/// <c>types</c>, <c>components</c>, <c>hooks</c>, the declared <c>queries</c> and <c>effects</c> (when there are any) and
+/// shared <c>$defs</c> for records and enums. Field kinds map to JSON
 /// Schema types; KEDO-specific facts (list strategy, key field, reference target, asset kind) travel in <c>x-kedo</c>.
 /// </summary>
 public static class JsonSchemaWriter
@@ -54,6 +55,29 @@ public static class JsonSchemaWriter
 
         w.WriteEndObject();
 
+        // The declared host API (ADR-0015), only when the schema declares it: bundles of 1.0 schemas do not change.
+        if (registry.Queries.Count > 0)
+        {
+            w.WriteStartObject("queries");
+            foreach (var q in registry.Queries.Values.OrderBy(q => q.Id, StringComparer.Ordinal))
+            {
+                WriteHostApi(w, q.Id, q.Doc, q.Parameters, q.Returns);
+            }
+
+            w.WriteEndObject();
+        }
+
+        if (registry.Effects.Count > 0)
+        {
+            w.WriteStartObject("effects");
+            foreach (var e in registry.Effects.Values.OrderBy(e => e.Id, StringComparer.Ordinal))
+            {
+                WriteHostApi(w, e.Id, e.Doc, e.Parameters, null);
+            }
+
+            w.WriteEndObject();
+        }
+
         w.WriteStartObject("$defs");
         foreach (var r in registry.Records.Values.OrderBy(r => r.Id, StringComparer.Ordinal))
         {
@@ -95,7 +119,7 @@ public static class JsonSchemaWriter
         {
             w.WritePropertyName(f.Name);
             WriteField(w, f);
-            if (f.Required)
+            if (f.Required && f.Computed is null)
             {
                 required.Add(f.Name);
             }
@@ -114,7 +138,7 @@ public static class JsonSchemaWriter
         }
 
         w.WriteBoolean("additionalProperties", !record.Closed);
-        if (components is not null || hooks is not null)
+        if (components is not null || hooks is not null || record.Invariants.Count > 0)
         {
             w.WriteStartObject("x-kedo");
             if (components is not null)
@@ -139,7 +163,56 @@ public static class JsonSchemaWriter
                 w.WriteEndArray();
             }
 
+            if (record.Invariants.Count > 0)
+            {
+                // ADR-0016: the rules of the record, as the schema wrote them.
+                w.WriteStartArray("invariants");
+                foreach (var inv in record.Invariants)
+                {
+                    w.WriteStartObject();
+                    w.WriteString("id", inv.Id);
+                    w.WriteString("check", inv.Check);
+                    if (inv.Message is not null)
+                    {
+                        w.WriteString("message", inv.Message);
+                    }
+
+                    w.WriteString("severity", inv.Severity == Kedo.Diagnostics.Severity.Warning ? "warning" : "error");
+                    w.WriteEndObject();
+                }
+
+                w.WriteEndArray();
+            }
+
             w.WriteEndObject();
+        }
+
+        w.WriteEndObject();
+    }
+
+    private static void WriteHostApi(Utf8JsonWriter w, string id, string? doc, IReadOnlyList<FieldSchema> parameters, FieldSchema? returns)
+    {
+        w.WriteStartObject(id);
+        if (doc is not null)
+        {
+            w.WriteString("description", doc);
+        }
+
+        w.WriteStartArray("params");
+        foreach (var p in parameters)
+        {
+            w.WriteStartObject();
+            w.WriteString("name", p.Name);
+            w.WritePropertyName("schema");
+            WriteField(w, p);
+            w.WriteEndObject();
+        }
+
+        w.WriteEndArray();
+        if (returns is not null)
+        {
+            w.WritePropertyName("returns");
+            WriteField(w, returns);
         }
 
         w.WriteEndObject();
@@ -287,7 +360,9 @@ public static class JsonSchemaWriter
         if (f.Kind == ValueKind.Decimal) w.WriteNumber("scale", f.Scale);
         if (f.TargetType is not null) w.WriteString("target", f.TargetType);
         if (f.AssetKind is not null) w.WriteString("asset_kind", f.AssetKind);
+        if (f.Computed is not null) w.WriteString("computed", f.Computed);
         w.WriteEndObject();
+        if (f.Computed is not null) w.WriteBoolean("readOnly", true);
         w.WriteEndObject();
     }
 }

@@ -94,6 +94,7 @@ public static class CatalogHasher
             case RDecimal m: h.Append("m"u8); WriteInt(h, m.Units); WriteInt(h, m.Scale); break;
             case REnum e: h.Append("e"u8); WriteString(h, e.Name); break;
             case RRef r: h.Append("r"u8); WriteString(h, r.CanonicalText); break;
+            case RExpression x: h.Append("x"u8); WriteString(h, x.Text); break;
             case RList l:
             {
                 h.Append("l"u8);

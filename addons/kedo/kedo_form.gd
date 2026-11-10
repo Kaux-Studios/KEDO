@@ -80,7 +80,15 @@ func add_field_row(field: Dictionary, path: String, parent: Control) -> void:
 	label.custom_minimum_size.x = 180
 	label.tooltip_text = str(field.get("doc", ""))
 	row.add_child(label)
-	var editor := _editor_for(field, path)
+	var editor: Control
+	if field.get("computed", false):
+		# ADR-0016: a computed field is read-only; it shows its value and, on hover, its expression.
+		var shown := Label.new()
+		shown.text = str(field.get("value", ""))
+		shown.tooltip_text = "computed: " + str(field.get("expression", ""))
+		editor = shown
+	else:
+		editor = _editor_for(field, path)
 	editor.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(editor)
 	var layer := str(field.get("layer", "absent"))

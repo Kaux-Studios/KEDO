@@ -1,0 +1,2 @@
+error K4008 tree.kedo:38:15 invariant `fits_budget` fails: 4 × (15 + 3) = 72 is over the 70 points of the ruleset
+error K4008 tree.kedo:29:1 invariant `one_final` fails: a branch has one final node, this one has 2

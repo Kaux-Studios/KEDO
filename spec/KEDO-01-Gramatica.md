@@ -184,6 +184,13 @@ terminator = newline | ";" ;
 - Las sentencias terminan en salto de línea o `;`. Es el **único** lugar donde el salto de línea es significativo. Una expresión no puede partirse en dos líneas salvo dentro de paréntesis o corchetes.
 - `wait`: suspende el comportamiento. Sus formas se corresponden con `AwaitRequest` del runtime (tiempo, decisión del jugador, tirada, señal). La VM guarda el frame en ese punto; la etiqueta de reanudación es estable por hook y posición declarada (anexo E). `wait <duración>` espera tiempo simulado en la unidad base del programa; el host da la hora con `IBehaviorClock.Now(unidad)` o, si no lo implementa, se convierte `NowMinutes` (ADR-0014).
 - `apply effect:x(args)`: la única vía de mutación; pasa por el host con clave idempotente. `emit signal:x(args)`: encola una señal, nunca ejecuta de forma reentrante.
+- Consultas y efectos son del host: `nombre(args)`, `receptor.nombre(args)` y `receptor.nombre` son consultas (el receptor va primero), `apply effect:id(args)` es un efecto. Si el esquema del juego los declara (`kedo_query` con `params` y `returns`, `kedo_effect` con `params`), la compilación comprueba que existan (K5008, con sugerencia), su aridad y la clase de cada argumento que se conoce sin ejecutar (K5003); si no los declara, cualquier nombre compila, como en 1.0. Casos en `tests/corpus/host-api-*` ([ADR-0015](adr/0015-entrada-rapida.md)).
+
+  ```kedo
+  kedo_query hp_percent { params = [ { name = target  kind = reference  target = enemy } ]  returns = { kind = int } }
+  kedo_effect spawn_wave { params = [ { name = count  kind = int  min = 1 } ] }
+  ```
+
 - `function`: funciones puras o con sentencias, llamables desde hooks del mismo módulo o de módulos que lo requieren. Sin recursión en v0.1 (K5002 al compilar).
 - Lo que no existe en v0.1: bucles (`for`, `while`), cadenas de formato, flotantes, acceso a estado fuera de `ctx` y de consultas del host (`query`), definición de tipos por el autor.
 
@@ -245,6 +252,7 @@ Todos los `.kedo` bajo ese directorio pertenecen al módulo. Un objeto puede her
 | K2010 | `override` de un id que no existe en la base (con sugerencia) |
 | K2011 | `base_unit` no es una unidad de duración; se ignora (advertencia) |
 | K2012 | `base_unit` distinta entre manifiestos que se resuelven juntos (error, etiqueta en el primero; el mensaje sugiere declarar la misma `base_unit` en todos) |
+| K2013 | Expresión de esquema inválida al cargar el esquema: campo, función o tipo desconocido (con sugerencia), clase incompatible, decimal o duración sin resultado exacto, `it`/`index`/`root` fuera de lugar, `check` que no es booleano ([ADR-0016](adr/0016-invariantes-y-campos-calculados.md)) |
 | K2008 | Anotación desconocida (advertencia) |
 | K2009 | Ciclo entre módulos |
 

@@ -16,6 +16,8 @@ public enum LayerKind
     Own,
     /// <summary>Written in an <c>override</c> of a variant file, over the own layer (ADR-0012).</summary>
     Variant,
+    /// <summary>Computed by the schema after resolution (ADR-0016); <see cref="Provenance.LayerName"/> is the expression.</summary>
+    Computed,
 }
 
 /// <summary>Provenance of a resolved value: where it was authored and through which layer it arrived.</summary>
@@ -28,6 +30,7 @@ public sealed record Provenance(Origin Origin, LayerKind Layer, string LayerName
         LayerKind.Parent => $"parent {LayerName} ({Origin})",
         LayerKind.Default => "schema default",
         LayerKind.Variant => $"variant {LayerName} ({Origin})",
+        LayerKind.Computed => $"computed ({LayerName})",
         _ => $"own ({Origin})",
     };
 }
@@ -114,6 +117,22 @@ public sealed record RRef(Provenance Provenance, string Type, string? Module, st
 {
     /// <inheritdoc />
     public override string CanonicalText => Module is null ? $"{Type}:{Id}" : $"{Type}:{Module}/{Id}";
+}
+
+/// <summary>
+/// A schema expression kept as syntax (ADR-0016): the value of a meta-schema field of kind <see cref="ValueKind.Expression"/>
+/// (<c>check = (…)</c>, <c>computed = (…)</c>). <see cref="Text"/> is canonical, without the outer parentheses.
+/// </summary>
+public sealed record RExpression(Provenance Provenance, string Text) : ResolvedValue(Provenance)
+{
+    /// <inheritdoc />
+    public override string CanonicalText => "(" + Text + ")";
+
+    /// <summary>The expression as written (comments and line breaks included), for exact diagnostic positions.</summary>
+    internal string Source { get; init; } = "";
+
+    /// <summary>Byte offset of <see cref="Source"/> in its file.</summary>
+    internal int Offset { get; init; }
 }
 
 /// <summary>List with the strategy it was created with (schema or inferred).</summary>
@@ -297,10 +316,10 @@ public sealed class ResolvedObject
     public bool IsAbstract => Declaration.IsAbstract;
 
     /// <summary>Resolved body fields.</summary>
-    public RRecord Body { get; }
+    public RRecord Body { get; internal set; }
 
     /// <summary>Resolved components by component type, inherited first.</summary>
-    public OrderedFields Components { get; }
+    public OrderedFields Components { get; internal set; }
 
     /// <summary>Hooks declared on this object or inherited (own first).</summary>
     public IReadOnlyList<HookEntry> Hooks { get; }

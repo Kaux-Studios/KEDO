@@ -78,6 +78,13 @@ public static class ObjectDescriber
         var kind = f?.Kind ?? Infer(value);
         w.WriteString("kind", kind.ToString().ToLowerInvariant());
         w.WriteBoolean("required", f?.Required ?? false);
+        if (f?.Computed is { } computed)
+        {
+            // ADR-0016: read-only; the editor shows it disabled.
+            w.WriteBoolean("computed", true);
+            w.WriteString("expression", computed);
+        }
+
         if (f?.Doc is { } doc)
         {
             w.WriteString("doc", doc);
@@ -160,10 +167,11 @@ public static class ObjectDescriber
                 LayerKind.Mixin => "mixin",
                 LayerKind.Parent => "parent",
                 LayerKind.Variant => "variant",
+                LayerKind.Computed => "computed",
                 _ => p.LayerName.Length > 0 && p.LayerName != key ? "parent" : "own",
             };
             w.WriteString("layer", layer);
-            if (p.Layer != LayerKind.Default)
+            if (p.Layer is not (LayerKind.Default or LayerKind.Computed))
             {
                 w.WriteString("from", p.LayerName.Length > 0 ? p.LayerName : key);
                 w.WriteString("origin", p.Origin.ToString());

@@ -1,0 +1,56 @@
+kedo 1
+module run
+manifest { base_unit = s }
+
+run_rules default {
+    xp_curve = [10, 25, 45, 70]
+    levels = [
+        { id = first  xp = 10 }
+        { id = second  xp = 25 }
+    ]
+    escape_window = 18s
+}
+
+// 45 then 45: not strictly increasing; the levels go down; the window is 25 s.
+run_rules hardcore {
+    xp_curve = [10, 25, 45, 45, 80]
+    levels = [
+        { id = first  xp = 30 }
+        { id = second  xp = 25 }
+    ]
+    escape_window = 25s
+}
+
+loot chest {
+    drops = [
+        { id = ammo  chance = 0.5 }
+        { id = medkit  chance = 0.25 }
+        { id = grenade  chance = 0.125 }
+        { id = nothing  chance = 0.125 }
+    ]
+}
+
+loot crate {
+    drops = [
+        { id = ammo  chance = 0.6 }
+        { id = medkit  chance = 0.35 }
+    ]
+}
+
+card focus {
+    family = mind
+    weight = 10
+    max_level = 5
+}
+
+card disabled {
+    family = spirit
+    weight = 0
+    max_level = 3
+}
+
+card big_gun {
+    family = weapon
+    weight = 4
+    max_level = 8
+}

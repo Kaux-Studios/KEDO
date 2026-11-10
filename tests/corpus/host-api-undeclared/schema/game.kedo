@@ -1,0 +1,15 @@
+kedo 1
+module game
+
+// Hooks without kedo_query or kedo_effect: queries and effects are not checked when hooks compile (1.0 behaviour).
+
+kedo_type enemy {
+    fields = [{ name = hp  kind = int }]
+}
+
+kedo_hook damaged {
+    context = [
+        { name = boss  kind = reference  target = enemy }
+        { name = phase  kind = int }
+    ]
+}

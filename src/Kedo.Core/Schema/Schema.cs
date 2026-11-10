@@ -27,6 +27,11 @@ public enum ValueKind
     Decimal,
     /// <summary>Record with free keys; <see cref="FieldSchema.Element"/> describes values, <see cref="FieldSchema.KeysEnumId"/> may restrict keys (ADR-0009).</summary>
     Map,
+    /// <summary>
+    /// A schema expression written without quotes, <c>(…)</c>, kept as syntax instead of evaluated (ADR-0016): the
+    /// <c>check</c> of an invariant and the <c>computed</c> of a field. Only the meta schema declares fields of this kind.
+    /// </summary>
+    Expression,
 }
 
 /// <summary>How a list field merges across layers (KEDO-02 §3, ADR-0006).</summary>
@@ -147,6 +152,43 @@ public sealed class FieldSchema
 
     /// <summary>Inclusive maximum of a <see cref="ValueKind.Decimal"/> field written as a decimal; overrides <see cref="Max"/>.</summary>
     public decimal? MaxDecimal { get; init; }
+
+    /// <summary>
+    /// Schema expression that computes this field (ADR-0016), in canonical text without the outer parentheses; null for
+    /// an ordinary field. A computed field is read-only: it is evaluated once per concrete object after resolution, and
+    /// content that writes it is an error (K4015).
+    /// </summary>
+    public string? Computed { get; init; }
+}
+
+/// <summary>
+/// A rule the schema declares over resolved content (ADR-0016): <see cref="Check"/> must hold for every concrete object
+/// (K4008 otherwise). Declared on a type, a component or a record (<see cref="RecordSchema.Invariants"/>) or over the
+/// whole catalog (<see cref="SchemaRegistry.Invariants"/>, where the check is <c>forall(type, condition)</c>).
+/// </summary>
+public sealed class InvariantSchema
+{
+    /// <summary>Creates an invariant.</summary>
+    public InvariantSchema(string id, string check)
+    {
+        Id = id;
+        Check = check;
+    }
+
+    /// <summary>Id, unique within its owner; diagnostics name it.</summary>
+    public string Id { get; }
+
+    /// <summary>Boolean schema expression in canonical text, without the outer parentheses.</summary>
+    public string Check { get; }
+
+    /// <summary>Message shown when the check fails; <c>{expr}</c> parts show values. Null shows the check itself.</summary>
+    public string? Message { get; init; }
+
+    /// <summary>Severity of a failure: an error (default) or a warning.</summary>
+    public Kedo.Diagnostics.Severity Severity { get; init; } = Kedo.Diagnostics.Severity.Error;
+
+    /// <summary>Documentation.</summary>
+    public string? Doc { get; init; }
 }
 
 /// <summary>A named set of fields: the body of a type, a component or a nested record.</summary>
@@ -181,6 +223,18 @@ public sealed class RecordSchema
 
     /// <summary>Looks up a field by name.</summary>
     public FieldSchema? Find(string name) => _fields.TryGetValue(name, out var f) ? f : null;
+
+    private List<InvariantSchema>? _invariants;
+
+    /// <summary>Invariants checked on every concrete object (or record value) of this schema, in declaration order (ADR-0016).</summary>
+    public IReadOnlyList<InvariantSchema> Invariants => (IReadOnlyList<InvariantSchema>?)_invariants ?? Array.Empty<InvariantSchema>();
+
+    /// <summary>Adds an invariant.</summary>
+    public RecordSchema AddInvariant(InvariantSchema invariant)
+    {
+        (_invariants ??= new List<InvariantSchema>()).Add(invariant);
+        return this;
+    }
 }
 
 /// <summary>Enumeration declared by the game.</summary>
@@ -253,6 +307,52 @@ public sealed class HookSchema
 }
 
 /// <summary>
+/// Descriptor of a host query content may call (<c>kedo_query</c>, ADR-0015): <c>name(args)</c>, <c>receiver.name(args)</c>
+/// or <c>receiver.name</c>. The receiver of a member call is the first parameter.
+/// </summary>
+public sealed class QuerySchema
+{
+    /// <summary>Creates a query schema.</summary>
+    public QuerySchema(string id, IReadOnlyList<FieldSchema> parameters)
+    {
+        Id = id;
+        Parameters = parameters;
+    }
+
+    /// <summary>Query id as written in hooks.</summary>
+    public string Id { get; }
+
+    /// <summary>Parameters in order (the receiver first for member calls).</summary>
+    public IReadOnlyList<FieldSchema> Parameters { get; }
+
+    /// <summary>Kind of the result; null when the schema does not say.</summary>
+    public FieldSchema? Returns { get; init; }
+
+    /// <summary>Documentation.</summary>
+    public string? Doc { get; init; }
+}
+
+/// <summary>Descriptor of an effect content may apply (<c>kedo_effect</c>, ADR-0015): <c>apply effect:id(args)</c>.</summary>
+public sealed class EffectSchema
+{
+    /// <summary>Creates an effect schema.</summary>
+    public EffectSchema(string id, IReadOnlyList<FieldSchema> parameters)
+    {
+        Id = id;
+        Parameters = parameters;
+    }
+
+    /// <summary>Effect id, without the <c>effect:</c> prefix content writes.</summary>
+    public string Id { get; }
+
+    /// <summary>Parameters in order.</summary>
+    public IReadOnlyList<FieldSchema> Parameters { get; }
+
+    /// <summary>Documentation.</summary>
+    public string? Doc { get; init; }
+}
+
+/// <summary>
 /// Explicit, reflection-free registry of everything a game exposes to KEDO content (ADR-0007 D9).
 /// A permissive registry (no types registered, <see cref="Permissive"/> true) accepts any type and field and infers
 /// list strategies from the data; it exists for tooling and tests, never for shipping content.
@@ -264,6 +364,9 @@ public sealed class SchemaRegistry
     private readonly Dictionary<string, RecordSchema> _records = new(StringComparer.Ordinal);
     private readonly Dictionary<string, EnumSchema> _enums = new(StringComparer.Ordinal);
     private readonly Dictionary<string, HookSchema> _hooks = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, QuerySchema> _queries = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, EffectSchema> _effects = new(StringComparer.Ordinal);
+    private readonly List<InvariantSchema> _invariants = new();
 
     /// <summary>Accept unknown types, components and fields; infer list strategies.</summary>
     public bool Permissive { get; init; }
@@ -283,6 +386,18 @@ public sealed class SchemaRegistry
     /// <summary>Registered hooks.</summary>
     public IReadOnlyDictionary<string, HookSchema> Hooks => _hooks;
 
+    /// <summary>Declared queries. When there is at least one, hooks may only call declared queries (K5008).</summary>
+    public IReadOnlyDictionary<string, QuerySchema> Queries => _queries;
+
+    /// <summary>Declared effects. When there is at least one, hooks may only apply declared effects (K5008).</summary>
+    public IReadOnlyDictionary<string, EffectSchema> Effects => _effects;
+
+    /// <summary>Catalog invariants (<c>kedo_invariant</c>, ADR-0016): each check is <c>forall(type, condition)</c> and fails on each object that breaks it.</summary>
+    public IReadOnlyList<InvariantSchema> Invariants => _invariants;
+
+    /// <summary>Registers a catalog invariant.</summary>
+    public SchemaRegistry AddInvariant(InvariantSchema invariant) { _invariants.Add(invariant); return this; }
+
     /// <summary>Registers an object type.</summary>
     public SchemaRegistry AddType(TypeSchema type) { _types.Add(type.Id, type); return this; }
 
@@ -297,6 +412,18 @@ public sealed class SchemaRegistry
 
     /// <summary>Registers a hook.</summary>
     public SchemaRegistry AddHook(HookSchema hook) { _hooks.Add(hook.Id, hook); return this; }
+
+    /// <summary>Registers a query.</summary>
+    public SchemaRegistry AddQuery(QuerySchema query) { _queries.Add(query.Id, query); return this; }
+
+    /// <summary>Registers an effect.</summary>
+    public SchemaRegistry AddEffect(EffectSchema effect) { _effects.Add(effect.Id, effect); return this; }
+
+    /// <summary>Query by id or null.</summary>
+    public QuerySchema? FindQuery(string id) => _queries.TryGetValue(id, out var q) ? q : null;
+
+    /// <summary>Effect by id (without <c>effect:</c>) or null.</summary>
+    public EffectSchema? FindEffect(string id) => _effects.TryGetValue(id, out var e) ? e : null;
 
     /// <summary>Type by id or null.</summary>
     public TypeSchema? FindType(string id) => _types.TryGetValue(id, out var t) ? t : null;
@@ -320,6 +447,6 @@ public interface IKedoModule
     /// <summary>Module id (the <c>module</c> name in `.kedo` files).</summary>
     string Id { get; }
 
-    /// <summary>Registers types, components, records, enums and hooks.</summary>
+    /// <summary>Registers types, components, records, enums, hooks, queries and effects.</summary>
     void Register(SchemaRegistry registry);
 }

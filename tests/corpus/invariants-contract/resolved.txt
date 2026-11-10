@@ -1,0 +1,103 @@
+abstract contract base_route
+    sectors [atomic]
+        - item
+            sector = 1   # own (contracts.kedo:35:20)
+            mission = "hold"   # own (contracts.kedo:35:33)
+        - item
+            sector = 2   # own (contracts.kedo:36:20)
+            mission = "sequence"   # own (contracts.kedo:36:33)
+    payouts [keyed]
+        - item
+            id = mission   # own (contracts.kedo:39:16)
+            share = 60   # own (contracts.kedo:39:33)
+        - item
+            id = escape   # own (contracts.kedo:40:16)
+            share = 30   # own (contracts.kedo:40:32)
+        - item
+            id = survival   # own (contracts.kedo:41:16)
+            share = 10   # own (contracts.kedo:41:34)
+    hash bc5357137945372c9e598ebdc6df35d1
+contract long_route <- contract:base_route [errors]
+    sectors [atomic]
+        - item
+            sector = 1   # own (contracts.kedo:35:20)
+            mission = "hold"   # own (contracts.kedo:35:33)
+        - item
+            sector = 2   # own (contracts.kedo:36:20)
+            mission = "sequence"   # own (contracts.kedo:36:33)
+    payouts [keyed]
+        - item
+            id = mission   # own (contracts.kedo:39:16)
+            share = 60   # own (contracts.kedo:39:33)
+        - item
+            id = escape   # own (contracts.kedo:40:16)
+            share = 30   # own (contracts.kedo:40:32)
+        - item
+            id = survival   # own (contracts.kedo:41:16)
+            share = 10   # own (contracts.kedo:41:34)
+    boss_sector = 4   # own (contracts.kedo:50:19)
+    hash 7d1f62dd8f61abcdf6e53bffa6fc1d17
+contract plaza
+    sectors [atomic]
+        - item
+            sector = 1   # own (contracts.kedo:6:20)
+            mission = "hold"   # own (contracts.kedo:6:33)
+        - item
+            sector = 2   # own (contracts.kedo:7:20)
+            mission = "sequence"   # own (contracts.kedo:7:33)
+        - item
+            sector = 3   # own (contracts.kedo:8:20)
+            mission = "guardian"   # own (contracts.kedo:8:33)
+    boss_sector = 4   # own (contracts.kedo:10:19)
+    payouts [keyed]
+        - item
+            id = mission   # own (contracts.kedo:12:16)
+            share = 50   # own (contracts.kedo:12:33)
+        - item
+            id = escape   # own (contracts.kedo:13:16)
+            share = 35   # own (contracts.kedo:13:32)
+        - item
+            id = survival   # own (contracts.kedo:14:16)
+            share = 15   # own (contracts.kedo:14:34)
+    hash c220af33381a82d7163abb0a965b6070
+contract short_route <- contract:base_route
+    sectors [atomic]
+        - item
+            sector = 1   # own (contracts.kedo:35:20)
+            mission = "hold"   # own (contracts.kedo:35:33)
+        - item
+            sector = 2   # own (contracts.kedo:36:20)
+            mission = "sequence"   # own (contracts.kedo:36:33)
+    payouts [keyed]
+        - item
+            id = mission   # own (contracts.kedo:39:16)
+            share = 60   # own (contracts.kedo:39:33)
+        - item
+            id = escape   # own (contracts.kedo:40:16)
+            share = 30   # own (contracts.kedo:40:32)
+        - item
+            id = survival   # own (contracts.kedo:41:16)
+            share = 10   # own (contracts.kedo:41:34)
+    boss_sector = 3   # own (contracts.kedo:46:19)
+    hash 01ebc2abbf0b057cf8fc9ba38c02657a
+contract terraces [errors]
+    sectors [atomic]
+        - item
+            sector = 1   # own (contracts.kedo:21:20)
+            mission = "hold"   # own (contracts.kedo:21:33)
+        - item
+            sector = 3   # own (contracts.kedo:22:20)
+            mission = "guardian"   # own (contracts.kedo:22:33)
+    boss_sector = 5   # own (contracts.kedo:24:19)
+    payouts [keyed]
+        - item
+            id = mission   # own (contracts.kedo:26:16)
+            share = 40   # own (contracts.kedo:26:33)
+        - item
+            id = escape   # own (contracts.kedo:27:16)
+            share = 45   # own (contracts.kedo:27:32)
+        - item
+            id = survival   # own (contracts.kedo:28:16)
+            share = 5   # own (contracts.kedo:28:34)
+    hash 9d65bf54cb4a01438e54a1d3755d9a1b
+catalog 813103d0ad3454309577d3591a6947a2

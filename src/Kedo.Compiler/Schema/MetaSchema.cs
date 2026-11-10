@@ -4,7 +4,8 @@ namespace Kedo.Compiler.Schema;
 
 /// <summary>
 /// The schema of schemas. A game may describe its content types in KEDO itself using the built-in types
-/// <c>kedo_type</c>, <c>kedo_component</c>, <c>kedo_record</c>, <c>kedo_enum</c> and <c>kedo_hook</c>; those files are
+/// <c>kedo_type</c>, <c>kedo_component</c>, <c>kedo_record</c>, <c>kedo_enum</c>, <c>kedo_hook</c>, <c>kedo_query</c>, <c>kedo_invariant</c> and
+/// <c>kedo_effect</c>; those files are
 /// resolved against this registry and turned into a <see cref="SchemaRegistry"/> by <see cref="SchemaLoader"/>.
 /// Registering the same schema from C# through <see cref="IKedoModule"/> stays possible; both produce the same registry.
 /// </summary>
@@ -22,6 +23,7 @@ public static class MetaSchema
         var r = new SchemaRegistry();
         r.AddEnum(new EnumSchema("kedo_kind", Kinds));
         r.AddEnum(new EnumSchema("kedo_strategy", Strategies));
+        r.AddEnum(new EnumSchema("kedo_severity", new[] { "error", "warning" }));
 
         // A field descriptor. `element` is itself a field descriptor (for lists), so the record is recursive by name.
         var field = new RecordSchema("kedo_field") { Doc = "Descriptor of one field." }
@@ -45,13 +47,27 @@ public static class MetaSchema
             .Add(new FieldSchema("max_items", ValueKind.Int) { Min = 0, Doc = "Maximum items of a list or entries of a map." })
             .Add(new FieldSchema("min_length", ValueKind.Int) { Min = 0, Doc = "Minimum length of a text (Unicode characters)." })
             .Add(new FieldSchema("max_length", ValueKind.Int) { Min = 0, Doc = "Maximum length of a text (Unicode characters)." })
-            .Add(new FieldSchema("one_of", ValueKind.List) { ListStrategy = ListStrategy.Set, Element = new FieldSchema("item", ValueKind.Any), Doc = "Allowed values of a text or int field." });
+            .Add(new FieldSchema("one_of", ValueKind.List) { ListStrategy = ListStrategy.Set, Element = new FieldSchema("item", ValueKind.Any), Doc = "Allowed values of a text or int field." })
+            .Add(new FieldSchema("computed", ValueKind.Expression) { Doc = "Schema expression, in parentheses, that computes the field after resolution (ADR-0016); content cannot write it." });
         r.AddRecord(field);
+
+        // An invariant (ADR-0016): `check` must hold for every concrete object; `message` shows `{expr}` values.
+        var check = new FieldSchema("check", ValueKind.Expression) { Required = true, Doc = "Boolean schema expression, in parentheses." };
+        var message = new FieldSchema("message", ValueKind.Text) { Doc = "Shown when the check fails; `{expr}` shows a value." };
+        var severity = new FieldSchema("severity", ValueKind.Enum) { EnumId = "kedo_severity", DefaultText = "error" };
+        r.AddRecord(new RecordSchema("kedo_check") { Doc = "An invariant of a type, a component or a record." }
+            .Add(new FieldSchema("id", ValueKind.Enum) { Required = true, Doc = "Invariant id, unique in its owner." })
+            .Add(check)
+            .Add(message)
+            .Add(severity)
+            .Add(new FieldSchema("doc", ValueKind.Text)));
+        FieldSchema Invariants() => new("invariants", ValueKind.List) { ListStrategy = ListStrategy.Keyed, KeyField = "id", Element = new FieldSchema("item", ValueKind.Record) { RecordId = "kedo_check" }, Doc = "Rules every concrete object must keep (K4008)." };
 
         var fields = new FieldSchema("fields", ValueKind.List) { ListStrategy = ListStrategy.Keyed, KeyField = "name", Element = new FieldSchema("item", ValueKind.Record) { RecordId = "kedo_field" } };
 
         r.AddType(new TypeSchema("kedo_type", new RecordSchema("kedo_type") { Doc = "An object type the game exposes to content." }
             .Add(fields)
+            .Add(Invariants())
             .Add(new FieldSchema("doc", ValueKind.Text))
             .Add(new FieldSchema("closed", ValueKind.Bool) { DefaultBool = true })
             .Add(new FieldSchema("components", ValueKind.List) { ListStrategy = ListStrategy.Set, Element = new FieldSchema("item", ValueKind.Enum), Doc = "Allowed components; omit to allow any registered component." })
@@ -59,11 +75,13 @@ public static class MetaSchema
 
         r.AddType(new TypeSchema("kedo_component", new RecordSchema("kedo_component") { Doc = "A component objects may carry." }
             .Add(fields)
+            .Add(Invariants())
             .Add(new FieldSchema("doc", ValueKind.Text))
             .Add(new FieldSchema("closed", ValueKind.Bool) { DefaultBool = true })));
 
         r.AddType(new TypeSchema("kedo_record", new RecordSchema("kedo_record") { Doc = "A nested record used by fields of kind record." }
             .Add(fields)
+            .Add(Invariants())
             .Add(new FieldSchema("doc", ValueKind.Text))
             .Add(new FieldSchema("closed", ValueKind.Bool) { DefaultBool = true })));
 
@@ -75,6 +93,24 @@ public static class MetaSchema
             .Add(new FieldSchema("context", ValueKind.List) { ListStrategy = ListStrategy.Keyed, KeyField = "name", Element = new FieldSchema("item", ValueKind.Record) { RecordId = "kedo_field" }, Doc = "Fields of the context parameter." })
             .Add(new FieldSchema("allows_await", ValueKind.Bool) { DefaultBool = true })
             .Add(new FieldSchema("allows_effects", ValueKind.Bool) { DefaultBool = true })
+            .Add(new FieldSchema("doc", ValueKind.Text))));
+
+        // Host API (ADR-0015): declared, a query or an effect is checked by name, arity and argument kinds when hooks compile.
+        var parameters = new FieldSchema("params", ValueKind.List) { ListStrategy = ListStrategy.Keyed, KeyField = "name", Element = new FieldSchema("item", ValueKind.Record) { RecordId = "kedo_field" }, Doc = "Parameters in order; the receiver of a member call is the first." };
+        r.AddType(new TypeSchema("kedo_query", new RecordSchema("kedo_query") { Doc = "A host query hooks may call: `name(args)`, `receiver.name(args)` or `receiver.name`." }
+            .Add(parameters)
+            .Add(new FieldSchema("returns", ValueKind.Record) { RecordId = "kedo_field", Doc = "Kind of the result (a field descriptor without name)." })
+            .Add(new FieldSchema("doc", ValueKind.Text))));
+
+        r.AddType(new TypeSchema("kedo_effect", new RecordSchema("kedo_effect") { Doc = "An effect hooks may apply: `apply effect:id(args)`." }
+            .Add(parameters)
+            .Add(new FieldSchema("doc", ValueKind.Text))));
+
+        // A catalog invariant (ADR-0016): `check = (forall(type, condition))`, reported on each object that breaks it.
+        r.AddType(new TypeSchema("kedo_invariant", new RecordSchema("kedo_invariant") { Doc = "A rule over every object of a type: `check = (forall(card, weight > 0))`." }
+            .Add(check)
+            .Add(message)
+            .Add(severity)
             .Add(new FieldSchema("doc", ValueKind.Text))));
 
         return r;

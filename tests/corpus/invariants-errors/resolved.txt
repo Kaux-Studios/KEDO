@@ -1,0 +1,18 @@
+enemy brute [errors]
+    groupable = false   # schema default
+    hp = 120   # own (enemies.kedo:5:10)
+    speed = 3.50   # own (enemies.kedo:6:13)
+    role = melee   # own (enemies.kedo:7:12)
+    armor = 0   # own (enemies.kedo:8:13)
+    slots [keyed]
+        - item
+            id = claw   # own (enemies.kedo:9:21)
+            weight = 2   # own (enemies.kedo:9:36)
+    hash 35b3fb21e14771ec2bb86dd7d70a0c9f
+enemy schemer [errors]
+    groupable = true   # own (enemies.kedo:16:17)
+    hp = 40   # own (enemies.kedo:13:10)
+    speed = 4.25   # own (enemies.kedo:14:13)
+    role = smart   # own (enemies.kedo:15:12)
+    hash 35b79dd04cfc58c67e13841353ead9d5
+catalog abbde809e3f8db6cf98bb85c48d36f0b

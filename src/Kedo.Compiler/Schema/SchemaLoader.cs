@@ -47,11 +47,30 @@ public static class SchemaLoader
             });
         }
 
+        foreach (var obj in catalog.Concrete.Where(o => o.Type == "kedo_query"))
+        {
+            var returns = obj.Body.Fields.TryGetValue("returns", out var rv) && rv is RRecord rr ? Field(rr, obj.Id, Problem) : null;
+            registry.AddQuery(new QuerySchema(obj.Id, Fields(obj.Body, "params", obj.Id, Problem).ToList()) { Returns = returns, Doc = Text(obj.Body, "doc") });
+        }
+
+        foreach (var obj in catalog.Concrete.Where(o => o.Type == "kedo_effect"))
+        {
+            registry.AddEffect(new EffectSchema(obj.Id, Fields(obj.Body, "params", obj.Id, Problem).ToList()) { Doc = Text(obj.Body, "doc") });
+        }
+
         foreach (var obj in catalog.Concrete.Where(o => o.Type == "kedo_type"))
         {
             var components = obj.Body.Fields.TryGetValue("components", out _) ? new HashSet<string>(Strings(obj.Body, "components"), StringComparer.Ordinal) : null;
             var hooks = obj.Body.Fields.TryGetValue("hooks", out _) ? new HashSet<string>(Strings(obj.Body, "hooks"), StringComparer.Ordinal) : null;
             registry.AddType(new TypeSchema(obj.Id, Record(obj.Id, obj.Body, Problem)) { AllowedComponents = components, AllowedHooks = hooks, Doc = Text(obj.Body, "doc") });
+        }
+
+        foreach (var obj in catalog.Concrete.Where(o => o.Type == "kedo_invariant"))
+        {
+            if (Invariant(obj.Id, obj.Body) is { } invariant)
+            {
+                registry.AddInvariant(invariant);
+            }
         }
 
         // Cross-checks the meta schema cannot express: enum/record/component/hook ids referenced by descriptors must exist.
@@ -85,6 +104,18 @@ public static class SchemaLoader
             CheckRefs(rec, registry, diagnostics, catalog, rec.Id);
         }
 
+        foreach (var q in registry.Queries.Values)
+        {
+            CheckHostApi("query", q.Id, q.Parameters, q.Returns, registry, diagnostics, catalog);
+        }
+
+        foreach (var e in registry.Effects.Values)
+        {
+            CheckHostApi("effect", e.Id, e.Parameters, null, registry, diagnostics, catalog);
+        }
+
+        // Invariants and computed fields (ADR-0016): compiled now, so K2013 and K3012 are schema errors.
+        SchemaRules.Get(registry, diagnostics);
         return registry;
     }
 
@@ -93,6 +124,22 @@ public static class SchemaLoader
         var obj = catalog.Objects.FirstOrDefault(o => o.Id == ownerId);
         var origin = obj?.Declaration.Origin ?? default;
         d.Error("K2001", message, origin.File, origin.Span);
+    }
+
+    // Only scalars cross the host boundary: the VM has no lists, records, maps or decimals (K5003, K5007).
+    private static void CheckHostApi(string what, string id, IReadOnlyList<FieldSchema> parameters, FieldSchema? returns, SchemaRegistry registry, DiagnosticBag d, ResolvedCatalog catalog)
+    {
+        foreach (var p in returns is null ? parameters : parameters.Append(returns))
+        {
+            var role = ReferenceEquals(p, returns) ? "the result" : $"parameter `{p.Name}`";
+            if (p.Kind is ValueKind.List or ValueKind.Record or ValueKind.Map or ValueKind.Decimal)
+            {
+                Report(d, catalog, id, $"{what} `{id}`: {role} is of kind `{p.Kind.ToString().ToLowerInvariant()}`, which hooks cannot pass; use int, bool, text, duration, enum, reference or asset");
+                continue;
+            }
+
+            CheckField(p, registry, d, catalog, id);
+        }
     }
 
     private static void CheckRefs(RecordSchema record, SchemaRegistry registry, DiagnosticBag d, ResolvedCatalog catalog, string owner)
@@ -167,7 +214,41 @@ public static class SchemaLoader
             rec.Add(f);
         }
 
+        if (body.Fields.TryGetValue("invariants", out var v) && v is RList list)
+        {
+            foreach (var item in list.Items.OfType<RRecord>())
+            {
+                if (Invariant(Text(item, "id") ?? "invariant", item) is { } invariant)
+                {
+                    rec.AddInvariant(invariant);
+                }
+            }
+        }
+
         return rec;
+    }
+
+    // `check = (…)` arrives as an RExpression (the meta field is of kind expression); a missing check is K4002 already.
+    private static InvariantSchema? Invariant(string id, RRecord body)
+    {
+        if (!body.Fields.TryGetValue("check", out var c) || c is not RExpression check)
+        {
+            return null;
+        }
+
+        var invariant = new InvariantSchema(id, check.Text)
+        {
+            Message = Text(body, "message"),
+            Severity = Text(body, "severity") == "warning" ? Severity.Warning : Severity.Error,
+            Doc = Text(body, "doc"),
+        };
+        SchemaRules.Remember(invariant, new ExpressionSource(check.Source, check.Provenance.Origin.File, check.Offset));
+        if (body.Fields.TryGetValue("message", out var m) && m is RText)
+        {
+            SchemaRules.RememberMessage(invariant, new ExpressionSource(invariant.Message!, m.Provenance.Origin.File, m.Provenance.Origin.Span.Start));
+        }
+
+        return invariant;
     }
 
     private static IEnumerable<FieldSchema> Fields(RRecord body, string listName, string owner, Action<string, string> problem)
@@ -237,8 +318,10 @@ public static class SchemaLoader
             }
         }
 
-        return new FieldSchema(name, kind)
+        var computed = item.Fields.TryGetValue("computed", out var cv) ? cv as RExpression : null;
+        var field = new FieldSchema(name, kind)
         {
+            Computed = computed?.Text,
             Required = Bool(item, "required") ?? false,
             Doc = Text(item, "doc"),
             Min = Int(item, "min"),
@@ -267,6 +350,12 @@ public static class SchemaLoader
             MaxLength = (int?)Int(item, "max_length"),
             OneOf = item.Fields.TryGetValue("one_of", out _) ? Strings(item, "one_of") : null,
         };
+        if (computed is not null)
+        {
+            SchemaRules.Remember(field, new ExpressionSource(computed.Source, computed.Provenance.Origin.File, computed.Offset));
+        }
+
+        return field;
     }
 
     private static string? Text(RRecord r, string name) => r.Fields.TryGetValue(name, out var v) ? v switch { RText t => t.Text, REnum e => e.Name, _ => v.CanonicalText } : null;

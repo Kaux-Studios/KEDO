@@ -1,4 +1,5 @@
 using Kedo.Compiler.Model;
+using Kedo.Compiler.Schema;
 using Kedo.Diagnostics;
 using Kedo.Schema;
 using Kedo.Text;
@@ -54,7 +55,7 @@ public sealed class ResolvedCatalog
 /// Layered resolution (KEDO-02): schema defaults → resolved parent → flattened mixins → own entries; merge rules by value
 /// kind; explicit deletion; provenance on every value; cycles and limits as errors; two-stage validation.
 /// </summary>
-public sealed class Resolver
+public sealed partial class Resolver
 {
     private const int MaxDepth = 32;
     private const int MaxMixins = 64;
@@ -91,11 +92,13 @@ public sealed class Resolver
     private readonly bool _silentDurations;
     private readonly HashSet<string> _durationSites = new(StringComparer.Ordinal);
     private readonly Func<DurationValue, long?> _toUnit;
+    private readonly SchemaRules _rules;
 
     private Resolver(SchemaRegistry schema, DiagnosticBag diagnostics, string? variant, DurationUnit unit, bool silentDurations)
     {
         _schema = schema;
         _d = diagnostics;
+        _rules = SchemaRules.Get(schema, diagnostics);
         _variant = variant;
         _unit = unit;
         _silentDurations = silentDurations;
@@ -227,6 +230,10 @@ public sealed class Resolver
         var objects = r._resolved.Values.OrderBy(o => o.Type, StringComparer.Ordinal).ThenBy(o => o.Id, StringComparer.Ordinal).ToList();
         var catalog = new ResolvedCatalog(objects, r._resolved, r._mixins, diagnostics) { TimeUnit = unit };
 
+        // Computed fields run again for every object (ADR-0016); those whose values changed count as changed keys.
+        r.ComputeFields(catalog);
+        var computedChanged = r.ComputedChanges(objects, previous, state);
+
         // Keys that changed meaning for a reference: resolved again, new, or gone.
         var changed = new HashSet<string>(r._dirty, StringComparer.Ordinal);
         if (previous is not null)
@@ -234,9 +241,16 @@ public sealed class Resolver
             changed.UnionWith(previous.Catalog.ByKey.Keys.Where(k => !r._resolved.ContainsKey(k)));
         }
 
+        changed.UnionWith(computedChanged);
+        if (r._rules.HasForall)
+        {
+            // `forall(type, …)` depends on `*type`: any object of the type that changed, appeared or vanished.
+            changed.UnionWith(changed.Select(k => "*" + k[..Math.Max(0, k.IndexOf(':'))]).ToList());
+        }
+
         foreach (var obj in objects.Where(o => !o.IsAbstract))
         {
-            if (previous is not null && !r._dirty.Contains(obj.Key) && previous.StageB.TryGetValue(obj.Key, out var kept)
+            if (previous is not null && !r._dirty.Contains(obj.Key) && !computedChanged.Contains(obj.Key) && previous.StageB.TryGetValue(obj.Key, out var kept)
                 && previous.References.TryGetValue(obj.Key, out var refs) && !refs.Overlaps(changed))
             {
                 foreach (var d in kept)
@@ -244,7 +258,7 @@ public sealed class Resolver
                     local.Add(d);
                 }
 
-                obj.HasErrors = previous.HasErrors.Contains(obj.Key);
+                obj.HasErrors = previous.HasErrors.Contains(obj.Key) || r._computeFailed.Contains(obj.Key);
                 state.StageB[obj.Key] = kept;
                 state.References[obj.Key] = refs;
                 if (obj.HasErrors)
@@ -269,6 +283,7 @@ public sealed class Resolver
         }
 
         r._references = null;
+        r.CheckCatalogInvariants(catalog);
         CatalogHasher.Hash(catalog);
         state.Catalog = catalog;
         state.ResolvedCount = r._dirty.Count;
@@ -302,7 +317,9 @@ public sealed class Resolver
 
         var objects = r._resolved.Values.OrderBy(o => o.Type, StringComparer.Ordinal).ThenBy(o => o.Id, StringComparer.Ordinal).ToList();
         var catalog = new ResolvedCatalog(objects, r._resolved, r._mixins, diagnostics) { Variant = variant, TimeUnit = unit };
+        r.ComputeFields(catalog);
         r.ValidateStageB(catalog);
+        r.CheckCatalogInvariants(catalog);
         CatalogHasher.Hash(catalog);
         return catalog;
     }
@@ -693,6 +710,11 @@ public sealed class Resolver
         var prov = new Provenance(origin, LayerKind.Default, schema.Id);
         foreach (var f in schema.Fields)
         {
+            if (f.Computed is not null)
+            {
+                continue;
+            }
+
             ResolvedValue? v = f.Kind switch
             {
                 ValueKind.Int when f.DefaultInt is not null => new RInt(prov, f.DefaultInt.Value),
@@ -859,6 +881,12 @@ public sealed class Resolver
                     }
 
                     var path = pathPrefix.Length == 0 ? fe.Name : pathPrefix + "." + fe.Name;
+                    if (mapOf is null && fs?.Computed is { } computed)
+                    {
+                        _d.Error("K4015", $"`{path}` is computed by the schema (`{computed}`); remove it from the content", fe.Origin.File, fe.Origin.Span);
+                        continue;
+                    }
+
                     fields.TryGetValue(fe.Name, out var current);
                     var updated = ApplyField(current, fe, fs, prov, path, nesting, written, mixinId);
                     if (updated is not null)
@@ -1223,6 +1251,11 @@ public sealed class Resolver
     private ResolvedValue? Lower(Value value, FieldSchema? fs, Provenance p, ResolvedValue? current, int nesting, string path = "")
     {
         var prov = p with { Origin = value.Origin };
+        if (fs is { Kind: ValueKind.Expression })
+        {
+            return LowerExpression(value, fs, prov);
+        }
+
         switch (value)
         {
             case ExprValue ev:
@@ -1452,10 +1485,11 @@ public sealed class Resolver
         RRef => "a reference",
         RList => "a list",
         RRecord => "a record",
+        RExpression => "an expression",
         _ => "a value",
     };
 
-    private static string? Suggest(string name, IEnumerable<string> candidates)
+    internal static string? Suggest(string name, IEnumerable<string> candidates)
     {
         string? best = null;
         var bestDistance = 3;
@@ -1508,7 +1542,7 @@ public sealed class Resolver
     private void ValidateObject(ResolvedObject obj, ResolvedCatalog catalog)
     {
         var before = _d.Items.Count;
-        _objectFailed = false;
+        _objectFailed = _computeFailed.Contains(obj.Key);
         var typeSchema = _schema.FindType(obj.Type);
         _path.Clear().Append(obj.Key);
         ValidateRecord(obj.Body, typeSchema?.Body, obj, catalog);
@@ -1549,6 +1583,11 @@ public sealed class Resolver
             _path.Append('.').Append(kv.Key);
             ValidateValue(kv.Value, fs, obj, catalog);
             _path.Length = length;
+        }
+
+        if (!_rules.IsEmpty && _rules.For(schema) is { Invariants.Count: > 0 } rules)
+        {
+            CheckInvariants(rules, record, obj, catalog);
         }
     }
 
@@ -1706,9 +1745,10 @@ public sealed class Resolver
 
     private static Diagnostic WithProvenance(string code, string message, ResolvedObject obj, ResolvedValue value)
     {
-        var o = value.Provenance.Origin;
+        // A computed value has no authored position: its object is where the error is.
+        var o = value.Provenance.Layer == LayerKind.Computed ? obj.Declaration.Origin : value.Provenance.Origin;
         var labels = new List<DiagnosticLabel>();
-        if (value.Provenance.Layer != LayerKind.Own)
+        if (value.Provenance.Layer is not (LayerKind.Own or LayerKind.Computed))
         {
             labels.Add(new DiagnosticLabel(obj.Declaration.Origin.File, obj.Declaration.Origin.Span, $"inherited by `{obj.Key}` via {value.Provenance}"));
         }

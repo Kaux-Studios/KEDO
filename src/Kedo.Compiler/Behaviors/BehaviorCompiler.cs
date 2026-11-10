@@ -42,6 +42,7 @@ public sealed class BehaviorCompiler
     private DurationUnit _unit = DurationUnit.Minute;
     private bool _silent;
     private HashSet<string>? _durationSites;
+    private Dictionary<string, StaticType> _localTypes = new(StringComparer.Ordinal);
 
     /// <summary>
     /// K4014 sites already in the bag, so a literal shared by several programs (mixin or inherited hooks, module functions) is
@@ -121,6 +122,7 @@ public sealed class BehaviorCompiler
         _tree = tree;
         _file = tree.Source.Path;
         _locals = new Dictionary<string, int>(StringComparer.Ordinal);
+        _localTypes = new Dictionary<string, StaticType>(StringComparer.Ordinal);
         _nextRegister = 0;
         _maxRegister = 0;
         _localsHighWater = 0;
@@ -136,9 +138,10 @@ public sealed class BehaviorCompiler
         _contextName = null;
         _hookSchema = null;
         var entry = _code.Count;
-        foreach (var (pname, _) in f.Parameters)
+        foreach (var (pname, ptype) in f.Parameters)
         {
             Bind(pname, Alloc());
+            _localTypes[pname] = StaticType.OfTypeName(ptype);
         }
 
         CompileBlock(f.BlockNode);
@@ -294,6 +297,7 @@ public sealed class BehaviorCompiler
             {
                 var name = Text(own[1]);
                 var reg = Alloc();
+                var type = TypeOf(children[0]);
                 var value = CompileExpression(children[0], reg);
                 if (value != reg)
                 {
@@ -301,6 +305,7 @@ public sealed class BehaviorCompiler
                 }
 
                 Bind(name, reg);
+                _localTypes[name] = type;
                 break;
             }
 
@@ -318,6 +323,11 @@ public sealed class BehaviorCompiler
                 {
                     Error("K5001", $"`{targetText}` is not a variable declared with `let`", target);
                     return;
+                }
+
+                if (_localTypes.TryGetValue(targetText, out var was) && was != TypeOf(children[1]))
+                {
+                    _localTypes[targetText] = StaticType.Unknown;
                 }
 
                 var value = CompileExpression(children[1], reg);
@@ -405,6 +415,7 @@ public sealed class BehaviorCompiler
                 Emit(Instr.AImm(OpCode.WaitRoll, reg, Str(stream)), node);
                 Emit(Instr.Abc(OpCode.Nop, argBase, argCount, 0), node);
                 Bind(resultName, reg);
+                _localTypes[resultName] = new StaticType(ValueKind.Int, null);
                 break;
             }
 
@@ -424,6 +435,7 @@ public sealed class BehaviorCompiler
                 if (asName is not null)
                 {
                     Bind(asName, reg);
+                    _localTypes[asName] = StaticType.Unknown;
                 }
 
                 break;
@@ -445,6 +457,11 @@ public sealed class BehaviorCompiler
                 }
 
                 var argList = _tree.FirstChildOfKind(node, NodeKind.ArgList);
+                if (isApply)
+                {
+                    CheckEffect(_tree.Source.GetText(reference.Span), reference.Span, ArgNodes(argList, null), node);
+                }
+
                 var (argBase, argCount) = CompileArgs(argList, null);
                 Emit(Instr.AImm(isApply ? OpCode.Apply : OpCode.Emit, 0, Str(_tree.Source.GetText(reference.Span))), node);
                 Emit(Instr.Abc(OpCode.Nop, argBase, argCount, 0), node);
@@ -742,6 +759,7 @@ public sealed class BehaviorCompiler
         }
 
         // receiver.member → host query "member" with the receiver as first argument
+        CheckQuery(member, new[] { _tree.Children(node)[0] }, node, memberCall: true);
         var mark = _nextRegister;
         var receiver = CompileExpression(_tree.Children(node)[0], Alloc());
         var argBase = Alloc();
@@ -777,6 +795,7 @@ public sealed class BehaviorCompiler
             }
 
             // Host query by name.
+            CheckQuery(name, ArgNodes(argList, null), callee, memberCall: false);
             var (qb, qc) = CompileArgs(argList, null);
             Emit(Instr.AImm(OpCode.Query, target, Str(name)), node);
             Emit(Instr.Abc(OpCode.Nop, qb, qc, 0), node);
@@ -788,6 +807,7 @@ public sealed class BehaviorCompiler
             // receiver.method(args) → query "method" with the receiver first.
             var member = Text(_tree.OwnTokens(callee)[^1]);
             var receiverNode = _tree.Children(callee)[0];
+            CheckQuery(member, ArgNodes(argList, receiverNode), callee, memberCall: true);
             var (argBase, argCount) = CompileArgs(argList, receiverNode);
             Emit(Instr.AImm(OpCode.Query, target, Str(member)), node);
             Emit(Instr.Abc(OpCode.Nop, argBase, argCount, 0), node);
@@ -832,5 +852,238 @@ public sealed class BehaviorCompiler
         }
 
         return (argBase, args.Count);
+    }
+
+    // ----- host API declared in the schema (kedo_query, kedo_effect; ADR-0015) -----
+
+    private bool ChecksQueries => !_schema.Permissive && _schema.Queries.Count > 0;
+
+    private bool ChecksEffects => !_schema.Permissive && _schema.Effects.Count > 0;
+
+    private List<int> ArgNodes(int argList, int? receiverNode)
+    {
+        var args = new List<int>();
+        if (receiverNode is not null)
+        {
+            args.Add(receiverNode.Value);
+        }
+
+        if (argList >= 0)
+        {
+            args.AddRange(_tree.Children(argList).ToArray());
+        }
+
+        return args;
+    }
+
+    private void CheckQuery(string name, IReadOnlyList<int> args, int node, bool memberCall)
+    {
+        if (!ChecksQueries)
+        {
+            return;
+        }
+
+        var query = _schema.FindQuery(name);
+        if (query is null)
+        {
+            var near = Resolver.Suggest(name, _schema.Queries.Keys.OrderBy(k => k, StringComparer.Ordinal));
+            Error("K5008", $"query `{name}` is not declared in the schema; {(near is null ? "declare it with `kedo_query`" : $"did you mean `{near}`?")}", node);
+            return;
+        }
+
+        CheckArguments("query", name, query.Parameters, args, node, memberCall ? " (the receiver of a member call is the first)" : "");
+    }
+
+    private void CheckEffect(string reference, Kedo.Text.TextSpan span, IReadOnlyList<int> args, int node)
+    {
+        if (!ChecksEffects)
+        {
+            return;
+        }
+
+        var colon = reference.IndexOf(':');
+        var id = colon < 0 ? reference : reference[(colon + 1)..];
+        id = id[(id.IndexOf('/') + 1)..];   // `effect:module/id` names the same flat id (the resolver is flat, ADR-0014 D3)
+        var effect = colon > 0 && reference[..colon] == "effect" ? _schema.FindEffect(id) : null;
+        if (effect is null)
+        {
+            var near = Resolver.Suggest(reference, _schema.Effects.Keys.OrderBy(k => k, StringComparer.Ordinal).Select(k => "effect:" + k));
+            _d.Error("K5008", $"effect `{reference}` is not declared in the schema; {(near is null ? "declare it with `kedo_effect` and write it `effect:<id>`" : $"did you mean `{near}`?")}", _file, span);
+            return;
+        }
+
+        CheckArguments("effect", reference, effect.Parameters, args, node, "");
+    }
+
+    private void CheckArguments(string what, string name, IReadOnlyList<FieldSchema> parameters, IReadOnlyList<int> args, int node, string note)
+    {
+        if (args.Count != parameters.Count)
+        {
+            Error("K5003", $"{what} `{name}` takes {parameters.Count} argument(s), got {args.Count}{note}", node);
+            return;
+        }
+
+        for (var i = 0; i < args.Count; i++)
+        {
+            var expected = parameters[i];
+            var actual = TypeOf(args[i]);
+            if (!actual.Fits(expected))
+            {
+                Error("K5003", $"argument {i + 1} (`{expected.Name}`) of {what} `{name}` must be {StaticType.Describe(expected)}, got {actual.Describe()}", args[i]);
+            }
+        }
+    }
+
+    /// <summary>Static kind of an expression, as far as literals, locals, the hook context and the declared host API tell; unknown otherwise.</summary>
+    private StaticType TypeOf(int node)
+    {
+        var n = _tree[node];
+        var own = _tree.OwnTokens(node);
+        var children = _tree.Children(node);
+        switch (n.Kind)
+        {
+            case NodeKind.LiteralExpr:
+                return _tree.Tokens[own[0]].Kind switch
+                {
+                    TokenKind.Integer => new StaticType(ValueKind.Int, null),
+                    TokenKind.Duration => new StaticType(ValueKind.Duration, null),
+                    TokenKind.String => new StaticType(ValueKind.Text, null),
+                    TokenKind.KwTrue or TokenKind.KwFalse => new StaticType(ValueKind.Bool, null),
+                    _ => StaticType.Unknown,
+                };
+            case NodeKind.RefExpr:
+            {
+                var text = Text(own[0]);
+                var colon = text.IndexOf(':');
+                var type = colon < 0 ? null : text[..colon];
+                return type == "asset" ? new StaticType(ValueKind.Asset, null) : new StaticType(ValueKind.Reference, type);
+            }
+
+            case NodeKind.NameExpr:
+                return _localTypes.TryGetValue(Text(own[0]), out var local) ? local : StaticType.Unknown;
+            case NodeKind.ParenExpr:
+                return TypeOf(children[0]);
+            case NodeKind.UnaryExpr:
+                if (_tree.Tokens[own[0]].Kind != TokenKind.Minus)
+                {
+                    return new StaticType(ValueKind.Bool, null);
+                }
+
+                return TypeOf(children[0]).Kind == ValueKind.Duration ? new StaticType(ValueKind.Duration, null) : new StaticType(ValueKind.Int, null);
+            case NodeKind.BinaryExpr:
+                switch (_tree.Tokens[own[0]].Kind)
+                {
+                    case TokenKind.Plus or TokenKind.Minus or TokenKind.Star or TokenKind.Slash or TokenKind.Percent:
+                        return TypeOf(children[0]).Kind == ValueKind.Duration || TypeOf(children[1]).Kind == ValueKind.Duration
+                            ? new StaticType(ValueKind.Duration, null) : new StaticType(ValueKind.Int, null);
+                    default:
+                        return new StaticType(ValueKind.Bool, null);
+                }
+
+            case NodeKind.MemberExpr:
+            {
+                var path = PathOf(node);
+                var member = Text(own[^1]);
+                if (path is not null && _contextName is not null && path[0] == _contextName && path.Count == 2)
+                {
+                    return StaticType.Of(_hookSchema?.Context.Find(member));
+                }
+
+                if (path is not null && path.Count == 2 && !_locals.ContainsKey(path[0]) && path[0] != _contextName)
+                {
+                    return new StaticType(ValueKind.Enum, path[0]);
+                }
+
+                return StaticType.Of(ChecksQueries ? _schema.FindQuery(member)?.Returns : null);
+            }
+
+            case NodeKind.CallExpr:
+            {
+                var callee = children[0];
+                if (_tree[callee].Kind == NodeKind.NameExpr)
+                {
+                    var name = Text(_tree.OwnTokens(callee)[0]);
+                    if (_declaredFunctions.TryGetValue(name, out var fn))
+                    {
+                        return StaticType.OfTypeName(fn.ReturnType);
+                    }
+
+                    return StaticType.Of(ChecksQueries ? _schema.FindQuery(name)?.Returns : null);
+                }
+
+                if (_tree[callee].Kind == NodeKind.MemberExpr)
+                {
+                    return StaticType.Of(ChecksQueries ? _schema.FindQuery(Text(_tree.OwnTokens(callee)[^1]))?.Returns : null);
+                }
+
+                return StaticType.Unknown;
+            }
+
+            default:
+                return StaticType.Unknown;
+        }
+    }
+
+    /// <summary>A value kind with its enum id or reference target; <see cref="Unknown"/> fits everything.</summary>
+    private readonly record struct StaticType(ValueKind? Kind, string? Name)
+    {
+        public static StaticType Unknown => default;
+
+        public static StaticType Of(FieldSchema? f) => f is null ? Unknown : f.Kind switch
+        {
+            ValueKind.Int or ValueKind.Bool or ValueKind.Text or ValueKind.Duration => new StaticType(f.Kind, null),
+            ValueKind.Enum => new StaticType(ValueKind.Enum, f.EnumId),
+            ValueKind.Reference => new StaticType(ValueKind.Reference, f.TargetType),
+            ValueKind.Asset => new StaticType(ValueKind.Asset, null),
+            _ => Unknown,
+        };
+
+        /// <summary>A function parameter or return type name; a named type (reference type or enum) stays unknown.</summary>
+        public static StaticType OfTypeName(string? name) => name switch
+        {
+            "int" => new StaticType(ValueKind.Int, null),
+            "bool" => new StaticType(ValueKind.Bool, null),
+            "text" => new StaticType(ValueKind.Text, null),
+            "duration" => new StaticType(ValueKind.Duration, null),
+            _ => Unknown,
+        };
+
+        public bool Fits(FieldSchema p)
+        {
+            if (Kind is not { } k)
+            {
+                return true;
+            }
+
+            return p.Kind switch
+            {
+                ValueKind.Int or ValueKind.Duration => k is ValueKind.Int or ValueKind.Duration,   // durations are integers in the base unit
+                ValueKind.Bool => k == ValueKind.Bool,
+                ValueKind.Text => k == ValueKind.Text,
+                ValueKind.Enum => k == ValueKind.Enum && (p.EnumId is null || Name is null || p.EnumId == Name),
+                ValueKind.Reference => k == ValueKind.Reference && (p.TargetType is null || Name is null || p.TargetType == Name),
+                ValueKind.Asset => k == ValueKind.Asset,
+                _ => true,
+            };
+        }
+
+        public string Describe() => Kind switch
+        {
+            ValueKind.Int => "an int",
+            ValueKind.Bool => "a bool",
+            ValueKind.Text => "a text",
+            ValueKind.Duration => "a duration",
+            ValueKind.Enum => Name is null ? "an enum value" : $"an enum value of `{Name}`",
+            ValueKind.Reference => Name is null ? "a reference" : $"a reference to `{Name}`",
+            ValueKind.Asset => "an asset",
+            _ => "a value",
+        };
+
+        public static string Describe(FieldSchema p) => p.Kind switch
+        {
+            ValueKind.Enum => new StaticType(ValueKind.Enum, p.EnumId).Describe(),
+            ValueKind.Reference => new StaticType(ValueKind.Reference, p.TargetType).Describe(),
+            _ => Of(p).Describe(),
+        };
     }
 }

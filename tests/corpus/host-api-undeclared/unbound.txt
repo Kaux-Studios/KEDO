@@ -1,0 +1,2 @@
+query hp_percent
+effect effect:set_phase

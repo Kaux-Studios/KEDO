@@ -56,6 +56,8 @@ Prerelease durante la inicialización: `1.0.0-alpha.N`. Sin garantía entre alph
 
 Referencia con rango de major: `<PackageReference Include="Kedo.Core" Version="[1.0.0,2.0.0)" />`. Durante alpha, Patriark puede usar `<ProjectReference>` a `C:\dev\KEDO` mediante una propiedad condicional; al primer uso en `main`, paquete.
 
+En runtime el juego elige entre dos entradas a la VM con la misma semántica y el mismo formato de frames: `BehaviorVm` con un `IBehaviorHost` por nombres (1.0), o la entrada rápida de [ADR-0015](adr/0015-entrada-rapida.md): enlaza cada programa del pack una vez al cargar (`BehaviorBinder.Bind` contra su `BindingTable`, diagnósticos K6001/K6002) y activa hooks por `HookHandle` en `FastBehaviorVm` con un `IFastBehaviorHost` por ids, sin asignar memoria por activación, también en lote.
+
 Credenciales: token personal con permiso `read:packages`, fuera de Git (variables de entorno), como manda `CONTRIBUTING.md` de Patriark.
 
 ## Decisión sobre el riesgo "1.0 demasiado pronto"

@@ -2,11 +2,114 @@
 Kedo.Pack.KedoPack.TimeUnit.get -> Kedo.Schema.DurationUnit
 Kedo.Runtime.AwaitRequest.Unit.get -> Kedo.Schema.DurationUnit
 Kedo.Runtime.AwaitRequest.Unit.init -> void
+Kedo.Runtime.BehaviorBinder
+Kedo.Runtime.BehaviorHostAdapter
+Kedo.Runtime.BehaviorHostAdapter.Apply(in Kedo.Runtime.FastEffectKey key, int effectId, System.ReadOnlySpan<Kedo.Runtime.HostValue> args) -> bool
+Kedo.Runtime.BehaviorHostAdapter.BehaviorHostAdapter(Kedo.Runtime.IBehaviorHost! host, Kedo.Runtime.BindingTable! bindings) -> void
+Kedo.Runtime.BehaviorHostAdapter.Context(long instance, int slot) -> Kedo.Runtime.HostValue
+Kedo.Runtime.BehaviorHostAdapter.Now(Kedo.Schema.DurationUnit unit) -> long
+Kedo.Runtime.BehaviorHostAdapter.Query(int queryId, System.ReadOnlySpan<Kedo.Runtime.HostValue> args) -> Kedo.Runtime.HostValue
+Kedo.Runtime.BehaviorHostAdapter.Raise(int signalId, System.ReadOnlySpan<Kedo.Runtime.HostValue> args) -> void
 Kedo.Runtime.BehaviorJsonContext.DurationUnit.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<Kedo.Schema.DurationUnit>!
 Kedo.Runtime.BehaviorProgram.TimeUnit.get -> Kedo.Schema.DurationUnit
 Kedo.Runtime.BehaviorProgram.TimeUnit.init -> void
+Kedo.Runtime.BindingKind
+Kedo.Runtime.BindingKind.Context = 0 -> Kedo.Runtime.BindingKind
+Kedo.Runtime.BindingKind.Effect = 2 -> Kedo.Runtime.BindingKind
+Kedo.Runtime.BindingKind.Query = 1 -> Kedo.Runtime.BindingKind
+Kedo.Runtime.BindingKind.Signal = 3 -> Kedo.Runtime.BindingKind
+Kedo.Runtime.BindingKind.Stream = 4 -> Kedo.Runtime.BindingKind
+Kedo.Runtime.BindingTable
+Kedo.Runtime.BindingTable.Add(Kedo.Runtime.BindingKind kind, string! name, int id) -> Kedo.Runtime.BindingTable!
+Kedo.Runtime.BindingTable.BindingTable(Kedo.Runtime.SymbolTable? symbols = null) -> void
+Kedo.Runtime.BindingTable.Context(string! field, int slot) -> Kedo.Runtime.BindingTable!
+Kedo.Runtime.BindingTable.Effect(string! effectId, int id) -> Kedo.Runtime.BindingTable!
+Kedo.Runtime.BindingTable.NameOf(Kedo.Runtime.BindingKind kind, int id) -> string?
+Kedo.Runtime.BindingTable.Names(Kedo.Runtime.BindingKind kind) -> System.Collections.Generic.IEnumerable<string!>!
+Kedo.Runtime.BindingTable.Query(string! queryId, int id) -> Kedo.Runtime.BindingTable!
+Kedo.Runtime.BindingTable.Signal(string! signalId, int id) -> Kedo.Runtime.BindingTable!
+Kedo.Runtime.BindingTable.Stream(string! streamId, int id) -> Kedo.Runtime.BindingTable!
+Kedo.Runtime.BindingTable.Symbols.get -> Kedo.Runtime.SymbolTable!
+Kedo.Runtime.BindingTable.TryGet(Kedo.Runtime.BindingKind kind, string! name, out int id) -> bool
+Kedo.Runtime.BoundProgram
+Kedo.Runtime.BoundProgram.Bindings.get -> Kedo.Runtime.BindingTable!
+Kedo.Runtime.BoundProgram.Hook(string! hookId) -> Kedo.Runtime.HookHandle
+Kedo.Runtime.BoundProgram.IsValid.get -> bool
+Kedo.Runtime.BoundProgram.Program.get -> Kedo.Runtime.BehaviorProgram!
+Kedo.Runtime.BoundProgram.TryGetHook(string! hookId, out Kedo.Runtime.HookHandle hook) -> bool
+Kedo.Runtime.FastBehaviorVm
+Kedo.Runtime.FastBehaviorVm.Activate(Kedo.Runtime.HookHandle hook, long instance, ref Kedo.Runtime.RunOutcome outcome) -> void
+Kedo.Runtime.FastBehaviorVm.ActivateBatch(Kedo.Runtime.HookHandle hook, System.ReadOnlySpan<long> instances, System.ReadOnlySpan<Kedo.Runtime.HostValue> context, System.Span<Kedo.Runtime.RunOutcome> outcomes) -> void
+Kedo.Runtime.FastBehaviorVm.ActivateBatch(Kedo.Runtime.HookHandle hook, System.ReadOnlySpan<long> instances, System.Span<Kedo.Runtime.RunOutcome> outcomes) -> void
+Kedo.Runtime.FastBehaviorVm.Describe(in Kedo.Runtime.RunOutcome outcome) -> string!
+Kedo.Runtime.FastBehaviorVm.FastBehaviorVm(Kedo.Runtime.BoundProgram! program, Kedo.Runtime.IFastBehaviorHost! host, Kedo.Runtime.Budget? budget = null, Kedo.Runtime.VmOptions? options = null) -> void
+Kedo.Runtime.FastBehaviorVm.Load(Kedo.Runtime.BehaviorFrame! frame, ref Kedo.Runtime.RunOutcome outcome) -> Kedo.Runtime.FrameHandle
+Kedo.Runtime.FastBehaviorVm.Pending(Kedo.Runtime.FrameHandle frame) -> Kedo.Runtime.PendingAwait
+Kedo.Runtime.FastBehaviorVm.Program.get -> Kedo.Runtime.BoundProgram!
+Kedo.Runtime.FastBehaviorVm.Release(Kedo.Runtime.FrameHandle frame) -> bool
+Kedo.Runtime.FastBehaviorVm.Resume(Kedo.Runtime.BehaviorFrame! frame, Kedo.Runtime.AwaitKind kind, long value, ref Kedo.Runtime.RunOutcome outcome, Kedo.Runtime.StalePolicy stalePolicy = Kedo.Runtime.StalePolicy.AbortSilently) -> void
+Kedo.Runtime.FastBehaviorVm.Resume(Kedo.Runtime.FrameHandle frame, Kedo.Runtime.AwaitKind kind, long value, ref Kedo.Runtime.RunOutcome outcome) -> void
+Kedo.Runtime.FastBehaviorVm.Save(Kedo.Runtime.FrameHandle frame) -> Kedo.Runtime.BehaviorFrame!
+Kedo.Runtime.FastBehaviorVm.SuspendedCount.get -> int
+Kedo.Runtime.FastBehaviorVm.Trace.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Kedo.Runtime.FastEffectKey
+Kedo.Runtime.FastEffectKey.FastEffectKey() -> void
+Kedo.Runtime.FastEffectKey.FastEffectKey(long Instance, int Site, int Sequence) -> void
+Kedo.Runtime.FastEffectKey.Instance.get -> long
+Kedo.Runtime.FastEffectKey.Instance.init -> void
+Kedo.Runtime.FastEffectKey.Sequence.get -> int
+Kedo.Runtime.FastEffectKey.Sequence.init -> void
+Kedo.Runtime.FastEffectKey.Site.get -> int
+Kedo.Runtime.FastEffectKey.Site.init -> void
+Kedo.Runtime.FrameHandle
+Kedo.Runtime.FrameHandle.FrameHandle() -> void
+Kedo.Runtime.FrameHandle.IsValid.get -> bool
+Kedo.Runtime.HookHandle
+Kedo.Runtime.HookHandle.HookHandle() -> void
+Kedo.Runtime.HookHandle.IsValid.get -> bool
 Kedo.Runtime.IBehaviorClock
 Kedo.Runtime.IBehaviorClock.Now(Kedo.Schema.DurationUnit unit) -> long
+Kedo.Runtime.IFastBehaviorHost
+Kedo.Runtime.IFastBehaviorHost.Apply(in Kedo.Runtime.FastEffectKey key, int effectId, System.ReadOnlySpan<Kedo.Runtime.HostValue> args) -> bool
+Kedo.Runtime.IFastBehaviorHost.Context(long instance, int slot) -> Kedo.Runtime.HostValue
+Kedo.Runtime.IFastBehaviorHost.Now(Kedo.Schema.DurationUnit unit) -> long
+Kedo.Runtime.IFastBehaviorHost.Query(int queryId, System.ReadOnlySpan<Kedo.Runtime.HostValue> args) -> Kedo.Runtime.HostValue
+Kedo.Runtime.IFastBehaviorHost.Raise(int signalId, System.ReadOnlySpan<Kedo.Runtime.HostValue> args) -> void
+Kedo.Runtime.PendingAwait
+Kedo.Runtime.PendingAwait.DueAt.get -> long
+Kedo.Runtime.PendingAwait.Id.get -> int
+Kedo.Runtime.PendingAwait.Kind.get -> Kedo.Runtime.AwaitKind
+Kedo.Runtime.PendingAwait.Label.get -> string!
+Kedo.Runtime.PendingAwait.Name.get -> string?
+Kedo.Runtime.PendingAwait.Options.get -> System.ReadOnlyMemory<string!>
+Kedo.Runtime.PendingAwait.PendingAwait() -> void
+Kedo.Runtime.PendingAwait.Unit.get -> Kedo.Schema.DurationUnit
+Kedo.Runtime.RunError
+Kedo.Runtime.RunError.CallDepth = 5 -> Kedo.Runtime.RunError
+Kedo.Runtime.RunError.DivisionByZero = 7 -> Kedo.Runtime.RunError
+Kedo.Runtime.RunError.FellOffEnd = 8 -> Kedo.Runtime.RunError
+Kedo.Runtime.RunError.InvalidProgram = 2 -> Kedo.Runtime.RunError
+Kedo.Runtime.RunError.NoSuchHook = 1 -> Kedo.Runtime.RunError
+Kedo.Runtime.RunError.None = 0 -> Kedo.Runtime.RunError
+Kedo.Runtime.RunError.NotSuspended = 9 -> Kedo.Runtime.RunError
+Kedo.Runtime.RunError.RegisterBudget = 6 -> Kedo.Runtime.RunError
+Kedo.Runtime.RunError.StaleFrame = 11 -> Kedo.Runtime.RunError
+Kedo.Runtime.RunError.StaleFrameCompensation = 12 -> Kedo.Runtime.RunError
+Kedo.Runtime.RunError.StepBudget = 4 -> Kedo.Runtime.RunError
+Kedo.Runtime.RunError.Unbound = 3 -> Kedo.Runtime.RunError
+Kedo.Runtime.RunError.UnsupportedFrame = 13 -> Kedo.Runtime.RunError
+Kedo.Runtime.RunError.WrongResumption = 10 -> Kedo.Runtime.RunError
+Kedo.Runtime.RunOutcome
+Kedo.Runtime.RunOutcome.Error.get -> Kedo.Runtime.RunError
+Kedo.Runtime.RunOutcome.Frame.get -> Kedo.Runtime.FrameHandle
+Kedo.Runtime.RunOutcome.Pc.get -> int
+Kedo.Runtime.RunOutcome.RunOutcome() -> void
+Kedo.Runtime.RunOutcome.Status.get -> Kedo.Runtime.RunStatus
+Kedo.Runtime.RunOutcome.Steps.get -> long
+Kedo.Runtime.VmOptions
+Kedo.Runtime.VmOptions.Trace.get -> bool
+Kedo.Runtime.VmOptions.Trace.init -> void
+Kedo.Runtime.VmOptions.VmOptions() -> void
 Kedo.Schema.DurationUnit
 Kedo.Schema.DurationUnit.Day = 4 -> Kedo.Schema.DurationUnit
 Kedo.Schema.DurationUnit.Hour = 3 -> Kedo.Schema.DurationUnit
@@ -14,14 +117,55 @@ Kedo.Schema.DurationUnit.Millisecond = 1 -> Kedo.Schema.DurationUnit
 Kedo.Schema.DurationUnit.Minute = 0 -> Kedo.Schema.DurationUnit
 Kedo.Schema.DurationUnit.Second = 2 -> Kedo.Schema.DurationUnit
 Kedo.Schema.DurationUnits
+Kedo.Schema.EffectSchema
+Kedo.Schema.EffectSchema.Doc.get -> string?
+Kedo.Schema.EffectSchema.Doc.init -> void
+Kedo.Schema.EffectSchema.EffectSchema(string! id, System.Collections.Generic.IReadOnlyList<Kedo.Schema.FieldSchema!>! parameters) -> void
+Kedo.Schema.EffectSchema.Id.get -> string!
+Kedo.Schema.EffectSchema.Parameters.get -> System.Collections.Generic.IReadOnlyList<Kedo.Schema.FieldSchema!>!
+Kedo.Schema.FieldSchema.Computed.get -> string?
+Kedo.Schema.FieldSchema.Computed.init -> void
 Kedo.Schema.FieldSchema.DefaultDurationMs.get -> long?
 Kedo.Schema.FieldSchema.DefaultDurationMs.init -> void
 Kedo.Schema.FieldSchema.MaxDurationMs.get -> long?
 Kedo.Schema.FieldSchema.MaxDurationMs.init -> void
 Kedo.Schema.FieldSchema.MinDurationMs.get -> long?
 Kedo.Schema.FieldSchema.MinDurationMs.init -> void
+Kedo.Schema.InvariantSchema
+Kedo.Schema.InvariantSchema.Check.get -> string!
+Kedo.Schema.InvariantSchema.Doc.get -> string?
+Kedo.Schema.InvariantSchema.Doc.init -> void
+Kedo.Schema.InvariantSchema.Id.get -> string!
+Kedo.Schema.InvariantSchema.InvariantSchema(string! id, string! check) -> void
+Kedo.Schema.InvariantSchema.Message.get -> string?
+Kedo.Schema.InvariantSchema.Message.init -> void
+Kedo.Schema.InvariantSchema.Severity.get -> Kedo.Diagnostics.Severity
+Kedo.Schema.InvariantSchema.Severity.init -> void
+Kedo.Schema.QuerySchema
+Kedo.Schema.QuerySchema.Doc.get -> string?
+Kedo.Schema.QuerySchema.Doc.init -> void
+Kedo.Schema.QuerySchema.Id.get -> string!
+Kedo.Schema.QuerySchema.Parameters.get -> System.Collections.Generic.IReadOnlyList<Kedo.Schema.FieldSchema!>!
+Kedo.Schema.QuerySchema.QuerySchema(string! id, System.Collections.Generic.IReadOnlyList<Kedo.Schema.FieldSchema!>! parameters) -> void
+Kedo.Schema.QuerySchema.Returns.get -> Kedo.Schema.FieldSchema?
+Kedo.Schema.QuerySchema.Returns.init -> void
+Kedo.Schema.RecordSchema.AddInvariant(Kedo.Schema.InvariantSchema! invariant) -> Kedo.Schema.RecordSchema!
+Kedo.Schema.RecordSchema.Invariants.get -> System.Collections.Generic.IReadOnlyList<Kedo.Schema.InvariantSchema!>!
+Kedo.Schema.SchemaRegistry.AddEffect(Kedo.Schema.EffectSchema! effect) -> Kedo.Schema.SchemaRegistry!
+Kedo.Schema.SchemaRegistry.AddInvariant(Kedo.Schema.InvariantSchema! invariant) -> Kedo.Schema.SchemaRegistry!
+Kedo.Schema.SchemaRegistry.AddQuery(Kedo.Schema.QuerySchema! query) -> Kedo.Schema.SchemaRegistry!
+Kedo.Schema.SchemaRegistry.Effects.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Schema.EffectSchema!>!
+Kedo.Schema.SchemaRegistry.FindEffect(string! id) -> Kedo.Schema.EffectSchema?
+Kedo.Schema.SchemaRegistry.FindQuery(string! id) -> Kedo.Schema.QuerySchema?
+Kedo.Schema.SchemaRegistry.Invariants.get -> System.Collections.Generic.IReadOnlyList<Kedo.Schema.InvariantSchema!>!
+Kedo.Schema.SchemaRegistry.Queries.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Schema.QuerySchema!>!
+Kedo.Schema.ValueKind.Expression = 12 -> Kedo.Schema.ValueKind
 const Kedo.Pack.KedoPack.LatestFormatVersion = 3 -> int
 const Kedo.Pack.KedoPack.SectionTimeUnit = 4 -> int
+static Kedo.Runtime.BehaviorBinder.Bind(Kedo.Runtime.BehaviorProgram! program, Kedo.Runtime.BindingTable! bindings, Kedo.Diagnostics.DiagnosticBag! diagnostics) -> Kedo.Runtime.BoundProgram!
+static Kedo.Runtime.BehaviorBinder.Bind(Kedo.Runtime.BehaviorProgram! program, Kedo.Runtime.BindingTable! bindings, out System.Collections.Generic.IReadOnlyList<Kedo.Diagnostics.Diagnostic!>! diagnostics) -> Kedo.Runtime.BoundProgram!
+static Kedo.Runtime.BindingTable.FromPrograms(System.Collections.Generic.IEnumerable<Kedo.Runtime.BehaviorProgram!>! programs, Kedo.Runtime.SymbolTable? symbols = null) -> Kedo.Runtime.BindingTable!
+static Kedo.Runtime.VmOptions.Default.get -> Kedo.Runtime.VmOptions!
 static Kedo.Schema.DurationUnits.ConvertTruncating(long amount, Kedo.Schema.DurationUnit from, Kedo.Schema.DurationUnit to) -> long
 static Kedo.Schema.DurationUnits.Format(long amount, Kedo.Schema.DurationUnit unit) -> string!
 static Kedo.Schema.DurationUnits.MillisecondsPer(Kedo.Schema.DurationUnit unit) -> long

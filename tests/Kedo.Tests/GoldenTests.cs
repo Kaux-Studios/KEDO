@@ -102,7 +102,7 @@ public class GoldenTests
     private static string StripTokens(string dump)
         => string.Join("\n", dump.Split('\n').Select(l => l.Split(' ', 2)[0] + (l.Contains('`') ? " " + l[l.IndexOf('`')..] : string.Empty)));
 
-    private static void Check(string dir, string file, string actual)
+    internal static void Check(string dir, string file, string actual)
     {
         var path = Path.Combine(dir, file);
         actual = actual.Replace("\r\n", "\n");
