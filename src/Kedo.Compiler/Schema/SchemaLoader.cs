@@ -47,6 +47,17 @@ public static class SchemaLoader
             });
         }
 
+        foreach (var obj in catalog.Concrete.Where(o => o.Type == "kedo_query"))
+        {
+            var returns = obj.Body.Fields.TryGetValue("returns", out var rv) && rv is RRecord rr ? Field(rr, obj.Id, Problem) : null;
+            registry.AddQuery(new QuerySchema(obj.Id, Fields(obj.Body, "params", obj.Id, Problem).ToList()) { Returns = returns, Doc = Text(obj.Body, "doc") });
+        }
+
+        foreach (var obj in catalog.Concrete.Where(o => o.Type == "kedo_effect"))
+        {
+            registry.AddEffect(new EffectSchema(obj.Id, Fields(obj.Body, "params", obj.Id, Problem).ToList()) { Doc = Text(obj.Body, "doc") });
+        }
+
         foreach (var obj in catalog.Concrete.Where(o => o.Type == "kedo_type"))
         {
             var components = obj.Body.Fields.TryGetValue("components", out _) ? new HashSet<string>(Strings(obj.Body, "components"), StringComparer.Ordinal) : null;
@@ -85,6 +96,16 @@ public static class SchemaLoader
             CheckRefs(rec, registry, diagnostics, catalog, rec.Id);
         }
 
+        foreach (var q in registry.Queries.Values)
+        {
+            CheckHostApi("query", q.Id, q.Parameters, q.Returns, registry, diagnostics, catalog);
+        }
+
+        foreach (var e in registry.Effects.Values)
+        {
+            CheckHostApi("effect", e.Id, e.Parameters, null, registry, diagnostics, catalog);
+        }
+
         return registry;
     }
 
@@ -93,6 +114,22 @@ public static class SchemaLoader
         var obj = catalog.Objects.FirstOrDefault(o => o.Id == ownerId);
         var origin = obj?.Declaration.Origin ?? default;
         d.Error("K2001", message, origin.File, origin.Span);
+    }
+
+    // Only scalars cross the host boundary: the VM has no lists, records, maps or decimals (K5003, K5007).
+    private static void CheckHostApi(string what, string id, IReadOnlyList<FieldSchema> parameters, FieldSchema? returns, SchemaRegistry registry, DiagnosticBag d, ResolvedCatalog catalog)
+    {
+        foreach (var p in returns is null ? parameters : parameters.Append(returns))
+        {
+            var role = ReferenceEquals(p, returns) ? "the result" : $"parameter `{p.Name}`";
+            if (p.Kind is ValueKind.List or ValueKind.Record or ValueKind.Map or ValueKind.Decimal)
+            {
+                Report(d, catalog, id, $"{what} `{id}`: {role} is of kind `{p.Kind.ToString().ToLowerInvariant()}`, which hooks cannot pass; use int, bool, text, duration, enum, reference or asset");
+                continue;
+            }
+
+            CheckField(p, registry, d, catalog, id);
+        }
     }
 
     private static void CheckRefs(RecordSchema record, SchemaRegistry registry, DiagnosticBag d, ResolvedCatalog catalog, string owner)

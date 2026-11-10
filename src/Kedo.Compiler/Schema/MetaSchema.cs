@@ -4,7 +4,8 @@ namespace Kedo.Compiler.Schema;
 
 /// <summary>
 /// The schema of schemas. A game may describe its content types in KEDO itself using the built-in types
-/// <c>kedo_type</c>, <c>kedo_component</c>, <c>kedo_record</c>, <c>kedo_enum</c> and <c>kedo_hook</c>; those files are
+/// <c>kedo_type</c>, <c>kedo_component</c>, <c>kedo_record</c>, <c>kedo_enum</c>, <c>kedo_hook</c>, <c>kedo_query</c> and
+/// <c>kedo_effect</c>; those files are
 /// resolved against this registry and turned into a <see cref="SchemaRegistry"/> by <see cref="SchemaLoader"/>.
 /// Registering the same schema from C# through <see cref="IKedoModule"/> stays possible; both produce the same registry.
 /// </summary>
@@ -75,6 +76,17 @@ public static class MetaSchema
             .Add(new FieldSchema("context", ValueKind.List) { ListStrategy = ListStrategy.Keyed, KeyField = "name", Element = new FieldSchema("item", ValueKind.Record) { RecordId = "kedo_field" }, Doc = "Fields of the context parameter." })
             .Add(new FieldSchema("allows_await", ValueKind.Bool) { DefaultBool = true })
             .Add(new FieldSchema("allows_effects", ValueKind.Bool) { DefaultBool = true })
+            .Add(new FieldSchema("doc", ValueKind.Text))));
+
+        // Host API (ADR-0015): declared, a query or an effect is checked by name, arity and argument kinds when hooks compile.
+        var parameters = new FieldSchema("params", ValueKind.List) { ListStrategy = ListStrategy.Keyed, KeyField = "name", Element = new FieldSchema("item", ValueKind.Record) { RecordId = "kedo_field" }, Doc = "Parameters in order; the receiver of a member call is the first." };
+        r.AddType(new TypeSchema("kedo_query", new RecordSchema("kedo_query") { Doc = "A host query hooks may call: `name(args)`, `receiver.name(args)` or `receiver.name`." }
+            .Add(parameters)
+            .Add(new FieldSchema("returns", ValueKind.Record) { RecordId = "kedo_field", Doc = "Kind of the result (a field descriptor without name)." })
+            .Add(new FieldSchema("doc", ValueKind.Text))));
+
+        r.AddType(new TypeSchema("kedo_effect", new RecordSchema("kedo_effect") { Doc = "An effect hooks may apply: `apply effect:id(args)`." }
+            .Add(parameters)
             .Add(new FieldSchema("doc", ValueKind.Text))));
 
         return r;

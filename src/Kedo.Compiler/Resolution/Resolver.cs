@@ -1455,7 +1455,7 @@ public sealed class Resolver
         _ => "a value",
     };
 
-    private static string? Suggest(string name, IEnumerable<string> candidates)
+    internal static string? Suggest(string name, IEnumerable<string> candidates)
     {
         string? best = null;
         var bestDistance = 3;

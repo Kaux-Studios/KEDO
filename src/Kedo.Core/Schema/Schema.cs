@@ -253,6 +253,52 @@ public sealed class HookSchema
 }
 
 /// <summary>
+/// Descriptor of a host query content may call (<c>kedo_query</c>, ADR-0015): <c>name(args)</c>, <c>receiver.name(args)</c>
+/// or <c>receiver.name</c>. The receiver of a member call is the first parameter.
+/// </summary>
+public sealed class QuerySchema
+{
+    /// <summary>Creates a query schema.</summary>
+    public QuerySchema(string id, IReadOnlyList<FieldSchema> parameters)
+    {
+        Id = id;
+        Parameters = parameters;
+    }
+
+    /// <summary>Query id as written in hooks.</summary>
+    public string Id { get; }
+
+    /// <summary>Parameters in order (the receiver first for member calls).</summary>
+    public IReadOnlyList<FieldSchema> Parameters { get; }
+
+    /// <summary>Kind of the result; null when the schema does not say.</summary>
+    public FieldSchema? Returns { get; init; }
+
+    /// <summary>Documentation.</summary>
+    public string? Doc { get; init; }
+}
+
+/// <summary>Descriptor of an effect content may apply (<c>kedo_effect</c>, ADR-0015): <c>apply effect:id(args)</c>.</summary>
+public sealed class EffectSchema
+{
+    /// <summary>Creates an effect schema.</summary>
+    public EffectSchema(string id, IReadOnlyList<FieldSchema> parameters)
+    {
+        Id = id;
+        Parameters = parameters;
+    }
+
+    /// <summary>Effect id, without the <c>effect:</c> prefix content writes.</summary>
+    public string Id { get; }
+
+    /// <summary>Parameters in order.</summary>
+    public IReadOnlyList<FieldSchema> Parameters { get; }
+
+    /// <summary>Documentation.</summary>
+    public string? Doc { get; init; }
+}
+
+/// <summary>
 /// Explicit, reflection-free registry of everything a game exposes to KEDO content (ADR-0007 D9).
 /// A permissive registry (no types registered, <see cref="Permissive"/> true) accepts any type and field and infers
 /// list strategies from the data; it exists for tooling and tests, never for shipping content.
@@ -264,6 +310,8 @@ public sealed class SchemaRegistry
     private readonly Dictionary<string, RecordSchema> _records = new(StringComparer.Ordinal);
     private readonly Dictionary<string, EnumSchema> _enums = new(StringComparer.Ordinal);
     private readonly Dictionary<string, HookSchema> _hooks = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, QuerySchema> _queries = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, EffectSchema> _effects = new(StringComparer.Ordinal);
 
     /// <summary>Accept unknown types, components and fields; infer list strategies.</summary>
     public bool Permissive { get; init; }
@@ -283,6 +331,12 @@ public sealed class SchemaRegistry
     /// <summary>Registered hooks.</summary>
     public IReadOnlyDictionary<string, HookSchema> Hooks => _hooks;
 
+    /// <summary>Declared queries. When there is at least one, hooks may only call declared queries (K5008).</summary>
+    public IReadOnlyDictionary<string, QuerySchema> Queries => _queries;
+
+    /// <summary>Declared effects. When there is at least one, hooks may only apply declared effects (K5008).</summary>
+    public IReadOnlyDictionary<string, EffectSchema> Effects => _effects;
+
     /// <summary>Registers an object type.</summary>
     public SchemaRegistry AddType(TypeSchema type) { _types.Add(type.Id, type); return this; }
 
@@ -297,6 +351,18 @@ public sealed class SchemaRegistry
 
     /// <summary>Registers a hook.</summary>
     public SchemaRegistry AddHook(HookSchema hook) { _hooks.Add(hook.Id, hook); return this; }
+
+    /// <summary>Registers a query.</summary>
+    public SchemaRegistry AddQuery(QuerySchema query) { _queries.Add(query.Id, query); return this; }
+
+    /// <summary>Registers an effect.</summary>
+    public SchemaRegistry AddEffect(EffectSchema effect) { _effects.Add(effect.Id, effect); return this; }
+
+    /// <summary>Query by id or null.</summary>
+    public QuerySchema? FindQuery(string id) => _queries.TryGetValue(id, out var q) ? q : null;
+
+    /// <summary>Effect by id (without <c>effect:</c>) or null.</summary>
+    public EffectSchema? FindEffect(string id) => _effects.TryGetValue(id, out var e) ? e : null;
 
     /// <summary>Type by id or null.</summary>
     public TypeSchema? FindType(string id) => _types.TryGetValue(id, out var t) ? t : null;
@@ -320,6 +386,6 @@ public interface IKedoModule
     /// <summary>Module id (the <c>module</c> name in `.kedo` files).</summary>
     string Id { get; }
 
-    /// <summary>Registers types, components, records, enums and hooks.</summary>
+    /// <summary>Registers types, components, records, enums, hooks, queries and effects.</summary>
     void Register(SchemaRegistry registry);
 }

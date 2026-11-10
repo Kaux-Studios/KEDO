@@ -173,56 +173,9 @@ public sealed class BehaviorVm
 
     private void Verify()
     {
-        var code = _program.Code;
-        for (var pc = 0; pc < code.Length; pc++)
+        if (ProgramVerifier.Check(_program, out _) is { } error)
         {
-            var w = code[pc];
-            var op = Instr.Op(w);
-            if (op > OpCode.Trace)
-            {
-                throw new InvalidOperationException($"invalid opcode {(int)op} at {pc}");
-            }
-
-            switch (op)
-            {
-                case OpCode.Jump or OpCode.JumpIfFalse:
-                {
-                    var target = pc + 1 + Instr.Imm(w);
-                    if (target < 0 || target > code.Length)
-                    {
-                        throw new InvalidOperationException($"jump out of range at {pc}");
-                    }
-
-                    break;
-                }
-
-                case OpCode.LoadConst when Instr.Imm(w) < 0 || Instr.Imm(w) >= _program.Constants.Length:
-                    throw new InvalidOperationException($"constant index out of range at {pc}");
-                case OpCode.LoadSymbol or OpCode.LoadContext or OpCode.Query or OpCode.Apply or OpCode.Emit or OpCode.WaitDecision or OpCode.WaitRoll or OpCode.WaitSignal or OpCode.Trace:
-                    if (Instr.Imm(w) < 0 || Instr.Imm(w) >= _program.Strings.Length)
-                    {
-                        throw new InvalidOperationException($"string index out of range at {pc}");
-                    }
-
-                    if (op is OpCode.Query or OpCode.Apply or OpCode.Emit or OpCode.WaitDecision or OpCode.WaitRoll)
-                    {
-                        pc++;   // argument word
-                        if (pc >= code.Length)
-                        {
-                            throw new InvalidOperationException("truncated two-word instruction");
-                        }
-                    }
-
-                    break;
-                case OpCode.Call:
-                    if (Instr.Imm(w) < 0 || Instr.Imm(w) >= _program.Functions.Count)
-                    {
-                        throw new InvalidOperationException($"function index out of range at {pc}");
-                    }
-
-                    pc++;
-                    break;
-            }
+            throw new InvalidOperationException(error);
         }
     }
 
