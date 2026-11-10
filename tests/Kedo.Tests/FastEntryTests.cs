@@ -572,6 +572,32 @@ public class FastEntryTests
     }
 
     [Fact]
+    public void SchemaJsonListsTheDeclaredHostApiOnlyWhenThereIsOne()
+    {
+        static System.Text.Json.JsonElement Json(SchemaRegistry registry)
+        {
+            using var stream = new MemoryStream();
+            using (var writer = new System.Text.Json.Utf8JsonWriter(stream))
+            {
+                JsonSchemaWriter.Write(registry, writer);
+            }
+
+            return System.Text.Json.JsonDocument.Parse(stream.ToArray()).RootElement.Clone();
+        }
+
+        var (schema, _) = HostSchema();
+        var root = Json(schema);
+        var distance = root.GetProperty("queries").GetProperty("distance");
+        Assert.Equal("to", distance.GetProperty("params")[1].GetProperty("name").GetString());
+        Assert.Equal("integer", distance.GetProperty("returns").GetProperty("type").GetString());
+        Assert.Equal("text", root.GetProperty("effects").GetProperty("announce").GetProperty("params")[0].GetProperty("name").GetString());
+
+        var (plain, _) = HostSchema("kedo 1\nmodule game\nkedo_type enemy { fields = [] }\n");
+        Assert.False(Json(plain).TryGetProperty("queries", out _));
+        Assert.False(Json(plain).TryGetProperty("effects", out _));
+    }
+
+    [Fact]
     public void WithoutDeclarationsAnyQueryAndEffectCompileAsBefore()
     {
         var (schema, _) = HostSchema("""

@@ -1,6 +1,7 @@
 # Regression gate for the benchmarks (#16): compares the BenchmarkDotNet CSV reports with
 # tests/Kedo.Benchmarks/baseline.json. Allocations are deterministic, so more than 10% over the baseline fails;
-# time on shared runners is noisy, so only more than 3x the baseline fails.
+# time on shared runners is noisy, so only more than 3x the baseline fails. A baseline of 0 B is exact: any allocation
+# fails (ADR-0015: the fast entry allocates nothing per activation). BenchmarkDotNet prints `-` for 0 B.
 # Usage: pwsh tools/bench-gate.ps1 [-Results <dir>] [-Update]   (-Update rewrites the baseline from the results)
 param(
     [string]$Results = 'BenchmarkDotNet.Artifacts/results',
@@ -29,7 +30,8 @@ $measured = [ordered]@{}
 foreach ($csv in Get-ChildItem $Results -Filter '*-report.csv') {
     foreach ($row in (Get-Content $csv.FullName -Encoding utf8 | ConvertFrom-Csv -Delimiter ';')) {
         $key = $row.Method + $(if ($row.PSObject.Properties.Name -contains 'Objects') { '|' + $row.Objects } else { '' })
-        $measured[$key] = [ordered]@{ mean_ns = Convert-Quantity $row.Mean $time; allocated_bytes = Convert-Quantity $row.Allocated $size }
+        $allocated = if ($row.Allocated -and $row.Allocated.Trim().Trim('"') -eq '-') { 0.0 } else { Convert-Quantity $row.Allocated $size }
+        $measured[$key] = [ordered]@{ mean_ns = Convert-Quantity $row.Mean $time; allocated_bytes = $allocated }
     }
 }
 if ($measured.Count -eq 0) { throw "no benchmark reports in $Results" }
@@ -46,11 +48,14 @@ foreach ($key in $measured.Keys) {
     $now = $measured[$key]
     $was = $base.$key
     if ($null -eq $was) { Write-Output "new: $key"; continue }
-    if ($null -ne $was.allocated_bytes -and $null -ne $now.allocated_bytes -and $now.allocated_bytes -gt $was.allocated_bytes * (1 + $AllocationTolerance) + 1024) {
+    if ($null -ne $was.allocated_bytes -and $was.allocated_bytes -eq 0 -and $null -ne $now.allocated_bytes -and $now.allocated_bytes -gt 0) {
+        $failures += "$key allocates $($now.allocated_bytes) B, baseline 0 B"
+    }
+    elseif ($null -ne $was.allocated_bytes -and $null -ne $now.allocated_bytes -and $now.allocated_bytes -gt $was.allocated_bytes * (1 + $AllocationTolerance) + 1024) {
         $failures += "$key allocates $([math]::Round($now.allocated_bytes / 1MB, 2)) MB, baseline $([math]::Round($was.allocated_bytes / 1MB, 2)) MB"
     }
     if ($now.mean_ns -gt $was.mean_ns * $TimeFactor) {
-        $failures += "$key takes $([math]::Round($now.mean_ns / 1e6, 2)) ms, more than ${TimeFactor}x the baseline $([math]::Round($was.mean_ns / 1e6, 2)) ms"
+        $failures += "$key takes $([math]::Round($now.mean_ns, 1)) ns, more than ${TimeFactor}x the baseline $([math]::Round($was.mean_ns, 1)) ns"
     }
 }
 if ($failures.Count -gt 0) {

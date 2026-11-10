@@ -160,10 +160,13 @@ Orden: `creature → wolf → alpha_wolf`.
 | K4014 | Duración que no es entera en la unidad base del módulo o no cabe en 64 bits (advertencia con truncado en `min`, error en las demás unidades); también para el valor por defecto del esquema aplicado sin archivo (sin posición) |
 | K5001 | Hook: variable o campo de contexto desconocido |
 | K5002 | Función recursiva o ciclo de llamadas |
-| K5003 | Tipo incompatible en expresión |
+| K5003 | Tipo incompatible en expresión; también aridad o clase de un argumento de una consulta o un efecto declarados en el esquema ([ADR-0015](adr/0015-entrada-rapida.md)) |
 | K5004 | `wait` en un hook que no admite suspensión |
 | K5005 | `apply` en un hook que no admite efectos |
 | K5007 | Decimal dentro de un hook, una función o una expresión (los decimales son datos en 1.x) |
+| K5008 | Consulta o efecto no declarado, cuando el esquema declara `kedo_query` o `kedo_effect` (con sugerencia; ADR-0015) |
+| K6001 | Carga: un nombre de contexto, consulta, efecto, señal o tirada que usa un programa y el host no registró en su `BindingTable` (con sugerencia; falla sólo la activación que llega a esa instrucción) |
+| K6002 | Carga: programa que no pasa la verificación del binder (se recompila con `kedo build`) |
 
 ## 12. Decisiones para la revisión
 

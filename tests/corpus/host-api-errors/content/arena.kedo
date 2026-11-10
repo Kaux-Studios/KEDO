@@ -1,0 +1,19 @@
+kedo 1
+module arena
+manifest { base_unit = ms }
+
+enemy warden {
+    hp = 900
+    on damaged(ctx) {
+        let a = ctx.boss.hp_procent()
+        let b = alive()
+        let c = alive(mission:hold)
+        let d = ctx.boss.hp_percent(1)
+        if (a < 50 and b and c and d < 10) {
+            apply effect:set_phase(ctx.boss, "two")
+            apply effect:set_phaze(ctx.boss, 2)
+            apply phase:set(ctx.boss)
+            apply effect:spawn_wave(alive(ctx.boss))
+        }
+    }
+}

@@ -5,7 +5,8 @@ namespace Kedo.Compiler.Schema;
 
 /// <summary>
 /// Emits a registry as a JSON Schema bundle for editors (form generation) and agents: one JSON document with
-/// <c>types</c>, <c>components</c>, <c>hooks</c> and shared <c>$defs</c> for records and enums. Field kinds map to JSON
+/// <c>types</c>, <c>components</c>, <c>hooks</c>, the declared <c>queries</c> and <c>effects</c> (when there are any) and
+/// shared <c>$defs</c> for records and enums. Field kinds map to JSON
 /// Schema types; KEDO-specific facts (list strategy, key field, reference target, asset kind) travel in <c>x-kedo</c>.
 /// </summary>
 public static class JsonSchemaWriter
@@ -53,6 +54,29 @@ public static class JsonSchemaWriter
         }
 
         w.WriteEndObject();
+
+        // The declared host API (ADR-0015), only when the schema declares it: bundles of 1.0 schemas do not change.
+        if (registry.Queries.Count > 0)
+        {
+            w.WriteStartObject("queries");
+            foreach (var q in registry.Queries.Values.OrderBy(q => q.Id, StringComparer.Ordinal))
+            {
+                WriteHostApi(w, q.Id, q.Doc, q.Parameters, q.Returns);
+            }
+
+            w.WriteEndObject();
+        }
+
+        if (registry.Effects.Count > 0)
+        {
+            w.WriteStartObject("effects");
+            foreach (var e in registry.Effects.Values.OrderBy(e => e.Id, StringComparer.Ordinal))
+            {
+                WriteHostApi(w, e.Id, e.Doc, e.Parameters, null);
+            }
+
+            w.WriteEndObject();
+        }
 
         w.WriteStartObject("$defs");
         foreach (var r in registry.Records.Values.OrderBy(r => r.Id, StringComparer.Ordinal))
@@ -140,6 +164,34 @@ public static class JsonSchemaWriter
             }
 
             w.WriteEndObject();
+        }
+
+        w.WriteEndObject();
+    }
+
+    private static void WriteHostApi(Utf8JsonWriter w, string id, string? doc, IReadOnlyList<FieldSchema> parameters, FieldSchema? returns)
+    {
+        w.WriteStartObject(id);
+        if (doc is not null)
+        {
+            w.WriteString("description", doc);
+        }
+
+        w.WriteStartArray("params");
+        foreach (var p in parameters)
+        {
+            w.WriteStartObject();
+            w.WriteString("name", p.Name);
+            w.WritePropertyName("schema");
+            WriteField(w, p);
+            w.WriteEndObject();
+        }
+
+        w.WriteEndArray();
+        if (returns is not null)
+        {
+            w.WritePropertyName("returns");
+            WriteField(w, returns);
         }
 
         w.WriteEndObject();

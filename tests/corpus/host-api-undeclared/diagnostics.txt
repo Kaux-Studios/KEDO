@@ -1,0 +1,2 @@
+error K6001 - query `hp_percent` used by `enemy:warden` (arena.kedo:8:13) is not bound by the host; register it in the binding table (`BindingTable.Query`)
+error K6001 - effect `effect:set_phase` used by `enemy:warden` (arena.kedo:9:13) is not bound by the host; register it in the binding table (`BindingTable.Effect`)

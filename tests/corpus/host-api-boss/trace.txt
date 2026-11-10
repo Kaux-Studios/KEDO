@@ -1,0 +1,35 @@
+program enemy:warden time_unit=ms
+  hook damaged instance 7
+    context boss -> boss:7
+    query hp_percent(boss:7) -> 50
+    context phase -> 1
+    context boss -> boss:7
+    context phase -> 1
+    apply 7/pc19#0 effect:set_phase(boss:7,2)
+    context boss -> boss:7
+    raise signal:phase_changed(boss:7)
+    completed steps=19
+  hook enrage instance 7
+    suspended Minutes enrage/1 due=350ms
+    frame {"format_version":1,"instance_id":"7","behavior_id":"enemy:warden","definition_version":1,"definition_hash":"c78d2f3f3daf988074b0ad5ff638e596","hook_id":"enrage","stack":[{"function_index":2,"function_name":"on enrage","register_base":0,"register_count":3,"return_register":-1,"resume_label":"enrage/1","pc":26}],"registers":[350,0,0],"symbol_names":[null,null,null],"pending":{"kind":0,"label":"enrage/1","due_at_minutes":350,"id":null,"options":[],"result_register":-1,"unit":1},"applied_effects":[],"steps_used":2,"effect_sequence":0}
+    resume Minutes 0
+    context boss -> boss:7
+    query alive(boss:7) -> 1
+    apply 7/pc32#0 effect:spawn_wave(3)
+    suspended Signal enrage/2 signal:wave_cleared
+    frame {"format_version":1,"instance_id":"7","behavior_id":"enemy:warden","definition_version":1,"definition_hash":"c78d2f3f3daf988074b0ad5ff638e596","hook_id":"enrage","stack":[{"function_index":2,"function_name":"on enrage","register_base":0,"register_count":3,"return_register":-1,"resume_label":"enrage/2","pc":34}],"registers":[1,1,3],"symbol_names":[null,"boss:7",null],"pending":{"kind":3,"label":"enrage/2","due_at_minutes":0,"id":"signal:wave_cleared","options":[],"result_register":0},"applied_effects":["7/pc32#0"],"steps_used":8,"effect_sequence":1}
+    resume Signal signal:wave_cleared
+    apply 7/pc36#1 effect:spawn_wave(5)
+    completed steps=11
+program mission:hold_the_line time_unit=ms
+  hook mission_started instance 7
+    suspended Decision mission_started/1 prompt:route
+    frame {"format_version":1,"instance_id":"7","behavior_id":"mission:hold_the_line","definition_version":1,"definition_hash":"f86624895d7666ce64b725c855e4637a","hook_id":"mission_started","stack":[{"function_index":1,"function_name":"on mission_started","register_base":0,"register_count":6,"return_register":-1,"resume_label":"mission_started/1","pc":7}],"registers":[0,0,0,0,0,0],"symbol_names":[null,null,null,null,null,null],"pending":{"kind":1,"label":"mission_started/1","due_at_minutes":0,"id":"prompt:route","options":["north","south"],"result_register":0},"applied_effects":[],"steps_used":1,"effect_sequence":0}
+    resume Decision 0
+    apply 7/pc13#0 effect:spawn_wave(2)
+    suspended Minutes mission_started/2 due=1000ms
+    frame {"format_version":1,"instance_id":"7","behavior_id":"mission:hold_the_line","definition_version":1,"definition_hash":"f86624895d7666ce64b725c855e4637a","hook_id":"mission_started","stack":[{"function_index":1,"function_name":"on mission_started","register_base":0,"register_count":6,"return_register":-1,"resume_label":"mission_started/2","pc":24}],"registers":[1000,1,0,2,0,0],"symbol_names":[null,null,null,null,null,null],"pending":{"kind":0,"label":"mission_started/2","due_at_minutes":1000,"id":null,"options":[],"result_register":-1,"unit":1},"applied_effects":["7/pc13#0"],"steps_used":9,"effect_sequence":1}
+    resume Minutes 0
+    context mission -> mission:7
+    raise signal:mission_done(mission:7)
+    completed steps=12

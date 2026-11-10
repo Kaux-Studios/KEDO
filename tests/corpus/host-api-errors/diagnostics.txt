@@ -1,0 +1,8 @@
+error K5008 arena.kedo:8:17 query `hp_procent` is not declared in the schema; did you mean `hp_percent`?
+error K5003 arena.kedo:9:17 query `alive` takes 1 argument(s), got 0
+error K5003 arena.kedo:10:23 argument 1 (`target`) of query `alive` must be a reference to `enemy`, got a reference to `mission`
+error K5003 arena.kedo:11:17 query `hp_percent` takes 1 argument(s), got 2 (the receiver of a member call is the first)
+error K5003 arena.kedo:13:46 argument 2 (`phase`) of effect `effect:set_phase` must be an int, got a text
+error K5008 arena.kedo:14:19 effect `effect:set_phaze` is not declared in the schema; did you mean `effect:set_phase`?
+error K5008 arena.kedo:15:19 effect `phase:set` is not declared in the schema; declare it with `kedo_effect` and write it `effect:<id>`
+error K5003 arena.kedo:16:37 argument 1 (`count`) of effect `effect:spawn_wave` must be an int, got a bool

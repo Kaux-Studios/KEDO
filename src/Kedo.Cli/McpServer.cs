@@ -238,10 +238,13 @@ internal sealed class KedoTools
         return new ExplainResult(key, field_path, ws.CatalogFor(variant) is { } catalog ? Resolver.Explain(catalog, key, field_path) : $"no variant `{variant}`");
     }
 
-    [McpServerTool(Name = "kedo_catalog", ReadOnly = true, Idempotent = true), Description("List what exists: kind=objects (type:id with chain), types (registered types and their fields), components, enums (values), hooks (context fields), mixins. Filter with query. Use before inventing a type, field, enum value or id.")]
+    private static string Param(FieldSchema p)
+        => p.Name + ":" + p.Kind.ToString().ToLowerInvariant() + (p.TargetType ?? p.EnumId) switch { null => "", var t => "<" + t + ">" };
+
+    [McpServerTool(Name = "kedo_catalog", ReadOnly = true, Idempotent = true), Description("List what exists: kind=objects (type:id with chain), types (registered types and their fields), components, enums (values), hooks (context fields), queries and effects (declared host API, parameters), mixins. Filter with query. Use before inventing a type, field, enum value or id.")]
     public static CatalogResult Catalog(
         [Description("Files or directories with .kedo content")] string[] paths,
-        [Description("objects | types | components | enums | hooks | mixins | variants")] string kind,
+        [Description("objects | types | components | enums | hooks | queries | effects | mixins | variants")] string kind,
         [Description("Optional schema files or directories")] string[]? schema_paths = null,
         [Description("Optional substring filter on names")] string? query = null,
         [Description("Maximum items (default 100)")] int limit = 100,
@@ -257,8 +260,10 @@ internal sealed class KedoTools
             "components" => ws.Schema.Components.Values.Select(c => new CatalogItem("component", c.Id, string.Join(", ", c.Fields.Select(f => f.Name + ":" + f.Kind.ToString().ToLowerInvariant())))),
             "enums" => ws.Schema.Enums.Values.Select(e => new CatalogItem("enum", e.Id, string.Join(", ", e.Values))),
             "hooks" => ws.Schema.Hooks.Values.Select(h => new CatalogItem("hook", h.Id, "ctx: " + string.Join(", ", h.Context.Fields.Select(f => f.Name)) + (h.AllowsAwait ? "" : "; no wait") + (h.AllowsEffects ? "" : "; no apply"))),
+            "queries" => ws.Schema.Queries.Values.Select(q => new CatalogItem("query", q.Id, "(" + string.Join(", ", q.Parameters.Select(Param)) + ")" + (q.Returns is null ? "" : " -> " + q.Returns.Kind.ToString().ToLowerInvariant()))),
+            "effects" => ws.Schema.Effects.Values.Select(e => new CatalogItem("effect", "effect:" + e.Id, "(" + string.Join(", ", e.Parameters.Select(Param)) + ")")),
             "mixins" => catalog.Mixins.Values.Select(m => new CatalogItem("mixin", m.Id, m.Doc ?? "")),
-            _ => new[] { new CatalogItem("error", kind, "unknown kind; use objects, types, components, enums, hooks, mixins or variants") },
+            _ => new[] { new CatalogItem("error", kind, "unknown kind; use objects, types, components, enums, hooks, queries, effects, mixins or variants") },
         };
         if (!string.IsNullOrEmpty(query))
         {

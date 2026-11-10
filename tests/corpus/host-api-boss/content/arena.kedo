@@ -1,0 +1,35 @@
+kedo 1
+module arena
+manifest { base_unit = ms }
+
+function threshold(phase: int) -> int { return 100 - phase * 25 }
+
+enemy warden {
+    hp = 900
+    on damaged(ctx) {
+        if (ctx.boss.hp_percent() <= threshold(ctx.phase)) {
+            apply effect:set_phase(ctx.boss, ctx.phase + 1)
+            emit signal:phase_changed(ctx.boss)
+        }
+    }
+    on enrage(ctx) {
+        wait 350ms
+        if (alive(ctx.boss)) {
+            apply effect:spawn_wave(3)
+        }
+        wait signal signal:wave_cleared
+        apply effect:spawn_wave(5)
+    }
+}
+
+mission hold_the_line {
+    waves = 3
+    on mission_started(ctx) {
+        wait decision prompt:route {
+            option north { apply effect:spawn_wave(2) }
+            option south { apply effect:spawn_wave(4) }
+        }
+        wait 1s
+        emit signal:mission_done(ctx.mission)
+    }
+}

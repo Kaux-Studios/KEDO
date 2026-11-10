@@ -1,0 +1,7 @@
+program enemy:warden
+  hook damaged instance 7
+    context boss -> boss:7
+    apply 7/pc1#0 effect:flash(boss:7)
+    context boss -> boss:7
+    context phase -> 1
+    failed: query `hp_percent` is not bound by the host (K6001) (arena.kedo:8:13)

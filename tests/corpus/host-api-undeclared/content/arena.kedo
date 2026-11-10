@@ -1,0 +1,13 @@
+kedo 1
+module arena
+
+enemy warden {
+    hp = 900
+    on damaged(ctx) {
+        apply effect:flash(ctx.boss)
+        if (ctx.boss.hp_percent(ctx.phase) < 50) {
+            apply effect:set_phase(ctx.boss, ctx.phase + 1)
+        }
+        emit signal:hit(ctx.boss)
+    }
+}

@@ -1,0 +1,52 @@
+kedo 1
+module game
+
+// Game schema with its host API declared (ADR-0015): hooks compile against these queries and effects.
+
+kedo_type enemy {
+    fields = [{ name = hp  kind = int  min = 1  required = true }]
+    hooks = [damaged, enrage]
+}
+
+kedo_type mission {
+    fields = [{ name = waves  kind = int  min = 1 }]
+    hooks = [mission_started]
+}
+
+kedo_hook damaged {
+    allows_await = false
+    context = [
+        { name = boss  kind = reference  target = enemy }
+        { name = phase  kind = int }
+    ]
+}
+
+kedo_hook enrage {
+    context = [{ name = boss  kind = reference  target = enemy }]
+}
+
+kedo_hook mission_started {
+    context = [{ name = mission  kind = reference  target = mission }]
+}
+
+kedo_query hp_percent {
+    doc = "Remaining hit points of an enemy, 0 to 100."
+    params = [{ name = target  kind = reference  target = enemy }]
+    returns = { kind = int }
+}
+
+kedo_query alive {
+    params = [{ name = target  kind = reference  target = enemy }]
+    returns = { kind = bool }
+}
+
+kedo_effect set_phase {
+    params = [
+        { name = target  kind = reference  target = enemy }
+        { name = phase  kind = int  min = 0 }
+    ]
+}
+
+kedo_effect spawn_wave {
+    params = [{ name = count  kind = int  min = 1 }]
+}
