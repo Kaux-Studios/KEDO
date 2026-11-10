@@ -82,6 +82,28 @@ Statements end at newline or `;`. Statement forms: `let x = e`, `set x = e` (loc
 
 Presentation resources are objects of the game's `asset` type (`asset dunes { kind = texture  path = "art/dunes.png" }`) referenced as `asset:dunes`. A field with `kind = asset  asset_kind = texture` only takes assets whose `kind` is `texture` (K4013); a missing asset is K4005. The engine resolves the path; content never holds engine handles.
 
+## Schema rules: invariants and computed fields
+
+A game schema can declare rules over resolved content (ADR-0016). Expressions go **without quotes**, in parentheses; the resolver keeps them as syntax and the schema loader type-checks them (K2013, with position and did-you-mean).
+
+```kedo
+kedo_type contract {
+    fields = [
+        { name = sectors  kind = list  element = { kind = record  record = contract_sector }  required = true }
+        { name = boss_sector  kind = int  required = true }
+        { name = last_sector  kind = int  computed = (count(sectors)) }   // read-only, evaluated after resolution
+    ]
+    invariants = [
+        { id = sectors_in_order  check = (all(sectors, sector == index + 1))  message = "the sectors go 1, 2, 3... without gaps" }
+        { id = boss_after_last  check = (boss_sector == last_sector + 1)  message = "the boss sector is {boss_sector}, not {last_sector + 1}" }
+    ]
+}
+
+kedo_invariant cards_weighted { check = (forall(card, weight > 0))  severity = warning }   // reported on each card
+```
+
+Bare names are fields of the current record; `it` and `index` are the item and its position inside an aggregate; `root` is the object's body; `ref_field.x` and `type:id.x` read another object. Functions: `count(list[, cond])`, `sum|min|max|unique|increasing(list[, value[, filter]])` (`increasing` is strict), `all|any(list, cond)`, `forall(type, cond)`, `has(field)`, `len(text|list)`, `subsequence(a, va, b, vb)`. Integers are 64-bit; decimals add, subtract, compare and multiply by an integer exactly (no `/`); durations compare exactly (`15s` works in any `base_unit`). A bare name compared with an enum field is a value of that enum (`role != smart`). Content never writes a computed field (K4015). A failing rule is K4008 (error, or warning with `severity = warning`); a rule that cannot be evaluated is K4016 (guard optional fields with `has(x)`); cycles between computed fields are K3012.
+
 ## Variants
 
 A file with `variant <name>` on the line after `module` belongs to that variant (a campaign variant, a balance patch, a mod). Files without it are the base; each variant resolves as base + its files (ADR-0012).

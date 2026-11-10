@@ -94,5 +94,13 @@
     "LegacyActivate":  {
                        "mean_ns":  165.51,
                        "allocated_bytes":  465
-                     }
+                     },
+    "ResolveTyped|10000":  {
+                               "mean_ns":  110100000,
+                               "allocated_bytes":  73316433.92
+                           },
+    "ResolveWithInvariants|10000":  {
+                                        "mean_ns":  115600000,
+                                        "allocated_bytes":  66395340.8
+                                    }
 }

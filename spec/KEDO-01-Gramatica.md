@@ -252,6 +252,7 @@ Todos los `.kedo` bajo ese directorio pertenecen al módulo. Un objeto puede her
 | K2010 | `override` de un id que no existe en la base (con sugerencia) |
 | K2011 | `base_unit` no es una unidad de duración; se ignora (advertencia) |
 | K2012 | `base_unit` distinta entre manifiestos que se resuelven juntos (error, etiqueta en el primero; el mensaje sugiere declarar la misma `base_unit` en todos) |
+| K2013 | Expresión de esquema inválida al cargar el esquema: campo, función o tipo desconocido (con sugerencia), clase incompatible, decimal o duración sin resultado exacto, `it`/`index`/`root` fuera de lugar, `check` que no es booleano ([ADR-0016](adr/0016-invariantes-y-campos-calculados.md)) |
 | K2008 | Anotación desconocida (advertencia) |
 | K2009 | Ciclo entre módulos |
 

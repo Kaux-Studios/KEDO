@@ -56,7 +56,9 @@ Defaults(esquema del tipo) → Resuelto(P) → M1 … Mn (aplanados) → Propio(
 ## 5. Sin enlace tardío; campos calculados
 
 - R14. Ninguna capa evalúa expresiones contra el objeto final. No hay `self` ni `super`. Las expresiones en cuerpos se evalúan al resolver sobre literales y constantes; `Resolver(O)` depende solo de Resuelto(P), de los mixins y de la declaración de O.
-- R15. **Campos calculados** (v0.2, diseño fijado ahora): el esquema declara `computed max_hp = base_hp * level`; se evalúan una vez, después de resolver todos los objetos, en orden estático, sobre campos resueltos del propio objeto y de los referenciados; ciclos son error al cargar el esquema (K3012); entran al hash; el autor no los puede sobrescribir.
+- R15. **Campos calculados** ([ADR-0016](adr/0016-invariantes-y-campos-calculados.md)): un campo de un tipo o de un componente del esquema declara `computed = (hp * level)`, una expresión de esquema sin comillas (R15b); se evalúan una vez por objeto concreto, después de resolver todos los objetos y antes de la etapa B y del hash, en el orden de sus dependencias, sobre campos resueltos del propio objeto y de los referenciados (que se calculan primero); van al final del cuerpo con procedencia `computed`; ciclos son error al cargar el esquema (K3012); entran al hash y al pack; el contenido que los escribe es K4015; una evaluación imposible es K4016.
+- R15a. **Invariantes** (ADR-0016): `kedo_type`, `kedo_component` y `kedo_record` declaran `invariants = [{ id = …  check = (…)  message = "… {expr} …"  severity = error|warning }]`; `kedo_invariant id { check = (forall(tipo, condición)) }` declara una regla sobre todos los objetos de un tipo, reportada en cada objeto que la incumple. Se comprueban en la etapa B (R24) sobre el valor final.
+- R15b. **Expresiones de esquema** (ADR-0016 D1): la gramática de KEDO-01 §7, que el resolver no evalúa en los campos de clase `expression` del metaesquema; nombres sueltos son campos del registro actual, `it`/`index` el elemento y su posición en un agregado, `root` el cuerpo del objeto; `campo_ref.campo` y `tipo:id.campo` desreferencian; funciones `count`, `sum`, `min`, `max`, `unique`, `increasing` (estricto), `all`, `any`, `forall`, `has`, `len`, `subsequence`; enteros de 64 bits, decimales exactos (sin `/` ni `%`), duraciones exactas en milisegundos, booleanos, textos, enums (un nombre comparado con un enum es un valor del enum) y referencias. Una expresión que no tipa es K2013 al cargar el esquema.
 
 Razón (anexo I §5): el enlace tardío obliga a cerrar cada campo en una clausura por objeto final, impide reutilizar el resultado del padre, vuelve dinámicos los ciclos y rompe el "si ves un valor concreto, es el final". Los campos calculados dan el beneficio práctico sin ese costo.
 
@@ -76,7 +78,7 @@ Razón (anexo I §5): el enlace tardío obliga a cerrar cada campo en una clausu
 ## 8. Validación en dos etapas
 
 - R23. **Etapa A, por declaración** (sin resolver): errores de parseo; tipo, componente, hook o campo desconocidos (esquemas cerrados, con sugerencia); clase de valor incorrecta (K4001); operación de lista no permitida para la estrategia (K3005); padre o mixin ausente; id duplicado; duración que no es entera en la unidad base del módulo o no cabe en 64 bits (K4014), incluido el valor por defecto de un campo `duration` del esquema cuando se aplica sin archivo que lo escriba (K4014 sin archivo ni posición). Ubicación exacta de autoría.
-- R24. **Etapa B, por objeto resuelto concreto** (los `abstract` se saltan): campos obligatorios (K4002, salvo si el campo se escribió y su valor ya fue rechazado), rangos (K4004; los límites `min`/`max` de un campo `duration` se comparan exactamente en milisegundos, también cuando uno es entero y otro duración), escala decimal (K4009), cantidad de elementos (K4010), largo de texto (K4011), texto fuera de `one_of` (K4012), enums (K4003), referencia inexistente (K4005) o de tipo equivocado (K4006), asset de otra clase que la que pide el campo (`asset_kind` contra el campo `kind` del objeto asset, K4013), asset ausente del manifiesto (K4007, advertencia en modo rápido), invariantes declaradas por el esquema del juego (K4008).
+- R24. **Etapa B, por objeto resuelto concreto** (los `abstract` se saltan): campos obligatorios (K4002, salvo si el campo se escribió y su valor ya fue rechazado), rangos (K4004; los límites `min`/`max` de un campo `duration` se comparan exactamente en milisegundos, también cuando uno es entero y otro duración), escala decimal (K4009), cantidad de elementos (K4010), largo de texto (K4011), texto fuera de `one_of` (K4012), enums (K4003), referencia inexistente (K4005) o de tipo equivocado (K4006), asset de otra clase que la que pide el campo (`asset_kind` contra el campo `kind` del objeto asset, K4013), asset ausente del manifiesto (K4007, advertencia en modo rápido), invariantes declaradas por el esquema del juego (K4008, R15a; en la posición del primer campo escrito que leyó la regla, sin cascada: un campo obligatorio ausente o una referencia rota no las disparan).
 - R25. Todo diagnóstico de etapa B cita el objeto resuelto y la ruta, el origen de autoría por procedencia y la cadena de herencia. Errores idénticos con el mismo origen se agrupan: "`max` fuera de rango, definido en base.kedo:12, afecta a 37 objetos".
 - R26. Los validadores **acumulan**, no lanzan; el resolver devuelve el catálogo con su lista de diagnósticos aunque haya errores; el juego rechaza cargar con algún error.
 
@@ -139,7 +141,7 @@ Orden: `creature → wolf → alpha_wolf`.
 | K3009 | Mixins aplanados > 64 |
 | K3010 | Dos mixins escriben el mismo escalar (advertencia) |
 | K3011 | Lista `atomic` heredada no vacía reemplazada sin `=!` (advertencia) |
-| K3012 | Ciclo entre campos calculados del esquema |
+| K3012 | Ciclo entre campos calculados del esquema, al cargarlo (con la ruta; ADR-0016) |
 | K3013 | Anidamiento de records > 16 |
 | K3014 | `=` agrega a una lista `set` o `keyed` heredada no vacía (advertencia; `+=` o `=!`) |
 | K3015 | `= { }` sobre un record heredado no vacío no cambia nada (advertencia; `=! { }`) |
@@ -151,13 +153,15 @@ Orden: `creature → wolf → alpha_wolf`.
 | K4005 | Referencia a objeto inexistente |
 | K4006 | Referencia a objeto de otro tipo |
 | K4007 | Asset ausente del manifiesto |
-| K4008 | Invariante del esquema del juego incumplida |
+| K4008 | Invariante del esquema del juego incumplida (error, o advertencia con `severity = warning`; ADR-0016) |
 | K4009 | Decimal con más decimales que la escala del campo |
 | K4010 | Lista o mapa fuera de `min_items`/`max_items` |
 | K4011 | Texto fuera de `min_length`/`max_length` |
 | K4012 | Texto que no está en `one_of` |
 | K4013 | Referencia `asset:` a un asset de otra clase: el campo declara `asset_kind` y el objeto asset tiene otro `kind` |
 | K4014 | Duración que no es entera en la unidad base del módulo o no cabe en 64 bits (advertencia con truncado en `min`, error en las demás unidades); también para el valor por defecto del esquema aplicado sin archivo (sin posición) |
+| K4015 | El contenido escribe un campo calculado por el esquema (ADR-0016) |
+| K4016 | Una invariante o un campo calculado no se puede evaluar: desborde, división por cero, `min`/`max` de una lista vacía o un campo opcional ausente (con la sugerencia `has(campo)`); sin cascada |
 | K5001 | Hook: variable o campo de contexto desconocido |
 | K5002 | Función recursiva o ciclo de llamadas |
 | K5003 | Tipo incompatible en expresión; también aridad o clase de un argumento de una consulta o un efecto declarados en el esquema ([ADR-0015](adr/0015-entrada-rapida.md)) |
@@ -173,5 +177,5 @@ Orden: `creature → wolf → alpha_wolf`.
 1. Mezcla recursiva de records por defecto (propuesto) frente a reemplazo por defecto (Terraform, Jsonnet `:`).
 2. Listas `atomic` por defecto con advertencia K3011, frente a exigir estrategia explícita en todo esquema.
 3. Mixins con "último gana" + advertencia, frente a error duro cuando dos mixins chocan y el propio no decide.
-4. Campos calculados diferidos a v0.2 con el diseño ya fijado.
+4. Campos calculados diferidos a v0.2 con el diseño ya fijado (implementados en 1.x por ADR-0016).
 5. XxHash128 sobre forma canónica binaria (anexo F) en lugar de SHA-256 sobre JSON canónico como hace hoy Patriark. Implica que Patriark migre su hash de contenido al adoptar KEDO; el compilador al pack puede seguir emitiendo el SHA-256 actual durante la transición.
