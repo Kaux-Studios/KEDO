@@ -25,6 +25,9 @@ internal sealed class IncrementalState
 
     public HashSet<string> HasErrors { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>Text of the computed values of each object (ADR-0016): a change makes the key a changed one for its readers.</summary>
+    public Dictionary<string, string> Computed { get; } = new(StringComparer.Ordinal);
+
     public bool UnitConflict { get; set; }
 
     public int ResolvedCount { get; set; }

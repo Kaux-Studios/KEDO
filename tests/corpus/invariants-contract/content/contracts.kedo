@@ -1,0 +1,51 @@
+kedo 1
+module contracts
+
+contract plaza {
+    sectors = [
+        { sector = 1  mission = "hold" }
+        { sector = 2  mission = "sequence" }
+        { sector = 3  mission = "guardian" }
+    ]
+    boss_sector = 4
+    payouts = [
+        { id = mission  share = 50 }
+        { id = escape  share = 35 }
+        { id = survival  share = 15 }
+    ]
+}
+
+// A gap (1, 3), the boss two sectors after the last one, shares that add up to 90 and an escape over 40.
+contract terraces {
+    sectors = [
+        { sector = 1  mission = "hold" }
+        { sector = 3  mission = "guardian" }
+    ]
+    boss_sector = 5
+    payouts = [
+        { id = mission  share = 40 }
+        { id = escape  share = 45 }
+        { id = survival  share = 5 }
+    ]
+}
+
+// Every contract built on this one inherits its sectors; the invariant holds for each concrete one.
+abstract contract base_route {
+    sectors = [
+        { sector = 1  mission = "hold" }
+        { sector = 2  mission = "sequence" }
+    ]
+    payouts = [
+        { id = mission  share = 60 }
+        { id = escape  share = 30 }
+        { id = survival  share = 10 }
+    ]
+}
+
+contract short_route extends base_route {
+    boss_sector = 3
+}
+
+contract long_route extends base_route {
+    boss_sector = 4
+}

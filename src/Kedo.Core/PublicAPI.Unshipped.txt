@@ -123,12 +123,24 @@ Kedo.Schema.EffectSchema.Doc.init -> void
 Kedo.Schema.EffectSchema.EffectSchema(string! id, System.Collections.Generic.IReadOnlyList<Kedo.Schema.FieldSchema!>! parameters) -> void
 Kedo.Schema.EffectSchema.Id.get -> string!
 Kedo.Schema.EffectSchema.Parameters.get -> System.Collections.Generic.IReadOnlyList<Kedo.Schema.FieldSchema!>!
+Kedo.Schema.FieldSchema.Computed.get -> string?
+Kedo.Schema.FieldSchema.Computed.init -> void
 Kedo.Schema.FieldSchema.DefaultDurationMs.get -> long?
 Kedo.Schema.FieldSchema.DefaultDurationMs.init -> void
 Kedo.Schema.FieldSchema.MaxDurationMs.get -> long?
 Kedo.Schema.FieldSchema.MaxDurationMs.init -> void
 Kedo.Schema.FieldSchema.MinDurationMs.get -> long?
 Kedo.Schema.FieldSchema.MinDurationMs.init -> void
+Kedo.Schema.InvariantSchema
+Kedo.Schema.InvariantSchema.Check.get -> string!
+Kedo.Schema.InvariantSchema.Doc.get -> string?
+Kedo.Schema.InvariantSchema.Doc.init -> void
+Kedo.Schema.InvariantSchema.Id.get -> string!
+Kedo.Schema.InvariantSchema.InvariantSchema(string! id, string! check) -> void
+Kedo.Schema.InvariantSchema.Message.get -> string?
+Kedo.Schema.InvariantSchema.Message.init -> void
+Kedo.Schema.InvariantSchema.Severity.get -> Kedo.Diagnostics.Severity
+Kedo.Schema.InvariantSchema.Severity.init -> void
 Kedo.Schema.QuerySchema
 Kedo.Schema.QuerySchema.Doc.get -> string?
 Kedo.Schema.QuerySchema.Doc.init -> void
@@ -137,12 +149,17 @@ Kedo.Schema.QuerySchema.Parameters.get -> System.Collections.Generic.IReadOnlyLi
 Kedo.Schema.QuerySchema.QuerySchema(string! id, System.Collections.Generic.IReadOnlyList<Kedo.Schema.FieldSchema!>! parameters) -> void
 Kedo.Schema.QuerySchema.Returns.get -> Kedo.Schema.FieldSchema?
 Kedo.Schema.QuerySchema.Returns.init -> void
+Kedo.Schema.RecordSchema.AddInvariant(Kedo.Schema.InvariantSchema! invariant) -> Kedo.Schema.RecordSchema!
+Kedo.Schema.RecordSchema.Invariants.get -> System.Collections.Generic.IReadOnlyList<Kedo.Schema.InvariantSchema!>!
 Kedo.Schema.SchemaRegistry.AddEffect(Kedo.Schema.EffectSchema! effect) -> Kedo.Schema.SchemaRegistry!
+Kedo.Schema.SchemaRegistry.AddInvariant(Kedo.Schema.InvariantSchema! invariant) -> Kedo.Schema.SchemaRegistry!
 Kedo.Schema.SchemaRegistry.AddQuery(Kedo.Schema.QuerySchema! query) -> Kedo.Schema.SchemaRegistry!
 Kedo.Schema.SchemaRegistry.Effects.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Schema.EffectSchema!>!
 Kedo.Schema.SchemaRegistry.FindEffect(string! id) -> Kedo.Schema.EffectSchema?
 Kedo.Schema.SchemaRegistry.FindQuery(string! id) -> Kedo.Schema.QuerySchema?
+Kedo.Schema.SchemaRegistry.Invariants.get -> System.Collections.Generic.IReadOnlyList<Kedo.Schema.InvariantSchema!>!
 Kedo.Schema.SchemaRegistry.Queries.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Kedo.Schema.QuerySchema!>!
+Kedo.Schema.ValueKind.Expression = 12 -> Kedo.Schema.ValueKind
 const Kedo.Pack.KedoPack.LatestFormatVersion = 3 -> int
 const Kedo.Pack.KedoPack.SectionTimeUnit = 4 -> int
 static Kedo.Runtime.BehaviorBinder.Bind(Kedo.Runtime.BehaviorProgram! program, Kedo.Runtime.BindingTable! bindings, Kedo.Diagnostics.DiagnosticBag! diagnostics) -> Kedo.Runtime.BoundProgram!

@@ -1,0 +1,39 @@
+kedo 1
+module tree
+manifest { base_unit = s }
+
+ruleset main {
+    max_points = 75
+    start_points = 3
+}
+
+ruleset tight {
+    max_points = 70
+    start_points = 3
+}
+
+abstract branch base {
+    ruleset = ruleset:main
+    nodes = [
+        { id = a  cost = 1 }
+        { id = b  cost = 2 }
+    ]
+}
+
+// 4 × (15 + 3) = 72 fits in 75.
+branch mind extends base {
+    nodes += [{ id = capstone  cost = 3  final = true }]
+}
+
+// Two final nodes.
+branch greedy extends base {
+    nodes += [
+        { id = c  cost = 2  final = true }
+        { id = d  cost = 3  final = true }
+    ]
+}
+
+// The same tree on a ruleset of 70 points: 72 does not fit.
+branch cramped extends mind {
+    ruleset = ruleset:tight
+}

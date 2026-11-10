@@ -256,7 +256,8 @@ internal sealed class KedoTools
         {
             "variants" => ws.Catalog.Variants.Select(v => new CatalogItem("variant", v.Key, $"{v.Value.Objects.Count(o => !ws.Catalog.ByKey.TryGetValue(o.Key, out var b) || b.Hash != o.Hash)} object(s) added or changed")),
             "objects" => catalog.Objects.Select(o => new CatalogItem(o.Type, o.Key, (o.IsAbstract ? "abstract; " : "") + (o.Chain.Count > 1 ? "extends " + o.Chain[^2] : "root") + (o.Mixins.Count > 0 ? "; with " + string.Join(", ", o.Mixins) : ""))),
-            "types" => ws.Schema.Types.Values.Select(t => new CatalogItem("type", t.Id, string.Join(", ", t.Body.Fields.Select(f => f.Name + ":" + f.Kind.ToString().ToLowerInvariant() + (f.Required ? "!" : ""))))),
+            "types" => ws.Schema.Types.Values.Select(t => new CatalogItem("type", t.Id, string.Join(", ", t.Body.Fields.Select(f => f.Name + ":" + f.Kind.ToString().ToLowerInvariant() + (f.Required ? "!" : "") + (f.Computed is null ? "" : " = (" + f.Computed + ")")))
+                + string.Concat(t.Body.Invariants.Select(i => $"; invariant {i.Id}: ({i.Check})")))),
             "components" => ws.Schema.Components.Values.Select(c => new CatalogItem("component", c.Id, string.Join(", ", c.Fields.Select(f => f.Name + ":" + f.Kind.ToString().ToLowerInvariant())))),
             "enums" => ws.Schema.Enums.Values.Select(e => new CatalogItem("enum", e.Id, string.Join(", ", e.Values))),
             "hooks" => ws.Schema.Hooks.Values.Select(h => new CatalogItem("hook", h.Id, "ctx: " + string.Join(", ", h.Context.Fields.Select(f => f.Name)) + (h.AllowsAwait ? "" : "; no wait") + (h.AllowsEffects ? "" : "; no apply"))),

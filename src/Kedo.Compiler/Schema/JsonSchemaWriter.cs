@@ -119,7 +119,7 @@ public static class JsonSchemaWriter
         {
             w.WritePropertyName(f.Name);
             WriteField(w, f);
-            if (f.Required)
+            if (f.Required && f.Computed is null)
             {
                 required.Add(f.Name);
             }
@@ -138,7 +138,7 @@ public static class JsonSchemaWriter
         }
 
         w.WriteBoolean("additionalProperties", !record.Closed);
-        if (components is not null || hooks is not null)
+        if (components is not null || hooks is not null || record.Invariants.Count > 0)
         {
             w.WriteStartObject("x-kedo");
             if (components is not null)
@@ -158,6 +158,27 @@ public static class JsonSchemaWriter
                 foreach (var h in hooks.OrderBy(h => h, StringComparer.Ordinal))
                 {
                     w.WriteStringValue(h);
+                }
+
+                w.WriteEndArray();
+            }
+
+            if (record.Invariants.Count > 0)
+            {
+                // ADR-0016: the rules of the record, as the schema wrote them.
+                w.WriteStartArray("invariants");
+                foreach (var inv in record.Invariants)
+                {
+                    w.WriteStartObject();
+                    w.WriteString("id", inv.Id);
+                    w.WriteString("check", inv.Check);
+                    if (inv.Message is not null)
+                    {
+                        w.WriteString("message", inv.Message);
+                    }
+
+                    w.WriteString("severity", inv.Severity == Kedo.Diagnostics.Severity.Warning ? "warning" : "error");
+                    w.WriteEndObject();
                 }
 
                 w.WriteEndArray();
@@ -339,7 +360,9 @@ public static class JsonSchemaWriter
         if (f.Kind == ValueKind.Decimal) w.WriteNumber("scale", f.Scale);
         if (f.TargetType is not null) w.WriteString("target", f.TargetType);
         if (f.AssetKind is not null) w.WriteString("asset_kind", f.AssetKind);
+        if (f.Computed is not null) w.WriteString("computed", f.Computed);
         w.WriteEndObject();
+        if (f.Computed is not null) w.WriteBoolean("readOnly", true);
         w.WriteEndObject();
     }
 }

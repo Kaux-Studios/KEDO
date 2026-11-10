@@ -1,0 +1,5 @@
+error K4008 contracts.kedo:50:19 invariant `boss_after_last` fails: the boss sector is 4; it goes right after the last sector, 3
+error K4008 contracts.kedo:20:15 invariant `sectors_in_order` fails: the sectors go 1, 2, 3... without gaps
+error K4008 contracts.kedo:24:19 invariant `boss_after_last` fails: the boss sector is 5; it goes right after the last sector, 3
+error K4008 contracts.kedo:25:15 invariant `payout_total` fails: the payout shares add up to 90, not 100
+warning K4008 contracts.kedo:25:15 invariant `escape_band` fails: `all(payouts, id != escape or (share >= 30 and share <= 40))` is false

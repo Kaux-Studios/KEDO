@@ -1,0 +1,18 @@
+kedo 1
+module enemies
+
+enemy brute {
+    hp = 120
+    speed = 3.5
+    role = melee
+    armor = 0
+    slots = [{ id = claw  weight = 2 }]
+}
+
+enemy schemer {
+    hp = 40
+    speed = 4.25
+    role = smart
+    groupable = true
+    a = 3
+}

@@ -1,0 +1,39 @@
+kedo 1
+module game
+
+// Invariants of a contract (ADR-0016, issue #22): the sectors go 1, 2, 3... without gaps, the boss sector comes right
+// after the last one and the payout shares add up to 100, with the escape between 30 and 40 (a warning).
+
+kedo_enum payout_kind { values = [mission, escape, survival] }
+
+kedo_record contract_sector {
+    fields = [
+        { name = sector  kind = int  min = 1  required = true }
+        { name = mission  kind = text  required = true }
+    ]
+}
+
+kedo_record payout {
+    fields = [
+        { name = id  kind = enum  enum = payout_kind  required = true }
+        { name = share  kind = int  min = 0  max = 100  required = true }
+    ]
+}
+
+kedo_type contract {
+    fields = [
+        { name = sectors  kind = list  element = { kind = record  record = contract_sector }  required = true }
+        { name = boss_sector  kind = int  min = 2  required = true }
+        { name = payouts  kind = list  strategy = keyed  element = { kind = record  record = payout }  required = true }
+    ]
+    invariants = [
+        { id = sectors_in_order  check = (all(sectors, sector == index + 1))  message = "the sectors go 1, 2, 3... without gaps" }
+        {
+            id = boss_after_last
+            check = (boss_sector == count(sectors) + 1)
+            message = "the boss sector is {boss_sector}; it goes right after the last sector, {count(sectors) + 1}"
+        }
+        { id = payout_total  check = (sum(payouts, share) == 100)  message = "the payout shares add up to {sum(payouts, share)}, not 100" }
+        { id = escape_band  check = (all(payouts, id != escape or (share >= 30 and share <= 40)))  severity = warning }
+    ]
+}

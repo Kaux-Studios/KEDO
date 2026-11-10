@@ -1,0 +1,6 @@
+error K4008 run.kedo:34:13 invariant `chances_total` fails: the chances add up to 0.950, not 1
+error K4008 run.kedo:16:16 invariant `curve_increasing` fails: the run xp curve must grow at every level: [10, 25, 45, 45, 80]
+error K4008 run.kedo:17:14 invariant `levels_increasing` fails: `not has(levels) or increasing(levels, xp)` is false
+error K4008 run.kedo:21:21 invariant `escape_window_band` fails: `not has(escape_window) or (escape_window >= 15s and escape_window <= 20s)` is false
+error K4008 run.kedo:48:14 invariant `cards_weighted` fails: card weight is 0; a card with weight 0 never shows up
+warning K4008 run.kedo:53:14 invariant `weapon_cards_cap` fails: `family != weapon or max_level <= 5` is false

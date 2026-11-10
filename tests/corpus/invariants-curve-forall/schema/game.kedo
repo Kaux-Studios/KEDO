@@ -1,0 +1,57 @@
+kedo 1
+module game
+
+// A strictly increasing experience curve, decimal chances that add up to exactly 1 at different scales, and a catalog
+// invariant over every card (`forall`), reported on each card that breaks it (ADR-0016).
+
+kedo_record level {
+    fields = [
+        { name = id  kind = enum  required = true }
+        { name = xp  kind = int  min = 1  required = true }
+    ]
+}
+
+kedo_type run_rules {
+    fields = [
+        { name = xp_curve  kind = list  element = { kind = int  min = 1 }  required = true }
+        { name = levels  kind = list  strategy = keyed  element = { kind = record  record = level } }
+        { name = escape_window  kind = duration }
+    ]
+    invariants = [
+        { id = curve_increasing  check = (increasing(xp_curve))  message = "the run xp curve must grow at every level: {xp_curve}" }
+        { id = levels_increasing  check = (not has(levels) or increasing(levels, xp)) }
+        { id = escape_window_band  check = (not has(escape_window) or (escape_window >= 15s and escape_window <= 20s)) }
+    ]
+}
+
+kedo_record drop {
+    fields = [
+        { name = id  kind = enum  required = true }
+        { name = chance  kind = decimal  scale = 3  min = 0  max = 1  required = true }
+    ]
+}
+
+kedo_type loot {
+    fields = [{ name = drops  kind = list  strategy = keyed  element = { kind = record  record = drop }  required = true }]
+    invariants = [{ id = chances_total  check = (sum(drops, chance) == 1.00)  message = "the chances add up to {sum(drops, chance)}, not 1" }]
+}
+
+kedo_enum family { values = [mind, dexterity, spirit, weapon] }
+
+kedo_type card {
+    fields = [
+        { name = family  kind = enum  enum = family  required = true }
+        { name = weight  kind = int  min = 0  required = true }
+        { name = max_level  kind = int  min = 1  required = true }
+    ]
+}
+
+kedo_invariant cards_weighted {
+    check = (forall(card, weight > 0))
+    message = "card weight is {weight}; a card with weight 0 never shows up"
+}
+
+kedo_invariant weapon_cards_cap {
+    check = (forall(card, family != weapon or max_level <= 5))
+    severity = warning
+}

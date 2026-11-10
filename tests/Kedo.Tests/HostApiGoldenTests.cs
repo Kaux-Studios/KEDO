@@ -74,6 +74,13 @@ public class HostApiGoldenTests
             return $"{d.Severity.ToString().ToLowerInvariant()} {d.Code} {where} {d.Message}\n";
         }));
         GoldenTests.Check(dir, "diagnostics.txt", diagnostics);
+
+        // Invariants and computed fields (ADR-0016): the resolved catalog shows the computed values and their provenance.
+        if (name.StartsWith("invariants-", StringComparison.Ordinal) || name.StartsWith("computed-", StringComparison.Ordinal))
+        {
+            GoldenTests.Check(dir, "resolved.txt", ResolvedDump.Dump(catalog, withProvenance: true));
+        }
+
         if (bag.Items.Any(d => d.IsError && d.Code != "K6001"))
         {
             Assert.False(File.Exists(Path.Combine(dir, "trace.txt")), "a case with errors has no trace");

@@ -44,6 +44,29 @@ public sealed class Parser
         return parser._builder.Finish(source, tokens);
     }
 
+    /// <summary>
+    /// Parses one expression (the text of a schema expression, ADR-0016). The root is a <see cref="NodeKind.File"/>
+    /// node whose only child is the expression; trailing tokens are K1002.
+    /// </summary>
+    internal static SyntaxTree ParseExpressionText(SourceText source, DiagnosticBag diagnostics)
+    {
+        var tokens = Lexer.Lex(source, diagnostics);
+        var parser = new Parser(source, tokens, diagnostics);
+        parser.Open(NodeKind.File);
+        parser.ParseExpression(0);
+        if (!parser.AtEof)
+        {
+            parser.ErrorAtCurrent("expected the end of the expression");
+            while (!parser.AtEof)
+            {
+                parser.Advance();
+            }
+        }
+
+        parser.Close();
+        return parser._builder.Finish(source, tokens);
+    }
+
     // ----- token helpers -----
 
     private TokenKind Peek(int k = 0)

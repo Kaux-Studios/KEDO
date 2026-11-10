@@ -1,0 +1,62 @@
+card big_gun
+    family = weapon   # own (run.kedo:53:14)
+    weight = 4   # own (run.kedo:54:14)
+    max_level = 8   # own (run.kedo:55:17)
+    hash 24e1b91967cb3d1578f29b6b3d21018a
+card disabled [errors]
+    family = spirit   # own (run.kedo:47:14)
+    weight = 0   # own (run.kedo:48:14)
+    max_level = 3   # own (run.kedo:49:17)
+    hash f77163b958083188892c7b74fa763f31
+card focus
+    family = mind   # own (run.kedo:41:14)
+    weight = 10   # own (run.kedo:42:14)
+    max_level = 5   # own (run.kedo:43:17)
+    hash ee6e5a9b1c1cdbd8193dcde785b7b070
+loot chest
+    drops [keyed]
+        - item
+            id = ammo   # own (run.kedo:26:16)
+            chance = 0.500   # own (run.kedo:26:31)
+        - item
+            id = medkit   # own (run.kedo:27:16)
+            chance = 0.250   # own (run.kedo:27:33)
+        - item
+            id = grenade   # own (run.kedo:28:16)
+            chance = 0.125   # own (run.kedo:28:34)
+        - item
+            id = nothing   # own (run.kedo:29:16)
+            chance = 0.125   # own (run.kedo:29:34)
+    hash d3684b8bc5528105adc12d3faa817852
+loot crate [errors]
+    drops [keyed]
+        - item
+            id = ammo   # own (run.kedo:35:16)
+            chance = 0.600   # own (run.kedo:35:31)
+        - item
+            id = medkit   # own (run.kedo:36:16)
+            chance = 0.350   # own (run.kedo:36:33)
+    hash 24e4b5f8a202c5da45361bd1c968567f
+run_rules default
+    xp_curve [atomic] [10, 25, 45, 70]
+    levels [keyed]
+        - item
+            id = first   # own (run.kedo:8:16)
+            xp = 10   # own (run.kedo:8:28)
+        - item
+            id = second   # own (run.kedo:9:16)
+            xp = 25   # own (run.kedo:9:29)
+    escape_window = 18s   # own (run.kedo:11:21)
+    hash 2c6b5f08bbb79f415b3dfa7b2b088e81
+run_rules hardcore [errors]
+    xp_curve [atomic] [10, 25, 45, 45, 80]
+    levels [keyed]
+        - item
+            id = first   # own (run.kedo:18:16)
+            xp = 30   # own (run.kedo:18:28)
+        - item
+            id = second   # own (run.kedo:19:16)
+            xp = 25   # own (run.kedo:19:29)
+    escape_window = 25s   # own (run.kedo:21:21)
+    hash 436529f8546e73742c4540ed72b32c43
+catalog d2e8d1b628f4c388a41cb037f0f83e80
