@@ -227,6 +227,10 @@ public class FastEntryTests
         var outcome = new RunOutcome();
         vm.Activate(bound.Hook("arrive"), 1, ref outcome);
         var stale = vm.Save(outcome.Frame) with { DefinitionHash = "other" };
+        var suspended = vm.SuspendedCount;
+        vm.Resume(stale, AwaitKind.Decision, 0, ref outcome, StalePolicy.RestartAtEntry);
+        Assert.Equal(RunError.WrongResumption, outcome.Error);   // the kind is checked before staleness, as BehaviorVm
+        Assert.Equal(suspended, vm.SuspendedCount);
         vm.Resume(stale, AwaitKind.Minutes, 0, ref outcome);
         Assert.Equal(RunError.StaleFrame, outcome.Error);
         vm.Resume(stale, AwaitKind.Minutes, 0, ref outcome, StalePolicy.AbortWithCompensation);

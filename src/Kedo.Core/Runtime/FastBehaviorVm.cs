@@ -9,6 +9,9 @@ namespace Kedo.Runtime;
 /// and argument buffer are reused, the result is a struct passed by reference, and a frame is taken from a pool only when a
 /// hook suspends: after warm-up an activation allocates nothing. Same instruction semantics, effect keys, budgets and frame
 /// format as <see cref="BehaviorVm"/>. One instance runs one activation at a time; use one per worker thread.
+/// <see cref="Activate"/>, <see cref="ActivateBatch(HookHandle, ReadOnlySpan{long}, Span{RunOutcome})"/> and the resumption of a
+/// pooled frame only read the shared <see cref="BoundProgram"/>; <see cref="Load"/>, <see cref="Save"/> and the resumption of a
+/// saved <see cref="BehaviorFrame"/> use the session's <see cref="SymbolTable"/>, which is not thread-safe: do those on one thread.
 /// </summary>
 public sealed class FastBehaviorVm
 {
@@ -164,6 +167,12 @@ public sealed class FastBehaviorVm
         if (_tracing)
         {
             _trace.Clear();
+        }
+
+        if (frame.Pending is { } pending && pending.Kind != kind)
+        {
+            Finish(ref outcome, RunStatus.Failed, RunError.WrongResumption, -1);   // checked first, as BehaviorVm.Resume
+            return;
         }
 
         var handle = Restore(frame, ref outcome, out var stale);
